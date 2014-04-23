@@ -1,0 +1,6 @@
+*.o
+*.rlib
+*.a
+lodepng.c
+lodepng.h
+example
