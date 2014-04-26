@@ -24,11 +24,11 @@ lodepng.h:
 	curl -L http://lpi.googlecode.com/svn/trunk/lodepng.h -o $@
 
 example: $(RUSTLIB) example.rs
-	$(RUSTC) -L . example.rs
-	@echo run with: ./example
+	$(RUSTC) -o $@ -L . example.rs
+	@echo Run ./example
 
 clean:
-	rm -rf $(RUSTLIB) *.o
+	rm -rf $(RUSTLIB) *.o example
 
 distclean: clean
 	rm -rf lodepng.[ch]
