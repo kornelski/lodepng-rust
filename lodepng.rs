@@ -7,6 +7,7 @@ use libc::funcs::c95::stdlib;
 use std::c_vec::CVec;
 use std::fmt;
 use std::intrinsics;
+use std::io::{File, Open, Read};
 
 pub use ffi::ColorType;
 pub use ffi::{LCT_GREY, LCT_RGB, LCT_PALETTE, LCT_GREY_ALPHA, LCT_RGBA};
@@ -179,7 +180,6 @@ pub mod ffi {
     #[link(name="lodepng", kind="static")]
     extern {
         pub fn lodepng_decode_memory(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, input: *u8, insize: size_t, colortype: ColorType, bitdepth: c_uint) -> Error;
-        pub fn lodepng_decode_file(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, filepath: *c_char, colortype: ColorType, bitdepth: c_uint) -> Error;
         pub fn lodepng_encode_memory(out: &mut *mut u8, outsize: &mut size_t, image: *u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
         pub fn lodepng_encode_file(filepath: *c_char, image: *u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
         pub fn lodepng_error_text(code: Error) -> &'static i8;
@@ -307,15 +307,9 @@ pub fn decode24(input: &[u8]) -> Result<RawBitmap, Error> {
 }
 
 pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error>  {
-    unsafe {
-        let mut out = intrinsics::init();
-        let mut w = 0;
-        let mut h = 0;
-
-        filepath.with_c_str(|cstr|{
-            let res = ffi::lodepng_decode_file(&mut out, &mut w, &mut h, cstr, colortype, bitdepth);
-            new_bitmap(res, out, w, h, required_size(w, h, colortype, bitdepth))
-        })
+    match File::open_mode(filepath, Open, Read).read_to_end() {
+        Ok(file) => decode_memory(file.as_slice(), colortype, bitdepth),
+        Err(_) => Err(Error(78)),
     }
 }
 
