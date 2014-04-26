@@ -181,7 +181,6 @@ pub mod ffi {
     extern {
         pub fn lodepng_decode_memory(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, input: *u8, insize: size_t, colortype: ColorType, bitdepth: c_uint) -> Error;
         pub fn lodepng_encode_memory(out: &mut *mut u8, outsize: &mut size_t, image: *u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
-        pub fn lodepng_encode_file(filepath: *c_char, image: *u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
         pub fn lodepng_error_text(code: Error) -> &'static i8;
         pub fn lodepng_compress_settings_init(settings: &mut CompressSettings);
         pub fn lodepng_color_mode_init(info: &mut ColorMode);
@@ -296,6 +295,18 @@ unsafe fn new_buffer(res: Error, out: *mut u8, size: size_t) -> Result<CVec<u8>,
     }
 }
 
+fn save_file(filepath: &Path, data: &[u8]) -> Result<(), Error> {
+    let mut file = match File::create(filepath) {
+        Ok(file) => file,
+        Err(_) => { return Err(Error(79)) }
+    };
+
+    match file.write(data) {
+        Ok(_) => Ok(()),
+        Err(_) => Err(Error(79)),
+    }
+}
+
 pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error> {
     unsafe {
         let mut out = intrinsics::init();
@@ -356,13 +367,8 @@ pub fn encode24(image: &[u8], w: c_uint, h: c_uint) -> Result<CVec<u8>, Error> {
 }
 
 pub fn encode_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
-    with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| {
-        unsafe {
-            filepath.with_c_str(|cstr|{
-                ffi::lodepng_encode_file(cstr, ptr, w, h, colortype, bitdepth)
-            })
-        }
-    }).to_result()
+    let encoded = try!(encode_memory(image, w, h, colortype, bitdepth));
+    save_file(filepath, encoded.as_slice())
 }
 
 pub fn encode32_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Result<(), Error> {
@@ -600,6 +606,11 @@ impl ffi::State {
             });
             new_buffer(res, out, outsize)
         }
+    }
+
+    pub fn encode_file(&mut self, filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Result<(), Error> {
+        let buf = try!(self.encode(image, w, h));
+        save_file(filepath, buf.as_slice())
     }
 }
 
