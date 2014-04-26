@@ -188,7 +188,7 @@ pub mod ffi {
         pub fn lodepng_color_mode_cleanup(info: &mut ColorMode);
         pub fn lodepng_color_mode_copy(dest: &mut ColorMode, source: &ColorMode) -> Error;
         pub fn lodepng_palette_clear(info: &mut ColorMode);
-        pub fn lodepng_palette_add(info: &mut ColorMode, r: c_uchar, g: c_uchar, b: c_uchar, a: c_uchar) -> c_uint;
+        pub fn lodepng_palette_add(info: &mut ColorMode, r: c_uchar, g: c_uchar, b: c_uchar, a: c_uchar) -> Error;
         pub fn lodepng_get_bpp(info: &ColorMode) -> c_uint;
         pub fn lodepng_get_channels(info: &ColorMode) -> c_uint;
         pub fn lodepng_is_greyscale_type(info: &ColorMode) -> c_uint;
@@ -206,7 +206,7 @@ pub mod ffi {
         pub fn lodepng_add_itext(info: &mut Info, key: *c_char, langtag: *c_char, transkey: *c_char, str: *c_char) -> Error;
         pub fn lodepng_convert(out: *mut u8, input: *u8, mode_out: &mut ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint, fix_png: c_uint) -> Error;
         pub fn lodepng_decoder_settings_init(settings: &mut DecoderSettings);
-        pub fn lodepng_auto_choose_color(mode_out: &mut ColorMode, image: *u8, w: c_uint, h: c_uint, mode_in: &ColorMode, auto_convert: AutoConvert) -> c_uint;
+        pub fn lodepng_auto_choose_color(mode_out: &mut ColorMode, image: *u8, w: c_uint, h: c_uint, mode_in: &ColorMode, auto_convert: AutoConvert) -> Error;
         pub fn lodepng_encoder_settings_init(settings: &mut EncoderSettings);
         pub fn lodepng_state_init(state: &mut State);
         pub fn lodepng_state_cleanup(state: &mut State);
@@ -224,11 +224,20 @@ pub mod ffi {
         pub fn lodepng_chunk_check_crc(chunk: *c_uchar) -> c_uint;
         pub fn lodepng_chunk_generate_crc(chunk: *mut c_uchar);
         pub fn lodepng_chunk_next(chunk: *mut c_uchar) -> *mut c_uchar;
-        pub fn lodepng_chunk_append(out: &mut *mut u8, outlength: *size_t, chunk: *c_uchar) -> c_uint;
-        pub fn lodepng_chunk_create(out: &mut *mut u8, outlength: *size_t, length: c_uint, chtype: *c_char, data: *u8) -> c_uint;
+        pub fn lodepng_chunk_append(out: &mut *mut u8, outlength: *size_t, chunk: *c_uchar) -> Error;
+        pub fn lodepng_chunk_create(out: &mut *mut u8, outlength: *size_t, length: c_uint, chtype: *c_char, data: *u8) -> Error;
         pub fn lodepng_crc32(buf: *u8, len: size_t) -> c_uint;
         pub fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut size_t, input: *u8, insize: size_t, settings: &CompressSettings) -> Error;
         pub fn lodepng_deflate(out: &mut *mut u8, outsize: &mut size_t, input: *u8, insize: size_t, settings: &CompressSettings) -> Error;
+    }
+}
+
+impl ffi::Error {
+    fn to_result(self) -> Result<(), Error> {
+        match self {
+            Error(0) => Ok(()),
+            err => Err(err),
+        }
     }
 }
 
@@ -346,21 +355,21 @@ pub fn encode24(image: &[u8], w: c_uint, h: c_uint) -> Result<CVec<u8>, Error> {
     encode_memory(image, w, h, LCT_RGB, 8)
 }
 
-pub fn encode_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error {
+pub fn encode_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| {
         unsafe {
             filepath.with_c_str(|cstr|{
                 ffi::lodepng_encode_file(cstr, ptr, w, h, colortype, bitdepth)
             })
         }
-    })
+    }).to_result()
 }
 
-pub fn encode32_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Error {
+pub fn encode32_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGBA, 8)
 }
 
-pub fn encode24_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Error {
+pub fn encode24_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGB, 8)
 }
 
@@ -395,9 +404,9 @@ impl ffi::ColorMode {
         }
     }
 
-    pub fn palette_add(&mut self, r: c_uchar, g: c_uchar, b: c_uchar, a: c_uchar) -> c_uint {
+    pub fn palette_add(&mut self, r: c_uchar, g: c_uchar, b: c_uchar, a: c_uchar) -> Result<(), Error> {
         unsafe {
-            ffi::lodepng_palette_add(self, r, g, b, a)
+            ffi::lodepng_palette_add(self, r, g, b, a).to_result()
         }
     }
 
@@ -462,10 +471,8 @@ impl Clone for ffi::ColorMode {
     fn clone(&self) -> ColorMode {
         unsafe {
             let mut dest = intrinsics::init();
-            match ffi::lodepng_color_mode_copy(&mut dest, self) {
-                Error(0) => dest,
-                err => fail!(err)
-            }
+            ffi::lodepng_color_mode_copy(&mut dest, self).to_result().unwrap();
+            return dest;
         }
     }
 }
@@ -517,10 +524,8 @@ impl Clone for ffi::Info {
     fn clone(&self) -> Info {
         unsafe {
             let mut dest = intrinsics::init();
-            match ffi::lodepng_info_copy(&mut dest, self) {
-                Error(0) => dest,
-                err => fail!(err)
-            }
+            ffi::lodepng_info_copy(&mut dest, self).to_result().unwrap();
+            return dest;
         }
     }
 }
@@ -541,9 +546,9 @@ pub fn decoder_settings_init(settings: &mut DecoderSettings) {
     }
 }
 
-pub fn auto_choose_color(mode_out: &mut ColorMode, image: *u8, w: c_uint, h: c_uint, mode_in: &ColorMode, auto_convert: AutoConvert) -> c_uint {
+pub fn auto_choose_color(mode_out: &mut ColorMode, image: *u8, w: c_uint, h: c_uint, mode_in: &ColorMode, auto_convert: AutoConvert) -> Result<(), Error> {
     unsafe {
-        ffi::lodepng_auto_choose_color(mode_out, image, w, h, mode_in, auto_convert)
+        ffi::lodepng_auto_choose_color(mode_out, image, w, h, mode_in, auto_convert).to_result()
     }
 }
 
@@ -668,15 +673,15 @@ impl Chunk {
         }
     }
 
-    pub fn append(&self, out: &mut *mut u8, outlength: *size_t) -> c_uint {
+    pub fn append(&self, out: &mut *mut u8, outlength: *size_t) -> Result<(), Error> {
         unsafe {
-            ffi::lodepng_chunk_append(out, outlength, &*self.data)
+            ffi::lodepng_chunk_append(out, outlength, &*self.data).to_result()
         }
     }
 
-    pub fn create(out: &mut *mut u8, outlength: *size_t, length: c_uint, chtype: *c_char, data: *u8) -> c_uint {
+    pub fn create(out: &mut *mut u8, outlength: *size_t, length: c_uint, chtype: *c_char, data: *u8) -> Result<(), Error> {
         unsafe {
-            ffi::lodepng_chunk_create(out, outlength, length, chtype, data)
+            ffi::lodepng_chunk_create(out, outlength, length, chtype, data).to_result()
         }
     }
 }
