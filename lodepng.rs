@@ -179,9 +179,9 @@ pub mod ffi {
     #[link(name="lodepng", kind="static")]
     extern {
         pub fn lodepng_decode_memory(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, input: *u8, insize: size_t, colortype: ColorType, bitdepth: c_uint) -> Error;
-        pub fn lodepng_decode_file(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, filename: *c_char, colortype: ColorType, bitdepth: c_uint) -> Error;
+        pub fn lodepng_decode_file(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, filepath: *c_char, colortype: ColorType, bitdepth: c_uint) -> Error;
         pub fn lodepng_encode_memory(out: &mut *mut u8, outsize: &mut size_t, image: *u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
-        pub fn lodepng_encode_file(filename: *c_char, image: *u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
+        pub fn lodepng_encode_file(filepath: *c_char, image: *u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
         pub fn lodepng_error_text(code: Error) -> &'static i8;
         pub fn lodepng_compress_settings_init(settings: &mut CompressSettings);
         pub fn lodepng_color_mode_init(info: &mut ColorMode);
@@ -306,25 +306,25 @@ pub fn decode24(input: &[u8]) -> Result<RawBitmap, Error> {
     lodepng_decode_memory(input, LCT_RGB, 8)
 }
 
-pub fn decode_file(filename: &str, colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error>  {
+pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error>  {
     unsafe {
         let mut out = intrinsics::init();
         let mut w = 0;
         let mut h = 0;
 
-        filename.with_c_str(|cstr|{
+        filepath.with_c_str(|cstr|{
             let res = ffi::lodepng_decode_file(&mut out, &mut w, &mut h, cstr, colortype, bitdepth);
             new_bitmap(res, out, w, h, required_size(w, h, colortype, bitdepth))
         })
     }
 }
 
-pub fn decode32_file(filename: &str) -> Result<RawBitmap, Error> {
-    decode_file(filename, LCT_RGBA, 8)
+pub fn decode32_file(filepath: &Path) -> Result<RawBitmap, Error> {
+    decode_file(filepath, LCT_RGBA, 8)
 }
 
-pub fn decode24_file(filename: &str) -> Result<RawBitmap, Error> {
-    decode_file(filename, LCT_RGB, 8)
+pub fn decode24_file(filepath: &Path) -> Result<RawBitmap, Error> {
+    decode_file(filepath, LCT_RGB, 8)
 }
 
 fn with_buffer_for_type(image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint, f: |*u8| -> Error) -> Error {
@@ -352,22 +352,22 @@ pub fn encode24(image: &[u8], w: c_uint, h: c_uint) -> Result<CVec<u8>, Error> {
     encode_memory(image, w, h, LCT_RGB, 8)
 }
 
-pub fn encode_file(filename: &str, image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error {
+pub fn encode_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error {
     with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| {
         unsafe {
-            filename.with_c_str(|cstr|{
+            filepath.with_c_str(|cstr|{
                 ffi::lodepng_encode_file(cstr, ptr, w, h, colortype, bitdepth)
             })
         }
     })
 }
 
-pub fn encode32_file(filename: &str, image: &[u8], w: c_uint, h: c_uint) -> Error {
-    encode_file(filename, image, w, h, LCT_RGBA, 8)
+pub fn encode32_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Error {
+    encode_file(filepath, image, w, h, LCT_RGBA, 8)
 }
 
-pub fn encode24_file(filename: &str, image: &[u8], w: c_uint, h: c_uint) -> Error {
-    encode_file(filename, image, w, h, LCT_RGB, 8)
+pub fn encode24_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Error {
+    encode_file(filepath, image, w, h, LCT_RGB, 8)
 }
 
 pub fn error_text(code: Error) -> &'static str {
