@@ -404,9 +404,9 @@ impl ffi::ColorMode {
         }
     }
 
-    pub fn palette_add(&mut self, r: c_uchar, g: c_uchar, b: c_uchar, a: c_uchar) -> Result<(), Error> {
+    pub fn palette_add(&mut self, r: c_uchar, g: c_uchar, b: c_uchar, a: c_uchar) -> Option<Error> {
         unsafe {
-            ffi::lodepng_palette_add(self, r, g, b, a).to_result()
+            ffi::lodepng_palette_add(self, r, g, b, a).to_result().err()
         }
     }
 
