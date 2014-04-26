@@ -287,7 +287,7 @@ unsafe fn new_buffer(res: Error, out: *mut u8, size: size_t) -> Result<CVec<u8>,
     }
 }
 
-pub fn lodepng_decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error> {
+pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error> {
     unsafe {
         let mut out = intrinsics::init();
         let mut w = 0;
@@ -299,11 +299,11 @@ pub fn lodepng_decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uin
 }
 
 pub fn decode32(input: &[u8]) -> Result<RawBitmap, Error> {
-    lodepng_decode_memory(input, LCT_RGBA, 8)
+    decode_memory(input, LCT_RGBA, 8)
 }
 
 pub fn decode24(input: &[u8]) -> Result<RawBitmap, Error> {
-    lodepng_decode_memory(input, LCT_RGB, 8)
+    decode_memory(input, LCT_RGB, 8)
 }
 
 pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error>  {
