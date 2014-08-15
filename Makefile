@@ -1,8 +1,8 @@
 RUSTC ?= rustc
 
 RUSTLIBSRC=lodepng.rs
-RUSTLIB=$(shell $(RUSTC) --crate-file-name $(RUSTLIBSRC))
-CFLAGS ?= -O3
+RUSTLIB=$(shell $(RUSTC) --print-file-name $(RUSTLIBSRC))
+CFLAGS ?= -O3 -fPIC
 
 all: example crate
 
