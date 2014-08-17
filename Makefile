@@ -1,36 +1,17 @@
-RUSTC ?= rustc
-
-RUSTLIBSRC=lodepng.rs
-RUSTLIB=$(shell $(RUSTC) --print-file-name $(RUSTLIBSRC))
 CFLAGS ?= -O3 -fPIC
+LIB = $(OUT_DIR)/liblodepng.a
+OBJ = $(OUT_DIR)/liblodepng.o
+SRC = $(OUT_DIR)/lodepng.c
+HEADER = $(OUT_DIR)/lodepng.h
 
-all: example crate
-
-crate: $(RUSTLIB)
-
-$(RUSTLIB): $(RUSTLIBSRC) liblodepng.a
-	$(RUSTC) -L . $<
-
-liblodepng.a: liblodepng.o
+$(LIB): $(OBJ)
 	$(AR) $(ARFLAGS) $@ $^
 
-liblodepng.o: lodepng.c
+$(OBJ): $(SRC)
 	$(CC) $(CFLAGS) -c -o $@ $^
 
-lodepng.c: lodepng.h
+$(SRC): $(HEADER)
 	curl -L http://lpi.googlecode.com/svn/trunk/lodepng.cpp -o $@
 
-lodepng.h:
+$(HEADER):
 	curl -L http://lpi.googlecode.com/svn/trunk/lodepng.h -o $@
-
-example: $(RUSTLIB) example.rs
-	$(RUSTC) -o $@ -L . example.rs
-	@echo Run ./example
-
-clean:
-	rm -rf $(RUSTLIB) *.o example
-
-distclean: clean
-	rm -rf lodepng.[ch]
-
-.PHONY: all crate clean distclean
