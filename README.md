@@ -6,7 +6,7 @@ This package allows easy reading and writing of PNG files without any system dep
 
 To build the `lodepng` crate:
 
-    make crate
+    cargo build
 
 It will produce `liblodepng-….rlib`. For documentation of the structures and functions, [see the original lodepng.h](http://lpi.googlecode.com/svn/trunk/lodepng.h).
 
