@@ -30,6 +30,8 @@ pub use ffi::Error;
 #[allow(non_camel_case_types)]
 pub mod ffi {
     use libc::{c_char, c_uchar, c_uint, c_void, size_t};
+    use std::c_vec::CVec;
+    use std::intrinsics;
 
     pub struct Error(pub c_uint);
 
@@ -231,13 +233,230 @@ pub mod ffi {
         pub fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut size_t, input: *const u8, insize: size_t, settings: &CompressSettings) -> Error;
         pub fn lodepng_deflate(out: &mut *mut u8, outsize: &mut size_t, input: *const u8, insize: size_t, settings: &CompressSettings) -> Error;
     }
-}
 
-impl ffi::Error {
-    fn to_result(self) -> Result<(), Error> {
-        match self {
-            Error(0) => Ok(()),
-            err => Err(err),
+    impl Error {
+        pub fn to_result(self) -> Result<(), Error> {
+            match self {
+                Error(0) => Ok(()),
+                err => Err(err),
+            }
+        }
+    }
+
+    impl CompressSettings {
+        pub fn new() -> CompressSettings {
+            unsafe {
+                let mut settings = intrinsics::init();
+                lodepng_compress_settings_init(&mut settings);
+                return settings;
+            }
+        }
+    }
+
+    impl ColorMode {
+        pub fn new() -> ColorMode {
+            unsafe {
+                let mut mode = intrinsics::init();
+                lodepng_color_mode_init(&mut mode);
+                return mode;
+            }
+        }
+
+        pub fn palette_clear(&mut self) {
+            unsafe {
+                lodepng_palette_clear(self)
+            }
+        }
+
+        pub fn palette_add(&mut self, r: c_uchar, g: c_uchar, b: c_uchar, a: c_uchar) -> Option<Error> {
+            unsafe {
+                lodepng_palette_add(self, r, g, b, a).to_result().err()
+            }
+        }
+
+        pub fn bpp(&self) -> c_uint {
+            unsafe {
+                lodepng_get_bpp(self)
+            }
+        }
+
+        pub fn channels(&self) -> c_uint {
+            unsafe {
+                lodepng_get_channels(self)
+            }
+        }
+
+        pub fn is_greyscale_type(&self) -> bool {
+            unsafe {
+                lodepng_is_greyscale_type(self) != 0
+            }
+        }
+
+        pub fn is_alpha_type(&self) -> bool {
+            unsafe {
+                lodepng_is_alpha_type(self) != 0
+            }
+        }
+
+        pub fn is_palette_type(&self) -> bool {
+            unsafe {
+                lodepng_is_palette_type(self) != 0
+            }
+        }
+
+        pub fn has_palette_alpha(&self) -> bool {
+            unsafe {
+                lodepng_has_palette_alpha(self) != 0
+            }
+        }
+
+        pub fn can_have_alpha(&self) -> bool {
+            unsafe {
+                lodepng_can_have_alpha(self) != 0
+            }
+        }
+
+        pub fn raw_size(&self, w: c_uint, h: c_uint) -> uint {
+            unsafe {
+                lodepng_get_raw_size(w, h, self) as uint
+            }
+        }
+    }
+
+    impl Drop for ColorMode {
+        fn drop(&mut self) {
+            unsafe {
+                lodepng_color_mode_cleanup(self)
+            }
+        }
+    }
+
+    impl Clone for ColorMode {
+        fn clone(&self) -> ColorMode {
+            unsafe {
+                let mut dest = intrinsics::init();
+                lodepng_color_mode_copy(&mut dest, self).to_result().unwrap();
+                return dest;
+            }
+        }
+    }
+
+    impl Info {
+        pub fn new() -> Info {
+            unsafe {
+                let mut info = intrinsics::init();
+                lodepng_info_init(&mut info);
+                return info;
+            }
+        }
+
+        pub fn clear_text(&mut self) {
+            unsafe {
+                lodepng_clear_text(self)
+            }
+        }
+
+        pub fn add_text(&mut self, key: *const c_char, str: *const c_char) -> Error {
+            unsafe {
+                lodepng_add_text(self, key, str)
+            }
+        }
+
+        pub fn clear_itext(&mut self) {
+            unsafe {
+                lodepng_clear_itext(self)
+            }
+        }
+
+        pub fn add_itext(&mut self, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error {
+            unsafe {
+                lodepng_add_itext(self, key, langtag, transkey, str)
+            }
+        }
+    }
+
+    impl Drop for Info {
+        fn drop(&mut self) {
+            unsafe {
+                lodepng_info_cleanup(self)
+            }
+        }
+    }
+
+    impl Clone for Info {
+        fn clone(&self) -> Info {
+            unsafe {
+                let mut dest = intrinsics::init();
+                lodepng_info_copy(&mut dest, self).to_result().unwrap();
+                return dest;
+            }
+        }
+    }
+
+    impl State {
+        pub fn new() -> State {
+            unsafe {
+                let mut state = intrinsics::init();
+                lodepng_state_init(&mut state);
+                return state;
+            }
+        }
+
+        pub fn decode(&mut self, input: &[u8]) -> Result<::RawBitmap, Error> {
+            unsafe {
+                let mut out = intrinsics::init();
+                let mut w = 0;
+                let mut h = 0;
+
+                let res = lodepng_decode(&mut out, &mut w, &mut h, self, input.as_ptr(), input.len() as size_t);
+                ::new_bitmap(res, out, w, h, ::required_size(w, h, self.info_raw.colortype, self.info_raw.bitdepth))
+            }
+        }
+
+        pub fn inspect(&mut self, input: &[u8]) -> Result<(uint,uint), Error> {
+            unsafe {
+                let mut w = 0;
+                let mut h = 0;
+                match lodepng_inspect(&mut w, &mut h, self, input.as_ptr(), input.len() as size_t) {
+                    Error(0) => Ok((w as uint,h as uint)),
+                    err => Err(err)
+                }
+            }
+        }
+
+        pub fn encode(&mut self, image: &[u8], w: c_uint, h: c_uint) -> Result<CVec<u8>, Error> {
+            unsafe {
+                let mut out = intrinsics::init();
+                let mut outsize = 0;
+
+                let res = ::with_buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth, |ptr| {
+                    lodepng_encode(&mut out, &mut outsize, ptr, w, h, self)
+                });
+                ::new_buffer(res, out, outsize)
+            }
+        }
+
+        pub fn encode_file(&mut self, filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Result<(), Error> {
+            let buf = try!(self.encode(image, w, h));
+            ::save_file(filepath, buf.as_slice())
+        }
+    }
+
+    impl Drop for State {
+        fn drop(&mut self) {
+            unsafe {
+                lodepng_state_cleanup(self)
+            }
+        }
+    }
+
+    impl Clone for State {
+        fn clone(&self) -> State {
+            unsafe {
+                let mut dest = intrinsics::init();
+                lodepng_state_copy(&mut dest, self);
+                return dest;
+            }
         }
     }
 }
@@ -387,156 +606,6 @@ pub fn error_text(code: Error) -> &'static str {
     }
 }
 
-impl ffi::CompressSettings {
-    pub fn new() -> CompressSettings {
-        unsafe {
-            let mut settings = intrinsics::init();
-            ffi::lodepng_compress_settings_init(&mut settings);
-            return settings;
-        }
-    }
-}
-
-impl ffi::ColorMode {
-    pub fn new() -> ColorMode {
-        unsafe {
-            let mut mode = intrinsics::init();
-            ffi::lodepng_color_mode_init(&mut mode);
-            return mode;
-        }
-    }
-
-    pub fn palette_clear(&mut self) {
-        unsafe {
-            ffi::lodepng_palette_clear(self)
-        }
-    }
-
-    pub fn palette_add(&mut self, r: c_uchar, g: c_uchar, b: c_uchar, a: c_uchar) -> Option<Error> {
-        unsafe {
-            ffi::lodepng_palette_add(self, r, g, b, a).to_result().err()
-        }
-    }
-
-    pub fn bpp(&self) -> c_uint {
-        unsafe {
-            ffi::lodepng_get_bpp(self)
-        }
-    }
-
-    pub fn channels(&self) -> c_uint {
-        unsafe {
-            ffi::lodepng_get_channels(self)
-        }
-    }
-
-    pub fn is_greyscale_type(&self) -> bool {
-        unsafe {
-            ffi::lodepng_is_greyscale_type(self) != 0
-        }
-    }
-
-    pub fn is_alpha_type(&self) -> bool {
-        unsafe {
-            ffi::lodepng_is_alpha_type(self) != 0
-        }
-    }
-
-    pub fn is_palette_type(&self) -> bool {
-        unsafe {
-            ffi::lodepng_is_palette_type(self) != 0
-        }
-    }
-
-    pub fn has_palette_alpha(&self) -> bool {
-        unsafe {
-            ffi::lodepng_has_palette_alpha(self) != 0
-        }
-    }
-
-    pub fn can_have_alpha(&self) -> bool {
-        unsafe {
-            ffi::lodepng_can_have_alpha(self) != 0
-        }
-    }
-
-    pub fn raw_size(&self, w: c_uint, h: c_uint) -> uint {
-        unsafe {
-            ffi::lodepng_get_raw_size(w, h, self) as uint
-        }
-    }
-}
-
-impl Drop for ffi::ColorMode {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::lodepng_color_mode_cleanup(self)
-        }
-    }
-}
-
-impl Clone for ffi::ColorMode {
-    fn clone(&self) -> ColorMode {
-        unsafe {
-            let mut dest = intrinsics::init();
-            ffi::lodepng_color_mode_copy(&mut dest, self).to_result().unwrap();
-            return dest;
-        }
-    }
-}
-
-impl ffi::Info {
-    pub fn new() -> Info {
-        unsafe {
-            let mut info = intrinsics::init();
-            ffi::lodepng_info_init(&mut info);
-            return info;
-        }
-    }
-
-    pub fn clear_text(&mut self) {
-        unsafe {
-            ffi::lodepng_clear_text(self)
-        }
-    }
-
-    pub fn add_text(&mut self, key: *const c_char, str: *const c_char) -> Error {
-        unsafe {
-            ffi::lodepng_add_text(self, key, str)
-        }
-    }
-
-    pub fn clear_itext(&mut self) {
-        unsafe {
-            ffi::lodepng_clear_itext(self)
-        }
-    }
-
-    pub fn add_itext(&mut self, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error {
-        unsafe {
-            ffi::lodepng_add_itext(self, key, langtag, transkey, str)
-        }
-    }
-}
-
-
-impl Drop for ffi::Info {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::lodepng_info_cleanup(self)
-        }
-    }
-}
-
-impl Clone for ffi::Info {
-    fn clone(&self) -> Info {
-        unsafe {
-            let mut dest = intrinsics::init();
-            ffi::lodepng_info_copy(&mut dest, self).to_result().unwrap();
-            return dest;
-        }
-    }
-}
 
 pub fn convert(input: &[u8], mode_out: &mut ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint, fix_png: bool) -> Result<RawBitmap, Error> {
     unsafe {
@@ -563,74 +632,6 @@ pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: c_uint, 
 pub fn encoder_settings_init(settings: &mut EncoderSettings) {
     unsafe {
         ffi::lodepng_encoder_settings_init(settings)
-    }
-}
-
-
-impl ffi::State {
-    pub fn new() -> State {
-        unsafe {
-            let mut state = intrinsics::init();
-            ffi::lodepng_state_init(&mut state);
-            return state;
-        }
-    }
-
-    pub fn decode(&mut self, input: &[u8]) -> Result<RawBitmap, Error> {
-        unsafe {
-            let mut out = intrinsics::init();
-            let mut w = 0;
-            let mut h = 0;
-
-            let res = ffi::lodepng_decode(&mut out, &mut w, &mut h, self, input.as_ptr(), input.len() as size_t);
-            new_bitmap(res, out, w, h, required_size(w, h, self.info_raw.colortype, self.info_raw.bitdepth))
-        }
-    }
-
-    pub fn inspect(&mut self, input: &[u8]) -> Result<(uint,uint), Error> {
-        unsafe {
-            let mut w = 0;
-            let mut h = 0;
-            match ffi::lodepng_inspect(&mut w, &mut h, self, input.as_ptr(), input.len() as size_t) {
-                Error(0) => Ok((w as uint,h as uint)),
-                err => Err(err)
-            }
-        }
-    }
-
-    pub fn encode(&mut self, image: &[u8], w: c_uint, h: c_uint) -> Result<CVec<u8>, Error> {
-        unsafe {
-            let mut out = intrinsics::init();
-            let mut outsize = 0;
-
-            let res = with_buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth, |ptr| {
-                ffi::lodepng_encode(&mut out, &mut outsize, ptr, w, h, self)
-            });
-            new_buffer(res, out, outsize)
-        }
-    }
-
-    pub fn encode_file(&mut self, filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Result<(), Error> {
-        let buf = try!(self.encode(image, w, h));
-        save_file(filepath, buf.as_slice())
-    }
-}
-
-impl Drop for ffi::State {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::lodepng_state_cleanup(self)
-        }
-    }
-}
-
-impl Clone for ffi::State {
-    fn clone(&self) -> State {
-        unsafe {
-            let mut dest = intrinsics::init();
-            ffi::lodepng_state_copy(&mut dest, self);
-            return dest;
-        }
     }
 }
 
