@@ -4,3 +4,12 @@ name = "lodepng"
 version = "0.1.0"
 authors = [ "pornel@pornel.net" ]
 build = "sh build.sh"
+
+[[example]]
+name = "read"
+
+[[example]]
+name = "write"
+
+[[example]]
+name = "passthrough"

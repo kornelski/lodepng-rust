@@ -4,6 +4,12 @@ LodePNG is a stand-alone PNG image decoder and encoder (does *not* require zlib 
 
 This package allows easy reading and writing of PNG files without any system dependencies.
 
+The easiest way to use LodePNG is to simply include the lodepng crate.
+To do so, add this to your Cargo.toml:
+
+    [dependencies.lodepng]
+    git = "https://github.com/pornel/lodepng-rust.git"
+
 To build the `lodepng` crate:
 
     cargo build
