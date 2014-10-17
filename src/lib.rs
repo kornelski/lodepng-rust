@@ -44,6 +44,7 @@ pub mod ffi {
         LCT_RGBA = 6,
     }
 
+    #[repr(C)]
     pub struct ColorMode {
         pub colortype: ColorType,
         pub bitdepth: c_uint,
@@ -57,6 +58,7 @@ pub mod ffi {
         key_b: c_uint,
     }
 
+    #[repr(C)]
     struct DecompressSettings {
         ignore_adler32: c_uint,
         custom_zlib: *const c_void,
@@ -64,6 +66,7 @@ pub mod ffi {
         custom_context: *const c_void,
     }
 
+    #[repr(C)]
     pub struct CompressSettings {
         pub btype: c_uint,
         pub use_lz77: c_uint,
@@ -77,6 +80,7 @@ pub mod ffi {
         custom_context: *const c_void,
     }
 
+    #[repr(C)]
     pub struct Time {
         pub year: c_uint,
         pub month: c_uint,
@@ -86,6 +90,7 @@ pub mod ffi {
         pub second: c_uint,
     }
 
+    #[repr(C)]
     pub struct Info {
         pub compression_method: c_uint,
         pub filter_method: c_uint,
@@ -119,6 +124,7 @@ pub mod ffi {
         unknown_chunks_size: [*const size_t, ..3],
     }
 
+    #[repr(C)]
     pub struct DecoderSettings {
         zlibsettings: DecompressSettings,
 
@@ -153,6 +159,7 @@ pub mod ffi {
         LAC_AUTO_NO_NIBBLES_NO_PALETTE
     }
 
+    #[repr(C)]
     pub struct EncoderSettings {
         pub zlibsettings: CompressSettings,
 
@@ -171,6 +178,7 @@ pub mod ffi {
         text_compression: c_uint,
     }
 
+    #[repr(C)]
     pub struct State {
         pub decoder: DecoderSettings,
 
