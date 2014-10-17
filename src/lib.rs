@@ -1,8 +1,6 @@
 #![crate_name = "lodepng"]
 #![crate_type = "lib"]
 
-extern crate debug;
-
 extern crate libc;
 use libc::{c_char, c_uchar, c_uint, c_void, size_t};
 use libc::funcs::c95::stdlib;
@@ -488,7 +486,7 @@ pub struct RawBitmap {
 
 impl fmt::Show for RawBitmap {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{{} × {}, {:?}}}", self.width, self.height, self.buffer)
+        write!(f, "{{{} × {} RawBitmap}}", self.width, self.height)
     }
 }
 
