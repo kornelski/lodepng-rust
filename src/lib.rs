@@ -33,6 +33,7 @@ pub mod ffi {
     use std::c_vec::CVec;
     use std::intrinsics;
 
+    #[repr(C)]
     pub struct Error(pub c_uint);
 
     #[repr(C)]
