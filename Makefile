@@ -1,4 +1,5 @@
 CFLAGS ?= -O3 -fPIC
+OUT_DIR ?= .
 LIB = $(OUT_DIR)/liblodepng.a
 OBJ = $(OUT_DIR)/liblodepng.o
 SRC = $(OUT_DIR)/lodepng.c
