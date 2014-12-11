@@ -10,16 +10,16 @@ use std::intrinsics;
 use std::io::{File, Open, Read};
 
 pub use ffi::ColorType;
-pub use ffi::{LCT_GREY, LCT_RGB, LCT_PALETTE, LCT_GREY_ALPHA, LCT_RGBA};
+pub use ffi::ColorType::{LCT_GREY, LCT_RGB, LCT_PALETTE, LCT_GREY_ALPHA, LCT_RGBA};
 pub use ffi::ColorMode;
 pub use ffi::CompressSettings;
 pub use ffi::Time;
 pub use ffi::Info;
 pub use ffi::DecoderSettings;
 pub use ffi::FilterStrategy;
-pub use ffi::{LFS_ZERO, LFS_MINSUM, LFS_ENTROPY, LFS_BRUTE_FORCE, LFS_PREDEFINED};
+pub use ffi::FilterStrategy::{LFS_ZERO, LFS_MINSUM, LFS_ENTROPY, LFS_BRUTE_FORCE, LFS_PREDEFINED};
 pub use ffi::AutoConvert;
-pub use ffi::{LAC_NO, LAC_ALPHA, LAC_AUTO, LAC_AUTO_NO_NIBBLES, LAC_AUTO_NO_PALETTE, LAC_AUTO_NO_NIBBLES_NO_PALETTE};
+pub use ffi::AutoConvert::{LAC_NO, LAC_ALPHA, LAC_AUTO, LAC_AUTO_NO_NIBBLES, LAC_AUTO_NO_PALETTE, LAC_AUTO_NO_NIBBLES_NO_PALETTE};
 pub use ffi::EncoderSettings;
 pub use ffi::State;
 pub use ffi::Error;
@@ -609,7 +609,7 @@ pub fn encode24_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Res
 
 pub fn error_text(code: Error) -> &'static str {
     unsafe {
-        std::str::raw::c_str_to_static_slice(ffi::lodepng_error_text(code))
+        std::str::from_c_str(ffi::lodepng_error_text(code))
     }
 }
 
