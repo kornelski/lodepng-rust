@@ -3,7 +3,7 @@ extern crate lodepng;
 fn main() {
     let path = &Path::new("write_test.png");
 
-    let image : [u8, ..12] = [
+    let image : [u8; 12] = [
                  255, 0, 0,
                  0, 255, 0,
                  0, 0, 255,

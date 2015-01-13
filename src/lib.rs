@@ -2,9 +2,7 @@
 #![crate_type = "lib"]
 
 extern crate libc;
-use libc::{c_char, c_uchar, c_uint, c_void, size_t};
-use libc::funcs::c95::stdlib;
-use std::c_vec::CVec;
+use libc::{c_char, c_uchar, c_uint, size_t};
 use std::fmt;
 use std::intrinsics;
 use std::io::{File, Open, Read};
@@ -119,8 +117,8 @@ pub mod ffi {
         pub phys_y: c_uint,
         pub phys_unit: c_uint,
 
-        unknown_chunks_data: [*const c_uchar, ..3],
-        unknown_chunks_size: [*const size_t, ..3],
+        unknown_chunks_data: [*const c_uchar; 3],
+        unknown_chunks_size: [*const size_t; 3],
     }
 
     #[repr(C)]
@@ -225,7 +223,7 @@ pub mod ffi {
         pub fn lodepng_inspect(w: &mut c_uint, h: &mut c_uint, state: &mut State, input: *const u8, insize: size_t) -> Error;
         pub fn lodepng_encode(out: &mut *mut u8, outsize: &mut size_t, image: *const u8, w: c_uint, h: c_uint, state: &mut State) -> Error;
         pub fn lodepng_chunk_length(chunk: *const c_uchar) -> c_uint;
-        pub fn lodepng_chunk_type(chtype: [u8,..5], chunk: *const c_uchar);
+        pub fn lodepng_chunk_type(chtype: [u8; 5], chunk: *const c_uchar);
         pub fn lodepng_chunk_type_equals(chunk: *const c_uchar, chtype: *const u8) -> c_uchar;
         pub fn lodepng_chunk_ancillary(chunk: *const c_uchar) -> c_uchar;
         pub fn lodepng_chunk_private(chunk: *const c_uchar) -> c_uchar;
@@ -323,9 +321,9 @@ pub mod ffi {
             }
         }
 
-        pub fn raw_size(&self, w: c_uint, h: c_uint) -> uint {
+        pub fn raw_size(&self, w: c_uint, h: c_uint) -> usize {
             unsafe {
-                lodepng_get_raw_size(w, h, self) as uint
+                lodepng_get_raw_size(w, h, self) as usize
             }
         }
     }
@@ -420,12 +418,12 @@ pub mod ffi {
             }
         }
 
-        pub fn inspect(&mut self, input: &[u8]) -> Result<(uint,uint), Error> {
+        pub fn inspect(&mut self, input: &[u8]) -> Result<(usize,usize), Error> {
             unsafe {
                 let mut w = 0;
                 let mut h = 0;
                 match lodepng_inspect(&mut w, &mut h, self, input.as_ptr(), input.len() as size_t) {
-                    Error(0) => Ok((w as uint,h as uint)),
+                    Error(0) => Ok((w as usize,h as usize)),
                     err => Err(err)
                 }
             }
@@ -490,7 +488,7 @@ impl fmt::Show for RawBitmap {
     }
 }
 
-fn required_size(w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> uint {
+fn required_size(w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> usize {
     unsafe {
         let color = ColorMode {
             colortype: colortype,
@@ -501,7 +499,7 @@ fn required_size(w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -
     }
 }
 
-unsafe fn new_bitmap(res: Error, out: *mut u8, w: c_uint, h: c_uint, size: uint) -> Result<RawBitmap, Error>  {
+unsafe fn new_bitmap(res: Error, out: *mut u8, w: c_uint, h: c_uint, size: usize) -> Result<RawBitmap, Error>  {
     match res {
         Error(0) => Ok(RawBitmap {
             buffer: CVec::new_with_dtor(out, size, proc() {
@@ -609,7 +607,7 @@ pub fn encode24_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Res
 
 pub fn error_text(code: Error) -> &'static str {
     unsafe {
-        std::str::raw::c_str_to_static_slice(ffi::lodepng_error_text(code))
+        std::str::from_c_str(ffi::lodepng_error_text(code))
     }
 }
 
@@ -643,9 +641,9 @@ pub fn encoder_settings_init(settings: &mut EncoderSettings) {
 }
 
 impl Chunk {
-    pub fn len(&self) -> uint {
+    pub fn len(&self) -> usize {
         unsafe {
-            ffi::lodepng_chunk_length(&*self.data) as uint
+            ffi::lodepng_chunk_length(&*self.data) as usize
         }
     }
 
