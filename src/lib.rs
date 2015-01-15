@@ -691,7 +691,7 @@ impl Chunk {
     pub fn next(&self) -> Option<Chunk> {
         unsafe {
             match ffi::lodepng_chunk_next(self.data) {
-                ptr if ptr.is_not_null() => Some(Chunk {data: ptr}),
+                ptr if !ptr.is_null() => Some(Chunk {data: ptr}),
                 _ => None,
             }
         }
