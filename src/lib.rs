@@ -33,6 +33,14 @@ pub mod ffi {
     #[derive(Copy)]
     pub struct Error(pub c_uint);
 
+    impl Error {
+        pub fn as_str(&self) -> &'static str {
+            unsafe {
+                let bytes = ::std::ffi::c_str_to_bytes(lodepng_error_text(self.0));
+                ::std::str::from_utf8_unchecked(bytes)
+            }
+        }
+    }
     #[repr(C)]
     #[derive(Copy)]
     pub enum ColorType {
@@ -195,7 +203,7 @@ pub mod ffi {
     extern {
         pub fn lodepng_decode_memory(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, input: *const u8, insize: size_t, colortype: ColorType, bitdepth: c_uint) -> Error;
         pub fn lodepng_encode_memory(out: &mut *mut u8, outsize: &mut size_t, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
-        pub fn lodepng_error_text(code: Error) -> &'static i8;
+        fn lodepng_error_text(code: c_uint) -> &*const i8;
         pub fn lodepng_compress_settings_init(settings: &mut CompressSettings);
         pub fn lodepng_color_mode_init(info: &mut ColorMode);
         pub fn lodepng_color_mode_cleanup(info: &mut ColorMode);
@@ -471,9 +479,15 @@ pub mod ffi {
     }
 }
 
+impl fmt::String for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{}", self.as_str())
+    }
+}
+
 impl fmt::Show for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{}",error_text(*self))
+        write!(f,"{}", self.as_str())
     }
 }
 
@@ -608,12 +622,6 @@ pub fn encode32_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Res
 
 pub fn encode24_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGB, 8)
-}
-
-pub fn error_text(code: Error) -> &'static str {
-    unsafe {
-        std::str::from_c_str(ffi::lodepng_error_text(code))
-    }
 }
 
 
