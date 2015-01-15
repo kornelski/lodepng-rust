@@ -70,10 +70,22 @@ pub mod ffi {
 
     #[repr(C)]
     struct DecompressSettings {
-        ignore_adler32: c_uint,
-        custom_zlib: *const c_void,
-        custom_inflate: *const c_void,
-        custom_context: *const c_void,
+    pub ignore_adler32: c_uint,
+        pub custom_zlib: ::std::option::Option<extern "C" fn
+                                                   (arg1: *mut *mut c_uchar,
+                                                    arg2: *mut size_t,
+                                                    arg3: *const c_uchar,
+                                                    arg4: size_t,
+                                                    arg5: *const DecompressSettings)
+                                                   -> c_uint>,
+        pub custom_inflate: ::std::option::Option<extern "C" fn
+                                                      (arg1: *mut *mut c_uchar,
+                                                       arg2: *mut size_t,
+                                                       arg3: *const c_uchar,
+                                                       arg4: size_t,
+                                                       arg5: *const DecompressSettings)
+                                                      -> c_uint>,
+        pub custom_context: *const c_void,
     }
 
     #[repr(C)]
@@ -84,10 +96,21 @@ pub mod ffi {
         pub minmatch: c_uint,
         pub nicematch: c_uint,
         pub lazymatching: c_uint,
-
-        custom_zlib: *const c_void,
-        custom_deflate: *const c_void,
-        custom_context: *const c_void,
+        pub custom_zlib: ::std::option::Option<extern "C" fn
+                                                   (arg1: *mut *mut c_uchar,
+                                                    arg2: *mut size_t,
+                                                    arg3: *const c_uchar,
+                                                    arg4: size_t,
+                                                    arg5: *const CompressSettings)
+                                                   -> c_uint>,
+        pub custom_deflate: ::std::option::Option<extern "C" fn
+                                                      (arg1: *mut *mut c_uchar,
+                                                       arg2: *mut size_t,
+                                                       arg3: *const c_uchar,
+                                                       arg4: size_t,
+                                                       arg5: *const CompressSettings)
+                                                      -> c_uint>,
+        pub custom_context: *const c_void,
     }
 
     #[repr(C)]
@@ -152,7 +175,7 @@ pub mod ffi {
     #[repr(C)]
     #[derive(Copy)]
     pub enum FilterStrategy {
-        LFS_ZERO,
+        LFS_ZERO = 0,
         LFS_MINSUM,
         LFS_ENTROPY,
         LFS_BRUTE_FORCE,
@@ -162,7 +185,7 @@ pub mod ffi {
     #[repr(C)]
     #[derive(Copy)]
     pub enum AutoConvert {
-        LAC_NO,
+        LAC_NO = 0,
         LAC_ALPHA,
         LAC_AUTO,
 
