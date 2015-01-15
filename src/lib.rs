@@ -30,9 +30,11 @@ pub mod ffi {
     use std::intrinsics;
 
     #[repr(C)]
+    #[derive(Copy)]
     pub struct Error(pub c_uint);
 
     #[repr(C)]
+    #[derive(Copy)]
     pub enum ColorType {
         LCT_GREY = 0,
         LCT_RGB = 2,
@@ -78,6 +80,7 @@ pub mod ffi {
     }
 
     #[repr(C)]
+    #[derive(Copy)]
     pub struct Time {
         pub year: c_uint,
         pub month: c_uint,
@@ -136,6 +139,7 @@ pub mod ffi {
     }
 
     #[repr(C)]
+    #[derive(Copy)]
     pub enum FilterStrategy {
         LFS_ZERO,
         LFS_MINSUM,
@@ -145,6 +149,7 @@ pub mod ffi {
     }
 
     #[repr(C)]
+    #[derive(Copy)]
     pub enum AutoConvert {
         LAC_NO,
         LAC_ALPHA,
