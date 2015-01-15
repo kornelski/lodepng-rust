@@ -1,11 +1,13 @@
 #![crate_name = "lodepng"]
 #![crate_type = "lib"]
+#![feature(unsafe_destructor)]
 
 extern crate libc;
 use libc::{c_char, c_uchar, c_uint, size_t};
 use std::fmt;
 use std::intrinsics;
 use std::io::{File, Open, Read};
+pub use cvec::CVec;
 
 pub use ffi::ColorType;
 pub use ffi::ColorType::{LCT_GREY, LCT_RGB, LCT_PALETTE, LCT_GREY_ALPHA, LCT_RGBA};
@@ -22,11 +24,12 @@ pub use ffi::EncoderSettings;
 pub use ffi::State;
 pub use ffi::Error;
 
+mod cvec;
 
 #[allow(non_camel_case_types)]
 pub mod ffi {
     use libc::{c_char, c_uchar, c_uint, c_void, size_t};
-    use std::c_vec::CVec;
+    pub use cvec::CVec;
     use std::intrinsics;
 
     #[repr(C)]
@@ -521,9 +524,7 @@ fn required_size(w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -
 unsafe fn new_bitmap(res: Error, out: *mut u8, w: c_uint, h: c_uint, size: usize) -> Result<RawBitmap, Error>  {
     match res {
         Error(0) => Ok(RawBitmap {
-            buffer: CVec::new_with_dtor(out, size, proc() {
-                stdlib::free(out as *mut c_void);
-            }),
+            buffer: CVec::new(out, size),
             width: w,
             height: h,
         }),
@@ -533,9 +534,7 @@ unsafe fn new_bitmap(res: Error, out: *mut u8, w: c_uint, h: c_uint, size: usize
 
 unsafe fn new_buffer(res: Error, out: *mut u8, size: size_t) -> Result<CVec<u8>, Error> {
     match res {
-        Error(0) => Ok(CVec::new_with_dtor(out, size as uint, proc() {
-            stdlib::free(out as *mut c_void);
-        })),
+        Error(0) => Ok(CVec::new(out, size as usize)),
         e => Err(e),
     }
 }
