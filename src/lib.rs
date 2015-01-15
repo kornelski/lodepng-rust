@@ -585,7 +585,9 @@ pub fn decode24_file(filepath: &Path) -> Result<RawBitmap, Error> {
     decode_file(filepath, LCT_RGB, 8)
 }
 
-fn with_buffer_for_type(image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint, f: |*const u8| -> Error) -> Error {
+fn with_buffer_for_type<F>(image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint, mut f: F) -> Error
+    where F: FnMut(*const u8) -> Error
+{
     if image.len() != required_size(w, h, colortype, bitdepth) {
         return Error(84);
     }
