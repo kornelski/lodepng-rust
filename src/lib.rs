@@ -691,6 +691,7 @@ pub struct Chunk {
     data: *mut c_uchar,
 }
 
+/// Low-level representation of an image
 pub struct RawBitmap {
     /// Raw bitmap memory. Layout depends on color mode and bitdepth used to create it.
     pub buffer: CVec<u8>,
@@ -876,6 +877,7 @@ pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: c_uint, 
     }
 }
 
+#[experimental]
 impl Chunk {
     pub fn len(&self) -> usize {
         unsafe {
