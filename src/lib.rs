@@ -5,7 +5,7 @@
 extern crate libc;
 use libc::{c_char, c_uchar, c_uint, size_t};
 use std::fmt;
-use std::intrinsics;
+use std::mem;
 use std::io::{File, Open, Read};
 pub use cvec::CVec;
 
@@ -30,7 +30,7 @@ mod cvec;
 pub mod ffi {
     use libc::{c_char, c_uchar, c_uint, c_void, size_t};
     pub use cvec::CVec;
-    use std::intrinsics;
+    use std::mem;
 
     #[repr(C)]
     #[derive(Copy)]
@@ -290,7 +290,7 @@ pub mod ffi {
     impl CompressSettings {
         pub fn new() -> CompressSettings {
             unsafe {
-                let mut settings = intrinsics::init();
+                let mut settings = mem::zeroed();
                 lodepng_compress_settings_init(&mut settings);
                 return settings;
             }
@@ -300,7 +300,7 @@ pub mod ffi {
     impl ColorMode {
         pub fn new() -> ColorMode {
             unsafe {
-                let mut mode = intrinsics::init();
+                let mut mode = mem::zeroed();
                 lodepng_color_mode_init(&mut mode);
                 return mode;
             }
@@ -378,7 +378,7 @@ pub mod ffi {
     impl Clone for ColorMode {
         fn clone(&self) -> ColorMode {
             unsafe {
-                let mut dest = intrinsics::init();
+                let mut dest = mem::zeroed();
                 lodepng_color_mode_copy(&mut dest, self).to_result().unwrap();
                 return dest;
             }
@@ -388,7 +388,7 @@ pub mod ffi {
     impl Info {
         pub fn new() -> Info {
             unsafe {
-                let mut info = intrinsics::init();
+                let mut info = mem::zeroed();
                 lodepng_info_init(&mut info);
                 return info;
             }
@@ -430,7 +430,7 @@ pub mod ffi {
     impl Clone for Info {
         fn clone(&self) -> Info {
             unsafe {
-                let mut dest = intrinsics::init();
+                let mut dest = mem::zeroed();
                 lodepng_info_copy(&mut dest, self).to_result().unwrap();
                 return dest;
             }
@@ -440,7 +440,7 @@ pub mod ffi {
     impl State {
         pub fn new() -> State {
             unsafe {
-                let mut state = intrinsics::init();
+                let mut state = mem::zeroed();
                 lodepng_state_init(&mut state);
                 return state;
             }
@@ -448,7 +448,7 @@ pub mod ffi {
 
         pub fn decode(&mut self, input: &[u8]) -> Result<::RawBitmap, Error> {
             unsafe {
-                let mut out = intrinsics::init();
+                let mut out = mem::zeroed();
                 let mut w = 0;
                 let mut h = 0;
 
@@ -470,7 +470,7 @@ pub mod ffi {
 
         pub fn encode(&mut self, image: &[u8], w: c_uint, h: c_uint) -> Result<CVec<u8>, Error> {
             unsafe {
-                let mut out = intrinsics::init();
+                let mut out = mem::zeroed();
                 let mut outsize = 0;
 
                 let res = ::with_buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth, |ptr| {
@@ -497,7 +497,7 @@ pub mod ffi {
     impl Clone for State {
         fn clone(&self) -> State {
             unsafe {
-                let mut dest = intrinsics::init();
+                let mut dest = mem::zeroed();
                 lodepng_state_copy(&mut dest, self);
                 return dest;
             }
@@ -538,7 +538,7 @@ fn required_size(w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -
         let color = ColorMode {
             colortype: colortype,
             bitdepth: bitdepth,
-            .. intrinsics::init()
+            .. mem::zeroed()
         };
         color.raw_size(w, h)
     }
@@ -576,7 +576,7 @@ fn save_file(filepath: &Path, data: &[u8]) -> Result<(), Error> {
 
 pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error> {
     unsafe {
-        let mut out = intrinsics::init();
+        let mut out = mem::zeroed();
         let mut w = 0;
         let mut h = 0;
 
@@ -619,7 +619,7 @@ fn with_buffer_for_type<F>(image: &[u8], w: c_uint, h: c_uint, colortype: ColorT
 
 pub fn encode_memory(image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Result<CVec<u8>, Error> {
     unsafe {
-        let mut out = intrinsics::init();
+        let mut out = mem::zeroed();
         let mut outsize = 0;
 
         let res = with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| ffi::lodepng_encode_memory(&mut out, &mut outsize, ptr, w, h, colortype, bitdepth));
@@ -651,7 +651,7 @@ pub fn encode24_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Res
 
 pub fn convert(input: &[u8], mode_out: &mut ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint, fix_png: bool) -> Result<RawBitmap, Error> {
     unsafe {
-        let out = intrinsics::init();
+        let out = mem::zeroed();
         let res = with_buffer_for_type(input, w, h, mode_in.colortype, mode_in.bitdepth, |ptr| {
             ffi::lodepng_convert(out, ptr, mode_out, mode_in, w, h, fix_png as c_uint)
         });
@@ -750,7 +750,7 @@ pub fn crc32(buf: &[u8]) -> u32 {
 
 pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
     unsafe {
-        let mut out = intrinsics::init();
+        let mut out = mem::zeroed();
         let mut outsize = 0;
 
         let res = ffi::lodepng_zlib_compress(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings);
@@ -760,7 +760,7 @@ pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u
 
 pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
     unsafe {
-        let mut out = intrinsics::init();
+        let mut out = mem::zeroed();
         let mut outsize = 0;
 
         let res = ffi::lodepng_deflate(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings);
