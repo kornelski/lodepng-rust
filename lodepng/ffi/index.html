@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `ffi` mod in crate `lodepng`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, ffi">
+
+    <title>lodepng::ffi - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    <p style="position:absolute;top:0.5em;left:1em;right:0;z-index:999"><a href="https://github.com/pornel/lodepng-rust">GitHub project page</a></p>
+
+
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='../index.html'>lodepng</a></p><div class='block mod'><h2>Modules</h2><a class='mod current' href='../ffi/index.html'>ffi</a></div><div class='block struct'><h2>Structs</h2><a class='struct ' href='../struct.CVec.html'>CVec</a><a class='struct ' href='../struct.Chunk.html'>Chunk</a><a class='struct ' href='../struct.RawBitmap.html'>RawBitmap</a></div><div class='block fn'><h2>Functions</h2><a class='fn ' href='../fn.auto_choose_color.html'>auto_choose_color</a><a class='fn ' href='../fn.convert.html'>convert</a><a class='fn ' href='../fn.decode24.html'>decode24</a><a class='fn ' href='../fn.decode24_file.html'>decode24_file</a><a class='fn ' href='../fn.decode32.html'>decode32</a><a class='fn ' href='../fn.decode32_file.html'>decode32_file</a><a class='fn ' href='../fn.decode_file.html'>decode_file</a><a class='fn ' href='../fn.decode_memory.html'>decode_memory</a><a class='fn ' href='../fn.deflate.html'>deflate</a><a class='fn ' href='../fn.encode24.html'>encode24</a><a class='fn ' href='../fn.encode24_file.html'>encode24_file</a><a class='fn ' href='../fn.encode32.html'>encode32</a><a class='fn ' href='../fn.encode32_file.html'>encode32_file</a><a class='fn ' href='../fn.encode_file.html'>encode_file</a><a class='fn ' href='../fn.encode_memory.html'>encode_memory</a><a class='fn ' href='../fn.zlib_compress.html'>zlib_compress</a></div>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>lodepng</a>::<wbr><a class='mod' href=''>ffi</a><wbr></span><span class='out-of-band'><span id='render-detail'>
+            <a id="collapse-all" href="#">[-]
+            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-179' href='../../src/lodepng/lib.rs.html#30-678'>[src]</a></span></h1>
+<h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>pub use cvec::<a class='struct' href='../../lodepng/struct.CVec.html' title='lodepng::CVec'>CVec</a>;</code></td></tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.ColorMode.html'
+                               title='lodepng::ffi::ColorMode'>ColorMode</a></td>
+                        <td class='docblock short'><p>Color mode of an image. Contains all information required to decode the pixel
+bits to RGBA colors. This information is the same as used in the PNG file
+format, and is used both for PNG and raw image data in LodePNG.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.CompressSettings.html'
+                               title='lodepng::ffi::CompressSettings'>CompressSettings</a></td>
+                        <td class='docblock short'><p>Settings for zlib compression. Tweaking these settings tweaks the balance between speed and compression ratio.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.DecoderSettings.html'
+                               title='lodepng::ffi::DecoderSettings'>DecoderSettings</a></td>
+                        <td class='docblock short'><p>Settings for the decoder. This contains settings for the PNG and the Zlib decoder, but not the Info settings from the Info structs.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.EncoderSettings.html'
+                               title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.Error.html'
+                               title='lodepng::ffi::Error'>Error</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.Info.html'
+                               title='lodepng::ffi::Info'>Info</a></td>
+                        <td class='docblock short'><p>Information about the PNG image, except pixels, width and height</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.State.html'
+                               title='lodepng::ffi::State'>State</a></td>
+                        <td class='docblock short'><p>The settings, state and information for extended encoding and decoding</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.Time.html'
+                               title='lodepng::ffi::Time'>Time</a></td>
+                        <td class='docblock short'><p>The information of a Time chunk in PNG</p>
+</td>
+                    </tr>
+                </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='enum' href='enum.AutoConvert.html'
+                               title='lodepng::ffi::AutoConvert'>AutoConvert</a></td>
+                        <td class='docblock short'><p>automatically use color type with less bits per pixel if losslessly possible. Default: LAC_AUTO</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='enum' href='enum.ColorType.html'
+                               title='lodepng::ffi::ColorType'>ColorType</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='enum' href='enum.FilterStrategy.html'
+                               title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></td>
+                        <td class='docblock short'><p>automatically use color type with less bits per pixel if losslessly possible. Default: AUTO</p>
+</td>
+                    </tr>
+                </table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_add_itext.html'
+                               title='lodepng::ffi::lodepng_add_itext'>lodepng_add_itext</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_add_text.html'
+                               title='lodepng::ffi::lodepng_add_text'>lodepng_add_text</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_auto_choose_color.html'
+                               title='lodepng::ffi::lodepng_auto_choose_color'>lodepng_auto_choose_color</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_can_have_alpha.html'
+                               title='lodepng::ffi::lodepng_can_have_alpha'>lodepng_can_have_alpha</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_ancillary.html'
+                               title='lodepng::ffi::lodepng_chunk_ancillary'>lodepng_chunk_ancillary</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_append.html'
+                               title='lodepng::ffi::lodepng_chunk_append'>lodepng_chunk_append</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_check_crc.html'
+                               title='lodepng::ffi::lodepng_chunk_check_crc'>lodepng_chunk_check_crc</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_create.html'
+                               title='lodepng::ffi::lodepng_chunk_create'>lodepng_chunk_create</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_data.html'
+                               title='lodepng::ffi::lodepng_chunk_data'>lodepng_chunk_data</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_generate_crc.html'
+                               title='lodepng::ffi::lodepng_chunk_generate_crc'>lodepng_chunk_generate_crc</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_length.html'
+                               title='lodepng::ffi::lodepng_chunk_length'>lodepng_chunk_length</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_next.html'
+                               title='lodepng::ffi::lodepng_chunk_next'>lodepng_chunk_next</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_private.html'
+                               title='lodepng::ffi::lodepng_chunk_private'>lodepng_chunk_private</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_safetocopy.html'
+                               title='lodepng::ffi::lodepng_chunk_safetocopy'>lodepng_chunk_safetocopy</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_type.html'
+                               title='lodepng::ffi::lodepng_chunk_type'>lodepng_chunk_type</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_chunk_type_equals.html'
+                               title='lodepng::ffi::lodepng_chunk_type_equals'>lodepng_chunk_type_equals</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_clear_itext.html'
+                               title='lodepng::ffi::lodepng_clear_itext'>lodepng_clear_itext</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_clear_text.html'
+                               title='lodepng::ffi::lodepng_clear_text'>lodepng_clear_text</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_color_mode_cleanup.html'
+                               title='lodepng::ffi::lodepng_color_mode_cleanup'>lodepng_color_mode_cleanup</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_color_mode_copy.html'
+                               title='lodepng::ffi::lodepng_color_mode_copy'>lodepng_color_mode_copy</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_color_mode_init.html'
+                               title='lodepng::ffi::lodepng_color_mode_init'>lodepng_color_mode_init</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_compress_settings_init.html'
+                               title='lodepng::ffi::lodepng_compress_settings_init'>lodepng_compress_settings_init</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_convert.html'
+                               title='lodepng::ffi::lodepng_convert'>lodepng_convert</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_crc32.html'
+                               title='lodepng::ffi::lodepng_crc32'>lodepng_crc32</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_decode.html'
+                               title='lodepng::ffi::lodepng_decode'>lodepng_decode</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_decode_memory.html'
+                               title='lodepng::ffi::lodepng_decode_memory'>lodepng_decode_memory</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_decoder_settings_init.html'
+                               title='lodepng::ffi::lodepng_decoder_settings_init'>lodepng_decoder_settings_init</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_deflate.html'
+                               title='lodepng::ffi::lodepng_deflate'>lodepng_deflate</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_encode.html'
+                               title='lodepng::ffi::lodepng_encode'>lodepng_encode</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_encode_memory.html'
+                               title='lodepng::ffi::lodepng_encode_memory'>lodepng_encode_memory</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_encoder_settings_init.html'
+                               title='lodepng::ffi::lodepng_encoder_settings_init'>lodepng_encoder_settings_init</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_get_bpp.html'
+                               title='lodepng::ffi::lodepng_get_bpp'>lodepng_get_bpp</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_get_channels.html'
+                               title='lodepng::ffi::lodepng_get_channels'>lodepng_get_channels</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_get_raw_size.html'
+                               title='lodepng::ffi::lodepng_get_raw_size'>lodepng_get_raw_size</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_has_palette_alpha.html'
+                               title='lodepng::ffi::lodepng_has_palette_alpha'>lodepng_has_palette_alpha</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_info_cleanup.html'
+                               title='lodepng::ffi::lodepng_info_cleanup'>lodepng_info_cleanup</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_info_copy.html'
+                               title='lodepng::ffi::lodepng_info_copy'>lodepng_info_copy</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_info_init.html'
+                               title='lodepng::ffi::lodepng_info_init'>lodepng_info_init</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_inspect.html'
+                               title='lodepng::ffi::lodepng_inspect'>lodepng_inspect</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_is_alpha_type.html'
+                               title='lodepng::ffi::lodepng_is_alpha_type'>lodepng_is_alpha_type</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_is_greyscale_type.html'
+                               title='lodepng::ffi::lodepng_is_greyscale_type'>lodepng_is_greyscale_type</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_is_palette_type.html'
+                               title='lodepng::ffi::lodepng_is_palette_type'>lodepng_is_palette_type</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_palette_add.html'
+                               title='lodepng::ffi::lodepng_palette_add'>lodepng_palette_add</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_palette_clear.html'
+                               title='lodepng::ffi::lodepng_palette_clear'>lodepng_palette_clear</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_state_cleanup.html'
+                               title='lodepng::ffi::lodepng_state_cleanup'>lodepng_state_cleanup</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_state_copy.html'
+                               title='lodepng::ffi::lodepng_state_copy'>lodepng_state_copy</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_state_init.html'
+                               title='lodepng::ffi::lodepng_state_init'>lodepng_state_init</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='fn' href='fn.lodepng_zlib_compress.html'
+                               title='lodepng::ffi::lodepng_zlib_compress'>lodepng_zlib_compress</a></td>
+                        <td class='docblock short'></td>
+                    </tr>
+                </table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lodepng";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script async src="../../search-index.js"></script>
+</body>
+</html>
