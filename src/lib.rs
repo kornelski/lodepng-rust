@@ -172,6 +172,18 @@ pub mod ffi {
         remember_unknown_chunks: c_uint,
     }
 
+    impl DecoderSettings {
+        /// Creates decoder settings initialized to defaults
+        pub fn new() -> DecoderSettings {
+            unsafe {
+                let mut settings = ::std::mem::zeroed();
+                lodepng_decoder_settings_init(&mut settings);
+                settings
+            }
+        }
+    }
+
+
     #[repr(C)]
     #[derive(Copy)]
     pub enum FilterStrategy {
@@ -212,6 +224,17 @@ pub mod ffi {
         add_id: c_uint,
 
         text_compression: c_uint,
+    }
+
+    impl EncoderSettings {
+        /// Creates encoder settings initialized to defaults
+        pub fn new() -> EncoderSettings {
+            unsafe {
+                let mut settings = ::std::mem::zeroed();
+                lodepng_encoder_settings_init(&mut settings);
+                settings
+            }
+        }
     }
 
     #[repr(C)]
@@ -659,21 +682,9 @@ pub fn convert(input: &[u8], mode_out: &mut ColorMode, mode_in: &ColorMode, w: c
     }
 }
 
-pub fn decoder_settings_init(settings: &mut DecoderSettings) {
-    unsafe {
-        ffi::lodepng_decoder_settings_init(settings)
-    }
-}
-
 pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: c_uint, h: c_uint, mode_in: &ColorMode, auto_convert: AutoConvert) -> Result<(), Error> {
     unsafe {
         ffi::lodepng_auto_choose_color(mode_out, image, w, h, mode_in, auto_convert).to_result()
-    }
-}
-
-pub fn encoder_settings_init(settings: &mut EncoderSettings) {
-    unsafe {
-        ffi::lodepng_encoder_settings_init(settings)
     }
 }
 
