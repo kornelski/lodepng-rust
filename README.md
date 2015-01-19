@@ -22,7 +22,7 @@ It will produce `liblodepng-….rlib` that you can import with `extern crate lod
 
 ## API
 
-The API mimics lodepng, so for full documentation of the structures and functions, [see the original lodepng.h](http://lpi.googlecode.com/svn/trunk/lodepng.h).
+See [API documentation](http://pornel.github.io/lodepng-rust/lodepng/) for details. The API mimics lodepng, so if something is unclear, [see the original lodepng.h](http://lpi.googlecode.com/svn/trunk/lodepng.h).
 
 To load RGBA PNG file:
 

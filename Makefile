@@ -16,3 +16,9 @@ $(SRC): $(HEADER)
 
 $(HEADER):
 	curl -L http://lpi.googlecode.com/svn/trunk/lodepng.h -o $@
+
+doc: src/lib.rs
+	rustdoc --html-before-content doc/_header.html $^
+
+.PHONY: doc
+
