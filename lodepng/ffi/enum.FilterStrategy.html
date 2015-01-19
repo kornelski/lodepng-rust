@@ -46,7 +46,7 @@
 <h1 class='fqn'><span class='in-band'>Enum <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='enum' href=''>FilterStrategy</a><wbr></span><span class='out-of-band'><span id='render-detail'>
             <a id="collapse-all" href="#">[-]
             </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-588' href='../../src/lodepng/lib.rs.html#283-298'>[src]</a></span></h1>
+        </span><a id='src-588' href='../../src/lodepng/lib.rs.html#283-296'>[src]</a></span></h1>
 <pre class='rust enum'>pub enum FilterStrategy {
     LFS_ZERO,
     LFS_MINSUM,
@@ -55,8 +55,7 @@
     LFS_PREDEFINED,
 }</pre><div class='docblock'><p>automatically use color type with less bits per pixel if losslessly possible. Default: AUTO</p>
 </div><h2 class='variants'>Variants</h2>
-<table><tr><td id='variant.LFS_ZERO'><a class='stability Unmarked' title='No stability level'></a><code>LFS_ZERO</code></td><td><div class='docblock'><p>use predefined_filters buffer: you specify the filter type for each scanline*/
-every filter at zero</p>
+<table><tr><td id='variant.LFS_ZERO'><a class='stability Unmarked' title='No stability level'></a><code>LFS_ZERO</code></td><td><div class='docblock'><p>every filter at zero</p>
 </div></td></tr><tr><td id='variant.LFS_MINSUM'><a class='stability Unmarked' title='No stability level'></a><code>LFS_MINSUM</code></td><td><div class='docblock'><p>Use filter that gives minumum sum, as described in the official PNG filter heuristic.</p>
 </div></td></tr><tr><td id='variant.LFS_ENTROPY'><a class='stability Unmarked' title='No stability level'></a><code>LFS_ENTROPY</code></td><td><div class='docblock'><p>Use the filter type that gives smallest Shannon entropy for this scanline. Depending
 on the image, this is better or worse than minsum.</p>

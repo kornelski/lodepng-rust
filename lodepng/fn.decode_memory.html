@@ -46,11 +46,14 @@
 <h1 class='fqn'><span class='in-band'>Function <a href='index.html'>lodepng</a>::<wbr><a class='fn' href=''>decode_memory</a><wbr></span><span class='out-of-band'><span id='render-detail'>
             <a id="collapse-all" href="#">[-]
             </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-2598' href='../src/lodepng/lib.rs.html#756-765'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn decode_memory(input: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, colortype: <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a>, bitdepth: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../lodepng/struct.RawBitmap.html' title='lodepng::RawBitmap'>RawBitmap</a>, <a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</pre><div class='docblock'><p>Converts PNG data in memory to raw pixel data.
-* in: Memory buffer with the PNG file.
-* colortype: the desired color type for the raw output image. See explanation on PNG color types.
-* bitdepth: the desired bit depth for the raw output image. See explanation on PNG color types.</p>
+        </span><a id='src-2598' href='../src/lodepng/lib.rs.html#755-764'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn decode_memory(input: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, colortype: <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a>, bitdepth: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../lodepng/struct.RawBitmap.html' title='lodepng::RawBitmap'>RawBitmap</a>, <a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</pre><div class='docblock'><p>Converts PNG data in memory to raw pixel data.</p>
+
+<ul>
+<li><code>in</code>: Memory buffer with the PNG file.</li>
+<li><code>colortype</code>: the desired color type for the raw output image. See explanation on PNG color types.</li>
+<li><code>bitdepth</code>: the desired bit depth for the raw output image. See explanation on PNG color types.</li>
+</ul>
 </div></section>
     <section id='search' class="content hidden"></section>
 
