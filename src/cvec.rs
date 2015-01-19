@@ -14,7 +14,7 @@ impl<T> CVec<T> {
         CVec {ptr:ptr, length:length}
     }
 
-    pub fn to_vec(self) -> Vec<T> {
+    pub fn to_vec(&self) -> Vec<T> {
         unsafe {
             Vec::from_raw_buf(self.ptr, self.length)
         }
