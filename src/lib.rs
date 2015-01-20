@@ -371,7 +371,7 @@ pub mod ffi {
         pub info_raw: ColorMode,
         /// info of the PNG image obtained after decoding
         pub info_png: Info,
-        pub error: c_uint,
+        error: c_uint,
     }
 
     #[link(name="lodepng", kind="static")]
@@ -738,15 +738,12 @@ unsafe fn new_buffer(res: Error, out: *mut u8, size: size_t) -> Result<CVec<u8>,
 }
 
 fn save_file(filepath: &Path, data: &[u8]) -> Result<(), Error> {
-    let mut file = match File::create(filepath) {
-        Ok(file) => file,
-        Err(_) => { return Err(Error(79)) }
-    };
-
-    match file.write(data) {
-        Ok(_) => Ok(()),
-        Err(_) => Err(Error(79)),
+    if let Ok(mut file) = File::create(filepath) {
+        if file.write(data).is_ok() {
+            return Ok(());
+        }
     }
+    return Err(Error(79));
 }
 
 /// Converts PNG data in memory to raw pixel data.
