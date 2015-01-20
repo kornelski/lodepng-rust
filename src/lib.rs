@@ -662,7 +662,7 @@ pub mod ffi {
             }
         }
 
-        pub fn encode(&mut self, image: &[u8], w: usize, h: usize) -> Result<CVec<u8>, Error> {
+        pub fn encode<PixelType>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
             unsafe {
                 let mut out = mem::zeroed();
                 let mut outsize = 0;
@@ -674,7 +674,7 @@ pub mod ffi {
             }
         }
 
-        pub fn encode_file(&mut self, filepath: &Path, image: &[u8], w: usize, h: usize) -> Result<(), Error> {
+        pub fn encode_file<PixelType>(&mut self, filepath: &Path, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
             let buf = try!(self.encode(image, w, h));
             ::save_file(filepath, buf.as_slice())
         }
@@ -759,19 +759,19 @@ pub struct Chunk {
 }
 
 /// Low-level representation of an image
-pub struct Bitmap<T> {
+pub struct Bitmap<PixelType> {
     /// Raw bitmap memory. Layout depends on color mode and bitdepth used to create it.
     ///
     /// * For RGB/RGBA images one element is one pixel.
     /// * For <8bpp images pixels are packed, so raw bytes are exposed and you need to do bit-twiddling youself
-    pub buffer: CVec<T>,
+    pub buffer: CVec<PixelType>,
     /// Width in pixels
     pub width: usize,
     /// Height in pixels
     pub height: usize,
 }
 
-impl<T> fmt::Show for Bitmap<T> {
+impl<PixelType> fmt::Show for Bitmap<PixelType> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{{} × {} Bitmap}}", self.width, self.height)
     }
@@ -885,13 +885,14 @@ pub fn decode24_file(filepath: &Path) -> Result<Bitmap<RGB>, Error> {
     }
 }
 
-fn with_buffer_for_type<F>(image: &[u8], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint, mut f: F) -> Error
+fn with_buffer_for_type<PixelType, F>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint, mut f: F) -> Error
     where F: FnMut(*const u8) -> Error
 {
-    if image.len() != required_size(w, h, colortype, bitdepth) {
+    if image.len() * mem::size_of::<PixelType>() != required_size(w, h, colortype, bitdepth) {
         return Error(84);
     }
-    f(image.as_ptr())
+
+    f(unsafe {mem::transmute(image.as_ptr())})
 }
 
 /// Converts raw pixel data into a PNG image in memory. The colortype and bitdepth
@@ -905,7 +906,7 @@ fn with_buffer_for_type<F>(image: &[u8], w: usize, h: usize, colortype: ColorTyp
 /// * `h`: height of the raw pixel data in pixels.
 /// * `colortype`: the color type of the raw input image. See `ColorType`.
 /// * `bitdepth`: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.
-pub fn encode_memory(image: &[u8], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<CVec<u8>, Error> {
+pub fn encode_memory<PixelType>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut outsize = 0;
@@ -918,12 +919,12 @@ pub fn encode_memory(image: &[u8], w: usize, h: usize, colortype: ColorType, bit
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
-pub fn encode32(image: &[u8], w: usize, h: usize) -> Result<CVec<u8>, Error>  {
+pub fn encode32<PixelType>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error>  {
     encode_memory(image, w, h, LCT_RGBA, 8)
 }
 
 /// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
-pub fn encode24(image: &[u8], w: usize, h: usize) -> Result<CVec<u8>, Error> {
+pub fn encode24<PixelType>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
     encode_memory(image, w, h, LCT_RGB, 8)
 }
 
@@ -931,23 +932,23 @@ pub fn encode24(image: &[u8], w: usize, h: usize) -> Result<CVec<u8>, Error> {
 /// Same as the other encode functions, but instead takes a file path as output.
 ///
 /// NOTE: This overwrites existing files without warning!
-pub fn encode_file(filepath: &Path, image: &[u8], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
+pub fn encode_file<PixelType>(filepath: &Path, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = try!(encode_memory(image, w, h, colortype, bitdepth));
     save_file(filepath, encoded.as_slice())
 }
 
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
-pub fn encode32_file(filepath: &Path, image: &[u8], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode32_file<PixelType>(filepath: &Path, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGBA, 8)
 }
 
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
-pub fn encode24_file(filepath: &Path, image: &[u8], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode24_file<PixelType>(filepath: &Path, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGB, 8)
 }
 
 /// Converts from any color type to 24-bit or 32-bit (only)
-pub fn convert(input: &[u8], mode_out: &mut ColorMode, mode_in: &ColorMode, w: usize, h: usize, fix_png: bool) -> Result<Image, Error> {
+pub fn convert<PixelType>(input: &[PixelType], mode_out: &mut ColorMode, mode_in: &ColorMode, w: usize, h: usize, fix_png: bool) -> Result<Image, Error> {
     unsafe {
         let out = mem::zeroed();
         try!(with_buffer_for_type(input, w, h, mode_in.colortype, mode_in.bitdepth, |ptr| {

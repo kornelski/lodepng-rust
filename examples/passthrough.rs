@@ -11,7 +11,7 @@ fn main() {
 
     let to_path = &Path::new("write_test.png");
 
-    let buffer = bitmap.buffer.as_u8_slice();
+    let buffer = bitmap.buffer.as_slice();
 
     // Now we reencode it, using LCT_RGB since we used decode24_file
     if let Err(e) = lodepng::encode_file(to_path, buffer, bitmap.width, bitmap.height, lodepng::LCT_RGB, 8) {

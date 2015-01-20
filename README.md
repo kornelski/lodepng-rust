@@ -35,5 +35,5 @@ returns `lodepng::RawBitmap` with `.width`, `.height` and `RGBA` `.buffer`.
 To save RGBA PNG file:
 
 ```rust
-lodepng::encode32_file(&Path::new("out.png"), buffer.as_u8_slice(), width, height)
+lodepng::encode32_file(&Path::new("out.png"), buffer.as_slice(), width, height)
 ```
