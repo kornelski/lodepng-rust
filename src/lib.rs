@@ -634,9 +634,9 @@ pub mod ffi {
 
         /// Load PNG from buffer using State's settings
         ///
-        ///     match try!(decode_file(filepath, LCT_RGBA, 8)) {
+        ///     self.info_raw.colortype = LCT_RGBA;
+        ///     match try!(state.decode(slice)) {
         ///         Image::RGBA(with_alpha) => do_stuff(with_alpha),
-        ///         Image::RGB(without_alpha) => do_stuff(without_alpha),
         ///         _ => panic!("¯\\_(ツ)_/¯")
         ///     }
         pub fn decode(&mut self, input: &[u8]) -> Result<::Image, Error> {
