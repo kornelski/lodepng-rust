@@ -134,6 +134,7 @@ pub mod ffi {
 
     /// Settings for zlib compression. Tweaking these settings tweaks the balance between speed and compression ratio.
     #[repr(C)]
+    #[allow(missing_copy_implementations)]
     pub struct CompressSettings {
         /// the block type for LZ (0, 1, 2 or 3, see zlib standard). Should be 2 for proper compression.
         pub btype: c_uint,
@@ -701,6 +702,7 @@ impl fmt::Show for Error {
     }
 }
 
+#[allow(missing_copy_implementations)]
 pub struct Chunk {
     data: *mut c_uchar,
 }
