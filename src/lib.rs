@@ -637,7 +637,7 @@ pub mod ffi {
                 let mut h = 0;
 
                 try!(lodepng_decode(&mut out, &mut w, &mut h, self, input.as_ptr(), input.len() as size_t).to_result());
-                Ok(::new_bitmap(out, w, h, self.info_raw.colortype, self.info_raw.bitdepth))
+                Ok(::new_bitmap(out, w as usize, h as usize, self.info_raw.colortype, self.info_raw.bitdepth))
             }
         }
 
@@ -653,19 +653,19 @@ pub mod ffi {
             }
         }
 
-        pub fn encode(&mut self, image: &[u8], w: c_uint, h: c_uint) -> Result<CVec<u8>, Error> {
+        pub fn encode(&mut self, image: &[u8], w: usize, h: usize) -> Result<CVec<u8>, Error> {
             unsafe {
                 let mut out = mem::zeroed();
                 let mut outsize = 0;
 
                 try!(::with_buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth, |ptr| {
-                    lodepng_encode(&mut out, &mut outsize, ptr, w, h, self)
+                    lodepng_encode(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, self)
                 }).to_result());
                 Ok(::new_buffer(out, outsize))
             }
         }
 
-        pub fn encode_file(&mut self, filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Result<(), Error> {
+        pub fn encode_file(&mut self, filepath: &Path, image: &[u8], w: usize, h: usize) -> Result<(), Error> {
             let buf = try!(self.encode(image, w, h));
             ::save_file(filepath, buf.as_slice())
         }
@@ -757,9 +757,9 @@ pub struct Bitmap<T> {
     /// * For <8bpp images pixels are packed, so raw bytes are exposed and you need to do bit-twiddling youself
     pub buffer: CVec<T>,
     /// Width in pixels
-    pub width: c_uint,
+    pub width: usize,
     /// Height in pixels
-    pub height: c_uint,
+    pub height: usize,
 }
 
 impl<T> fmt::Show for Bitmap<T> {
@@ -768,8 +768,8 @@ impl<T> fmt::Show for Bitmap<T> {
     }
 }
 
-fn required_size(w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> usize {
-    colortype.to_color_mode(bitdepth).raw_size(w, h)
+fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> usize {
+    colortype.to_color_mode(bitdepth).raw_size(w as c_uint, h as c_uint)
 }
 
 unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Image  {
@@ -817,7 +817,7 @@ pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Re
         let mut h = 0;
 
         try!(ffi::lodepng_decode_memory(&mut out, &mut w, &mut h, input.as_ptr(), input.len() as size_t, colortype, bitdepth).to_result());
-        Ok(new_bitmap(out, w, h, colortype, bitdepth))
+        Ok(new_bitmap(out, w as usize, h as usize, colortype, bitdepth))
     }
 }
 
@@ -862,7 +862,7 @@ pub fn decode24_file(filepath: &Path) -> Result<Bitmap<RGB>, Error> {
     }
 }
 
-fn with_buffer_for_type<F>(image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint, mut f: F) -> Error
+fn with_buffer_for_type<F>(image: &[u8], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint, mut f: F) -> Error
     where F: FnMut(*const u8) -> Error
 {
     if image.len() != required_size(w, h, colortype, bitdepth) {
@@ -882,23 +882,25 @@ fn with_buffer_for_type<F>(image: &[u8], w: c_uint, h: c_uint, colortype: ColorT
 /// * `h`: height of the raw pixel data in pixels.
 /// * `colortype`: the color type of the raw input image. See explanation on PNG color types.
 /// * `bitdepth`: the bit depth of the raw input image. See explanation on PNG color types.
-pub fn encode_memory(image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Result<CVec<u8>, Error> {
+pub fn encode_memory(image: &[u8], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
-        try!(with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| ffi::lodepng_encode_memory(&mut out, &mut outsize, ptr, w, h, colortype, bitdepth)).to_result());
+        try!(with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| {
+            ffi::lodepng_encode_memory(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, colortype, bitdepth)
+        }).to_result());
         Ok(new_buffer(out, outsize))
     }
 }
 
 /// Same as lodepng_encode_memory, but always encodes from 32-bit RGBA raw image
-pub fn encode32(image: &[u8], w: c_uint, h: c_uint) -> Result<CVec<u8>, Error>  {
+pub fn encode32(image: &[u8], w: usize, h: usize) -> Result<CVec<u8>, Error>  {
     encode_memory(image, w, h, LCT_RGBA, 8)
 }
 
 /// Same as lodepng_encode_memory, but always encodes from 24-bit RGB raw image
-pub fn encode24(image: &[u8], w: c_uint, h: c_uint) -> Result<CVec<u8>, Error> {
+pub fn encode24(image: &[u8], w: usize, h: usize) -> Result<CVec<u8>, Error> {
     encode_memory(image, w, h, LCT_RGB, 8)
 }
 
@@ -906,27 +908,27 @@ pub fn encode24(image: &[u8], w: c_uint, h: c_uint) -> Result<CVec<u8>, Error> {
 /// Same as the other encode functions, but instead takes a file path as output.
 ///
 /// NOTE: This overwrites existing files without warning!
-pub fn encode_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
+pub fn encode_file(filepath: &Path, image: &[u8], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = try!(encode_memory(image, w, h, colortype, bitdepth));
     save_file(filepath, encoded.as_slice())
 }
 
 /// Same as lodepng_encode_file, but always encodes from 32-bit RGBA raw image
-pub fn encode32_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Result<(), Error> {
+pub fn encode32_file(filepath: &Path, image: &[u8], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGBA, 8)
 }
 
 /// Same as lodepng_encode_file, but always encodes from 24-bit RGB raw image
-pub fn encode24_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Result<(), Error> {
+pub fn encode24_file(filepath: &Path, image: &[u8], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGB, 8)
 }
 
 /// Converts from any color type to 24-bit or 32-bit (only)
-pub fn convert(input: &[u8], mode_out: &mut ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint, fix_png: bool) -> Result<Image, Error> {
+pub fn convert(input: &[u8], mode_out: &mut ColorMode, mode_in: &ColorMode, w: usize, h: usize, fix_png: bool) -> Result<Image, Error> {
     unsafe {
         let out = mem::zeroed();
         try!(with_buffer_for_type(input, w, h, mode_in.colortype, mode_in.bitdepth, |ptr| {
-            ffi::lodepng_convert(out, ptr, mode_out, mode_in, w, h, fix_png as c_uint)
+            ffi::lodepng_convert(out, ptr, mode_out, mode_in, w as c_uint, h as c_uint, fix_png as c_uint)
         }).to_result());
         Ok(new_bitmap(out, w, h, mode_out.colortype, mode_out.bitdepth))
     }
@@ -940,9 +942,9 @@ pub fn convert(input: &[u8], mode_out: &mut ColorMode, mode_in: &ColorMode, w: c
 ///
 /// updates values of mode with a potentially smaller color model. mode_out should
 /// contain the user chosen color model, but will be overwritten with the new chosen one.
-pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: c_uint, h: c_uint, mode_in: &ColorMode, auto_convert: AutoConvert) -> Result<(), Error> {
+pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h: usize, mode_in: &ColorMode, auto_convert: AutoConvert) -> Result<(), Error> {
     unsafe {
-        ffi::lodepng_auto_choose_color(mode_out, image, w, h, mode_in, auto_convert).to_result()
+        ffi::lodepng_auto_choose_color(mode_out, image, w as c_uint, h as c_uint, mode_in, auto_convert).to_result()
     }
 }
 
