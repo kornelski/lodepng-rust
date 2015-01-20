@@ -635,8 +635,8 @@ pub mod ffi {
                 let mut w = 0;
                 let mut h = 0;
 
-                let res = lodepng_decode(&mut out, &mut w, &mut h, self, input.as_ptr(), input.len() as size_t);
-                ::new_bitmap(res, out, w, h, self.info_raw.colortype, self.info_raw.bitdepth)
+                try!(lodepng_decode(&mut out, &mut w, &mut h, self, input.as_ptr(), input.len() as size_t).to_result());
+                Ok(::new_bitmap(out, w, h, self.info_raw.colortype, self.info_raw.bitdepth))
             }
         }
 
@@ -657,10 +657,10 @@ pub mod ffi {
                 let mut out = mem::zeroed();
                 let mut outsize = 0;
 
-                let res = ::with_buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth, |ptr| {
+                try!(::with_buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth, |ptr| {
                     lodepng_encode(&mut out, &mut outsize, ptr, w, h, self)
-                });
-                ::new_buffer(res, out, outsize)
+                }).to_result());
+                Ok(::new_buffer(out, outsize))
             }
         }
 
@@ -725,23 +725,17 @@ fn required_size(w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -
     colortype.to_color_mode(bitdepth).raw_size(w, h)
 }
 
-unsafe fn new_bitmap(res: Error, out: *mut u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap<u8>, Error>  {
-    let size = required_size(w, h, colortype, bitdepth);
-    match res {
-        Error(0) => Ok(RawBitmap {
-            buffer: CVec::new(out, size),
-            width: w,
-            height: h,
-        }),
-        e => Err(e),
+unsafe fn new_bitmap(out: *mut u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> RawBitmap<u8>  {
+    let size_bytes = required_size(w, h, colortype, bitdepth);
+    RawBitmap {
+        buffer: CVec::new(out, size_bytes),
+        width: w,
+        height: h,
     }
 }
 
-unsafe fn new_buffer(res: Error, out: *mut u8, size: size_t) -> Result<CVec<u8>, Error> {
-    match res {
-        Error(0) => Ok(CVec::new(out, size as usize)),
-        e => Err(e),
-    }
+unsafe fn new_buffer(out: *mut u8, size: size_t) -> CVec<u8> {
+    CVec::new(out, size as usize)
 }
 
 fn save_file(filepath: &Path, data: &[u8]) -> Result<(), Error> {
@@ -764,8 +758,8 @@ pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Re
         let mut w = 0;
         let mut h = 0;
 
-        let res = ffi::lodepng_decode_memory(&mut out, &mut w, &mut h, input.as_ptr(), input.len() as size_t, colortype, bitdepth);
-        new_bitmap(res, out, w, h, colortype, bitdepth)
+        try!(ffi::lodepng_decode_memory(&mut out, &mut w, &mut h, input.as_ptr(), input.len() as size_t, colortype, bitdepth).to_result());
+        Ok(new_bitmap(out, w, h, colortype, bitdepth))
     }
 }
 
@@ -823,8 +817,8 @@ pub fn encode_memory(image: &[u8], w: c_uint, h: c_uint, colortype: ColorType, b
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
-        let res = with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| ffi::lodepng_encode_memory(&mut out, &mut outsize, ptr, w, h, colortype, bitdepth));
-        new_buffer(res, out, outsize)
+        try!(with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| ffi::lodepng_encode_memory(&mut out, &mut outsize, ptr, w, h, colortype, bitdepth)).to_result());
+        Ok(new_buffer(out, outsize))
     }
 }
 
@@ -861,10 +855,10 @@ pub fn encode24_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Res
 pub fn convert(input: &[u8], mode_out: &mut ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint, fix_png: bool) -> Result<RawBitmap<u8>, Error> {
     unsafe {
         let out = mem::zeroed();
-        let res = with_buffer_for_type(input, w, h, mode_in.colortype, mode_in.bitdepth, |ptr| {
+        try!(with_buffer_for_type(input, w, h, mode_in.colortype, mode_in.bitdepth, |ptr| {
             ffi::lodepng_convert(out, ptr, mode_out, mode_in, w, h, fix_png as c_uint)
-        });
-        new_bitmap(res, out, w, h, mode_out.colortype, mode_out.bitdepth)
+        }).to_result());
+        Ok(new_bitmap(out, w, h, mode_out.colortype, mode_out.bitdepth))
     }
 }
 
@@ -956,8 +950,8 @@ pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
-        let res = ffi::lodepng_zlib_compress(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings);
-        new_buffer(res, out, outsize)
+        try!(ffi::lodepng_zlib_compress(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).to_result());
+        Ok(new_buffer(out, outsize))
     }
 }
 
@@ -967,7 +961,7 @@ pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Er
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
-        let res = ffi::lodepng_deflate(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings);
-        new_buffer(res, out, outsize)
+        try!(ffi::lodepng_deflate(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).to_result());
+        Ok(new_buffer(out, outsize))
     }
 }
