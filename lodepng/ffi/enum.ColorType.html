@@ -46,19 +46,20 @@
 <h1 class='fqn'><span class='in-band'>Enum <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='enum' href=''>ColorType</a><wbr></span><span class='out-of-band'><span id='render-detail'>
             <a id="collapse-all" href="#">[-]
             </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-267' href='../../src/lodepng/lib.rs.html#50-61'>[src]</a></span></h1>
+        </span><a id='src-267' href='../../src/lodepng/lib.rs.html#52-63'>[src]</a></span></h1>
 <pre class='rust enum'>pub enum ColorType {
     LCT_GREY,
     LCT_RGB,
     LCT_PALETTE,
     LCT_GREY_ALPHA,
     LCT_RGBA,
-}</pre><h2 class='variants'>Variants</h2>
-<table><tr><td id='variant.LCT_GREY'><a class='stability Unmarked' title='No stability level'></a><code>LCT_GREY</code></td><td><div class='docblock'><p>greyscale: 1,2,4,8,16 bit</p>
-</div></td></tr><tr><td id='variant.LCT_RGB'><a class='stability Unmarked' title='No stability level'></a><code>LCT_RGB</code></td><td><div class='docblock'><p>RGB: 8,16 bit</p>
-</div></td></tr><tr><td id='variant.LCT_PALETTE'><a class='stability Unmarked' title='No stability level'></a><code>LCT_PALETTE</code></td><td><div class='docblock'><p>palette: 1,2,4,8 bit</p>
-</div></td></tr><tr><td id='variant.LCT_GREY_ALPHA'><a class='stability Unmarked' title='No stability level'></a><code>LCT_GREY_ALPHA</code></td><td><div class='docblock'><p>greyscale with alpha: 8,16 bit</p>
-</div></td></tr><tr><td id='variant.LCT_RGBA'><a class='stability Unmarked' title='No stability level'></a><code>LCT_RGBA</code></td><td><div class='docblock'><p>RGB with alpha: 8,16 bit</p>
+}</pre><div class='docblock'><p>Type for <code>decode</code>, <code>encode</code>, etc. Same as standard PNG color types.</p>
+</div><h2 class='variants'>Variants</h2>
+<table><tr><td id='variant.LCT_GREY'><a class='stability Unmarked' title='No stability level'></a><code>LCT_GREY</code></td><td><div class='docblock'><p>greyscale: 1, 2, 4, 8, 16 bit</p>
+</div></td></tr><tr><td id='variant.LCT_RGB'><a class='stability Unmarked' title='No stability level'></a><code>LCT_RGB</code></td><td><div class='docblock'><p>RGB: 8, 16 bit</p>
+</div></td></tr><tr><td id='variant.LCT_PALETTE'><a class='stability Unmarked' title='No stability level'></a><code>LCT_PALETTE</code></td><td><div class='docblock'><p>palette: 1, 2, 4, 8 bit</p>
+</div></td></tr><tr><td id='variant.LCT_GREY_ALPHA'><a class='stability Unmarked' title='No stability level'></a><code>LCT_GREY_ALPHA</code></td><td><div class='docblock'><p>greyscale with alpha: 8, 16 bit</p>
+</div></td></tr><tr><td id='variant.LCT_RGBA'><a class='stability Unmarked' title='No stability level'></a><code>LCT_RGBA</code></td><td><div class='docblock'><p>RGB with alpha: 8, 16 bit</p>
 </div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='enum' href='../../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a></code></h3><div class='impl-items'><h4 id='method.to_color_mode' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.to_color_mode' class='fnname'>to_color_mode</a>(&amp;self, bitdepth: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>) -&gt; <a class='struct' href='../../lodepng/ffi/struct.ColorMode.html' title='lodepng::ffi::ColorMode'>ColorMode</a></code></h4>
 <div class='docblock'><p>Create color mode with given type and bitdepth</p>
 </div></div><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><a class='stability Stable' title='Stable'></a><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a> for <a class='enum' href='../../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a></code></h3><div class='impl-items'></div></section>

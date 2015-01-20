@@ -46,9 +46,20 @@
 <h1 class='fqn'><span class='in-band'>Function <a href='index.html'>lodepng</a>::<wbr><a class='fn' href=''>decode_file</a><wbr></span><span class='out-of-band'><span id='render-detail'>
             <a id="collapse-all" href="#">[-]
             </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-3096' href='../src/lodepng/lib.rs.html#842-847'>[src]</a></span></h1>
+        </span><a id='src-3096' href='../src/lodepng/lib.rs.html#865-870'>[src]</a></span></h1>
 <pre class='rust fn'>pub fn decode_file(filepath: &amp;<a class='struct' href='http://doc.rust-lang.org/nightly/std/path/posix/struct.Path.html' title='std::path::posix::Path'>Path</a>, colortype: <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a>, bitdepth: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='enum' href='../lodepng/enum.Image.html' title='lodepng::Image'>Image</a>, <a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</pre><div class='docblock'><p>Load PNG from disk, from file with given name.
 Same as the other decode functions, but instead takes a file path as input.</p>
+
+<p><code>decode32_file</code> and <code>decode24_file</code> are more convenient if you want specific image format.</p>
+
+<p>There&#39;s also <code>ffi::State::decode()</code> if you&#39;d like to set more settings.</p>
+<pre class='rust '>
+<span class='kw'>match</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>decode_file</span>(<span class='ident'>filepath</span>, <span class='ident'>LCT_RGBA</span>, <span class='number'>8</span>)) {
+    <span class='ident'>Image</span>::<span class='ident'>RGBA</span>(<span class='ident'>with_alpha</span>) <span class='op'>=&gt;</span> <span class='ident'>do_stuff</span>(<span class='ident'>with_alpha</span>),
+    <span class='ident'>Image</span>::<span class='ident'>RGB</span>(<span class='ident'>without_alpha</span>) <span class='op'>=&gt;</span> <span class='ident'>do_stuff</span>(<span class='ident'>without_alpha</span>),
+    _ <span class='op'>=&gt;</span> <span class='macro'>panic</span><span class='macro'>!</span>(<span class='string'>&quot;¯\\_(ツ)_/¯&quot;</span>)
+}
+</pre>
 </div></section>
     <section id='search' class="content hidden"></section>
 

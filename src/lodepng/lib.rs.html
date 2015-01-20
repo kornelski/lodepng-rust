@@ -1081,6 +1081,29 @@
 <span id="1037">1037</span>
 <span id="1038">1038</span>
 <span id="1039">1039</span>
+<span id="1040">1040</span>
+<span id="1041">1041</span>
+<span id="1042">1042</span>
+<span id="1043">1043</span>
+<span id="1044">1044</span>
+<span id="1045">1045</span>
+<span id="1046">1046</span>
+<span id="1047">1047</span>
+<span id="1048">1048</span>
+<span id="1049">1049</span>
+<span id="1050">1050</span>
+<span id="1051">1051</span>
+<span id="1052">1052</span>
+<span id="1053">1053</span>
+<span id="1054">1054</span>
+<span id="1055">1055</span>
+<span id="1056">1056</span>
+<span id="1057">1057</span>
+<span id="1058">1058</span>
+<span id="1059">1059</span>
+<span id="1060">1060</span>
+<span id="1061">1061</span>
+<span id="1062">1062</span>
 </pre><pre class='rust '>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>crate_name</span> <span class='op'>=</span> <span class='string'>&quot;lodepng&quot;</span>]</span>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>crate_type</span> <span class='op'>=</span> <span class='string'>&quot;lib&quot;</span>]</span>
@@ -1129,18 +1152,20 @@
             }
         }
     }
+
+    <span class='doccomment'>/// Type for `decode`, `encode`, etc. Same as standard PNG color types.</span>
     <span class='attribute'>#[<span class='ident'>repr</span>(<span class='ident'>C</span>)]</span>
     <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Copy</span>)]</span>
     <span class='kw'>pub</span> <span class='kw'>enum</span> <span class='ident'>ColorType</span> {
-        <span class='doccomment'>/// greyscale: 1,2,4,8,16 bit</span>
+        <span class='doccomment'>/// greyscale: 1, 2, 4, 8, 16 bit</span>
         <span class='ident'>LCT_GREY</span> <span class='op'>=</span> <span class='number'>0</span>,
-        <span class='doccomment'>/// RGB: 8,16 bit</span>
+        <span class='doccomment'>/// RGB: 8, 16 bit</span>
         <span class='ident'>LCT_RGB</span> <span class='op'>=</span> <span class='number'>2</span>,
-        <span class='doccomment'>/// palette: 1,2,4,8 bit</span>
+        <span class='doccomment'>/// palette: 1, 2, 4, 8 bit</span>
         <span class='ident'>LCT_PALETTE</span> <span class='op'>=</span> <span class='number'>3</span>,
-        <span class='doccomment'>/// greyscale with alpha: 8,16 bit</span>
+        <span class='doccomment'>/// greyscale with alpha: 8, 16 bit</span>
         <span class='ident'>LCT_GREY_ALPHA</span> <span class='op'>=</span> <span class='number'>4</span>,
-        <span class='doccomment'>/// RGB with alpha: 8,16 bit</span>
+        <span class='doccomment'>/// RGB with alpha: 8, 16 bit</span>
         <span class='ident'>LCT_RGBA</span> <span class='op'>=</span> <span class='number'>6</span>,
     }
 
@@ -1154,7 +1179,7 @@
         <span class='doccomment'>/// bits per sample, see PNG standard</span>
         <span class='kw'>pub</span> <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>,
 
-        <span class='doccomment'>/// palette (PLTE and tRNS)</span>
+        <span class='doccomment'>/// palette (`PLTE` and `tRNS`)</span>
         <span class='doccomment'>/// Dynamically allocated with the colors of the palette, including alpha.</span>
         <span class='doccomment'>/// When encoding a PNG, to store your colors in the palette of the LodePNGColorMode, first use</span>
         <span class='doccomment'>/// lodepng_palette_clear, then for each color use lodepng_palette_add.</span>
@@ -1164,11 +1189,11 @@
         <span class='doccomment'>/// fills the palette colors in the pixels of the raw RGBA output.</span>
         <span class='doccomment'>///</span>
         <span class='doccomment'>/// The palette is only supported for color type 3.</span>
-        <span class='kw'>pub</span> <span class='ident'>palette</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>c_uchar</span>,
-        <span class='doccomment'>/// palette size in number of colors (amount of bytes is 4 * palettesize)*</span>
+        <span class='kw'>pub</span> <span class='ident'>palette</span>: <span class='op'>*</span><span class='kw'>const</span> ::<span class='ident'>RGBA</span>,
+        <span class='doccomment'>/// palette size in number of colors (amount of bytes is 4 * `palettesize`)</span>
         <span class='kw'>pub</span> <span class='ident'>palettesize</span>: <span class='ident'>size_t</span>,
 
-        <span class='doccomment'>/// transparent color key (tRNS)</span>
+        <span class='doccomment'>/// transparent color key (`tRNS`)</span>
         <span class='doccomment'>///</span>
         <span class='doccomment'>/// This color uses the same bit depth as the bitdepth value in this struct, which can be 1-bit to 16-bit.</span>
         <span class='doccomment'>/// For greyscale PNGs, r, g and b will all 3 be set to the same.</span>
@@ -1333,7 +1358,7 @@
         <span class='doccomment'>/// There are 3 buffers, one for each position in the PNG where unknown chunks can appear</span>
         <span class='doccomment'>/// each buffer contains all unknown chunks for that position consecutively</span>
         <span class='doccomment'>/// The 3 buffers are the unknown chunks between certain critical chunks:</span>
-        <span class='doccomment'>/// 0: IHDR-PLTE, 1: PLTE-IDAT, 2: IDAT-IEND</span>
+        <span class='doccomment'>/// 0: IHDR-`PLTE`, 1: `PLTE`-IDAT, 2: IDAT-IEND</span>
         <span class='doccomment'>/// Do not allocate or traverse this data yourself. Use the chunk traversing functions declared</span>
         <span class='doccomment'>/// later, such as lodepng_chunk_next and lodepng_chunk_append, to read/write this struct.</span>
         <span class='ident'>unknown_chunks_data</span>: [<span class='op'>*</span><span class='kw'>const</span> <span class='ident'>c_uchar</span>; <span class='number'>3</span>],
@@ -1438,8 +1463,8 @@
         <span class='doccomment'>/// must be set to 0 to ensure this is also used on palette or low bitdepth images</span>
         <span class='ident'>predefined_filters</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>u8</span>,
 
-        <span class='doccomment'>/// force creating a PLTE chunk if colortype is 2 or 6 (= a suggested palette).</span>
-        <span class='doccomment'>/// If colortype is 3, PLTE is _always_ created</span>
+        <span class='doccomment'>/// force creating a `PLTE` chunk if colortype is 2 or 6 (= a suggested palette).</span>
+        <span class='doccomment'>/// If colortype is 3, `PLTE` is _always_ created</span>
         <span class='kw'>pub</span> <span class='ident'>force_palette</span>: <span class='ident'>c_uint</span>,
         <span class='doccomment'>/// add LodePNG identifier and version as a text chunk, for debugging</span>
         <span class='ident'>add_id</span>: <span class='ident'>c_uint</span>,
@@ -1714,6 +1739,13 @@
             }
         }
 
+        <span class='doccomment'>/// Load PNG from buffer using State&#39;s settings</span>
+        <span class='doccomment'>///</span>
+        <span class='doccomment'>///     match try!(decode_file(filepath, LCT_RGBA, 8)) {</span>
+        <span class='doccomment'>///         Image::RGBA(with_alpha) =&gt; do_stuff(with_alpha),</span>
+        <span class='doccomment'>///         Image::RGB(without_alpha) =&gt; do_stuff(without_alpha),</span>
+        <span class='doccomment'>///         _ =&gt; panic!(&quot;¯\\_(ツ)_/¯&quot;)</span>
+        <span class='doccomment'>///     }</span>
         <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>decode</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>input</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>]) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>::<span class='ident'>Image</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
             <span class='kw'>unsafe</span> {
                 <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>out</span> <span class='op'>=</span> <span class='ident'>mem</span>::<span class='ident'>zeroed</span>();
@@ -1891,9 +1923,13 @@
 
 <span class='doccomment'>/// Converts PNG data in memory to raw pixel data.</span>
 <span class='doccomment'>///</span>
+<span class='doccomment'>/// `decode32` and `decode24` are more convenient if you want specific image format.</span>
+<span class='doccomment'>///</span>
+<span class='doccomment'>/// See `ffi::State::decode()` for advanced decoding.</span>
+<span class='doccomment'>///</span>
 <span class='doccomment'>/// * `in`: Memory buffer with the PNG file.</span>
-<span class='doccomment'>/// * `colortype`: the desired color type for the raw output image. See explanation on PNG color types.</span>
-<span class='doccomment'>/// * `bitdepth`: the desired bit depth for the raw output image. See explanation on PNG color types.</span>
+<span class='doccomment'>/// * `colortype`: the desired color type for the raw output image. See `ColorType`.</span>
+<span class='doccomment'>/// * `bitdepth`: the desired bit depth for the raw output image. 1, 2, 4, 8 or 16. Typically 8.</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>decode_memory</span>(<span class='ident'>input</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>colortype</span>: <span class='ident'>ColorType</span>, <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Image</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='kw'>unsafe</span> {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>out</span> <span class='op'>=</span> <span class='ident'>mem</span>::<span class='ident'>zeroed</span>();
@@ -1905,7 +1941,7 @@
     }
 }
 
-<span class='doccomment'>/// Same as lodepng_decode_memory, but always decodes to 32-bit RGBA raw image</span>
+<span class='doccomment'>/// Same as `decode_memory`, but always decodes to 32-bit RGBA raw image</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>decode32</span>(<span class='ident'>input</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>]) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Bitmap</span><span class='op'>&lt;</span><span class='ident'>RGBA</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='kw'>match</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>decode_memory</span>(<span class='ident'>input</span>, <span class='ident'>LCT_RGBA</span>, <span class='number'>8</span>)) {
         <span class='ident'>Image</span>::<span class='ident'>RGBA</span>(<span class='ident'>img</span>) <span class='op'>=&gt;</span> <span class='prelude-val'>Ok</span>(<span class='ident'>img</span>),
@@ -1913,7 +1949,7 @@
     }
 }
 
-<span class='doccomment'>/// Same as lodepng_decode_memory, but always decodes to 24-bit RGB raw image</span>
+<span class='doccomment'>/// Same as `decode_memory`, but always decodes to 24-bit RGB raw image</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>decode24</span>(<span class='ident'>input</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>]) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Bitmap</span><span class='op'>&lt;</span><span class='ident'>RGB</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='kw'>match</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>decode_memory</span>(<span class='ident'>input</span>, <span class='ident'>LCT_RGB</span>, <span class='number'>8</span>)) {
         <span class='ident'>Image</span>::<span class='ident'>RGB</span>(<span class='ident'>img</span>) <span class='op'>=&gt;</span> <span class='prelude-val'>Ok</span>(<span class='ident'>img</span>),
@@ -1923,6 +1959,16 @@
 
 <span class='doccomment'>/// Load PNG from disk, from file with given name.</span>
 <span class='doccomment'>/// Same as the other decode functions, but instead takes a file path as input.</span>
+<span class='doccomment'>///</span>
+<span class='doccomment'>/// `decode32_file` and `decode24_file` are more convenient if you want specific image format.</span>
+<span class='doccomment'>///</span>
+<span class='doccomment'>/// There&#39;s also `ffi::State::decode()` if you&#39;d like to set more settings.</span>
+<span class='doccomment'>///</span>
+<span class='doccomment'>///     match try!(decode_file(filepath, LCT_RGBA, 8)) {</span>
+<span class='doccomment'>///         Image::RGBA(with_alpha) =&gt; do_stuff(with_alpha),</span>
+<span class='doccomment'>///         Image::RGB(without_alpha) =&gt; do_stuff(without_alpha),</span>
+<span class='doccomment'>///         _ =&gt; panic!(&quot;¯\\_(ツ)_/¯&quot;)</span>
+<span class='doccomment'>///     }</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>decode_file</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>colortype</span>: <span class='ident'>ColorType</span>, <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Image</span>, <span class='ident'>Error</span><span class='op'>&gt;</span>  {
     <span class='kw'>match</span> <span class='ident'>File</span>::<span class='ident'>open_mode</span>(<span class='ident'>filepath</span>, <span class='ident'>Open</span>, <span class='ident'>Read</span>).<span class='ident'>read_to_end</span>() {
         <span class='prelude-val'>Ok</span>(<span class='ident'>file</span>) <span class='op'>=&gt;</span> <span class='ident'>decode_memory</span>(<span class='ident'>file</span>.<span class='ident'>as_slice</span>(), <span class='ident'>colortype</span>, <span class='ident'>bitdepth</span>),
@@ -1930,7 +1976,7 @@
     }
 }
 
-<span class='doccomment'>/// Same as lodepng_decode_file, but always decodes to 32-bit RGBA raw image</span>
+<span class='doccomment'>/// Same as `decode_file`, but always decodes to 32-bit RGBA raw image</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>decode32_file</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Bitmap</span><span class='op'>&lt;</span><span class='ident'>RGBA</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='kw'>match</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>decode_file</span>(<span class='ident'>filepath</span>, <span class='ident'>LCT_RGBA</span>, <span class='number'>8</span>)) {
         <span class='ident'>Image</span>::<span class='ident'>RGBA</span>(<span class='ident'>img</span>) <span class='op'>=&gt;</span> <span class='prelude-val'>Ok</span>(<span class='ident'>img</span>),
@@ -1938,7 +1984,7 @@
     }
 }
 
-<span class='doccomment'>/// Same as lodepng_decode_file, but always decodes to 24-bit RGB raw image</span>
+<span class='doccomment'>/// Same as `decode_file`, but always decodes to 24-bit RGB raw image</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>decode24_file</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Bitmap</span><span class='op'>&lt;</span><span class='ident'>RGB</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='kw'>match</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>decode_file</span>(<span class='ident'>filepath</span>, <span class='ident'>LCT_RGB</span>, <span class='number'>8</span>)) {
         <span class='ident'>Image</span>::<span class='ident'>RGB</span>(<span class='ident'>img</span>) <span class='op'>=&gt;</span> <span class='prelude-val'>Ok</span>(<span class='ident'>img</span>),
@@ -1956,16 +2002,16 @@
 }
 
 <span class='doccomment'>/// Converts raw pixel data into a PNG image in memory. The colortype and bitdepth</span>
-<span class='doccomment'>///   of the output PNG image cannot be chosen, they are automatically determined</span>
-<span class='doccomment'>///   by the colortype, bitdepth and content of the input pixel data.</span>
+<span class='doccomment'>/// of the output PNG image cannot be chosen, they are automatically determined</span>
+<span class='doccomment'>/// by the colortype, bitdepth and content of the input pixel data.</span>
 <span class='doccomment'>///</span>
-<span class='doccomment'>///   Note: for 16-bit per channel colors, needs big endian format like PNG does.</span>
+<span class='doccomment'>/// Note: for 16-bit per channel colors, needs big endian format like PNG does.</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// * `image`: The raw pixel data to encode. The size of this buffer should be `w` * `h` * (bytes per pixel), bytes per pixel depends on colortype and bitdepth.</span>
 <span class='doccomment'>/// * `w`: width of the raw pixel data in pixels.</span>
 <span class='doccomment'>/// * `h`: height of the raw pixel data in pixels.</span>
-<span class='doccomment'>/// * `colortype`: the color type of the raw input image. See explanation on PNG color types.</span>
-<span class='doccomment'>/// * `bitdepth`: the bit depth of the raw input image. See explanation on PNG color types.</span>
+<span class='doccomment'>/// * `colortype`: the color type of the raw input image. See `ColorType`.</span>
+<span class='doccomment'>/// * `bitdepth`: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode_memory</span>(<span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>, <span class='ident'>colortype</span>: <span class='ident'>ColorType</span>, <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='kw'>unsafe</span> {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>out</span> <span class='op'>=</span> <span class='ident'>mem</span>::<span class='ident'>zeroed</span>();
@@ -1978,12 +2024,12 @@
     }
 }
 
-<span class='doccomment'>/// Same as lodepng_encode_memory, but always encodes from 32-bit RGBA raw image</span>
+<span class='doccomment'>/// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode32</span>(<span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span>  {
     <span class='ident'>encode_memory</span>(<span class='ident'>image</span>, <span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>LCT_RGBA</span>, <span class='number'>8</span>)
 }
 
-<span class='doccomment'>/// Same as lodepng_encode_memory, but always encodes from 24-bit RGB raw image</span>
+<span class='doccomment'>/// Same as `encode_memory`, but always encodes from 24-bit RGB raw image</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode24</span>(<span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='ident'>encode_memory</span>(<span class='ident'>image</span>, <span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>LCT_RGB</span>, <span class='number'>8</span>)
 }
@@ -1997,12 +2043,12 @@
     <span class='ident'>save_file</span>(<span class='ident'>filepath</span>, <span class='ident'>encoded</span>.<span class='ident'>as_slice</span>())
 }
 
-<span class='doccomment'>/// Same as lodepng_encode_file, but always encodes from 32-bit RGBA raw image</span>
+<span class='doccomment'>/// Same as `encode_file`, but always encodes from 32-bit RGBA raw image</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode32_file</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='ident'>encode_file</span>(<span class='ident'>filepath</span>, <span class='ident'>image</span>, <span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>LCT_RGBA</span>, <span class='number'>8</span>)
 }
 
-<span class='doccomment'>/// Same as lodepng_encode_file, but always encodes from 24-bit RGB raw image</span>
+<span class='doccomment'>/// Same as `encode_file`, but always encodes from 24-bit RGB raw image</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode24_file</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='ident'>encode_file</span>(<span class='ident'>filepath</span>, <span class='ident'>image</span>, <span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>LCT_RGB</span>, <span class='number'>8</span>)
 }

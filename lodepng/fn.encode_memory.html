@@ -46,10 +46,10 @@
 <h1 class='fqn'><span class='in-band'>Function <a href='index.html'>lodepng</a>::<wbr><a class='fn' href=''>encode_memory</a><wbr></span><span class='out-of-band'><span id='render-detail'>
             <a id="collapse-all" href="#">[-]
             </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-3295' href='../src/lodepng/lib.rs.html#885-895'>[src]</a></span></h1>
+        </span><a id='src-3295' href='../src/lodepng/lib.rs.html#908-918'>[src]</a></span></h1>
 <pre class='rust fn'>pub fn encode_memory(image: <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, w: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, h: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, colortype: <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a>, bitdepth: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../lodepng/struct.CVec.html' title='lodepng::CVec'>CVec</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;, <a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</pre><div class='docblock'><p>Converts raw pixel data into a PNG image in memory. The colortype and bitdepth
-  of the output PNG image cannot be chosen, they are automatically determined
-  by the colortype, bitdepth and content of the input pixel data.</p>
+of the output PNG image cannot be chosen, they are automatically determined
+by the colortype, bitdepth and content of the input pixel data.</p>
 
 <p>Note: for 16-bit per channel colors, needs big endian format like PNG does.</p>
 
@@ -57,8 +57,8 @@
 <li><code>image</code>: The raw pixel data to encode. The size of this buffer should be <code>w</code> * <code>h</code> * (bytes per pixel), bytes per pixel depends on colortype and bitdepth.</li>
 <li><code>w</code>: width of the raw pixel data in pixels.</li>
 <li><code>h</code>: height of the raw pixel data in pixels.</li>
-<li><code>colortype</code>: the color type of the raw input image. See explanation on PNG color types.</li>
-<li><code>bitdepth</code>: the bit depth of the raw input image. See explanation on PNG color types.</li>
+<li><code>colortype</code>: the color type of the raw input image. See <code>ColorType</code>.</li>
+<li><code>bitdepth</code>: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.</li>
 </ul>
 </div></section>
     <section id='search' class="content hidden"></section>
