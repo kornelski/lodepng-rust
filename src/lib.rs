@@ -629,7 +629,7 @@ pub mod ffi {
             }
         }
 
-        pub fn decode(&mut self, input: &[u8]) -> Result<::RawBitmap, Error> {
+        pub fn decode(&mut self, input: &[u8]) -> Result<::RawBitmap<u8>, Error> {
             unsafe {
                 let mut out = mem::zeroed();
                 let mut w = 0;
@@ -706,16 +706,16 @@ pub struct Chunk {
 }
 
 /// Low-level representation of an image
-pub struct RawBitmap {
+pub struct RawBitmap<T> {
     /// Raw bitmap memory. Layout depends on color mode and bitdepth used to create it.
-    pub buffer: CVec<u8>,
+    pub buffer: CVec<T>,
     /// Width in pixels
     pub width: c_uint,
     /// Height in pixels
     pub height: c_uint,
 }
 
-impl fmt::Show for RawBitmap {
+impl<T> fmt::Show for RawBitmap<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{{} × {} RawBitmap}}", self.width, self.height)
     }
@@ -725,7 +725,7 @@ fn required_size(w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -
     colortype.to_color_mode(bitdepth).raw_size(w, h)
 }
 
-unsafe fn new_bitmap(res: Error, out: *mut u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error>  {
+unsafe fn new_bitmap(res: Error, out: *mut u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap<u8>, Error>  {
     let size = required_size(w, h, colortype, bitdepth);
     match res {
         Error(0) => Ok(RawBitmap {
@@ -758,7 +758,7 @@ fn save_file(filepath: &Path, data: &[u8]) -> Result<(), Error> {
 /// * `in`: Memory buffer with the PNG file.
 /// * `colortype`: the desired color type for the raw output image. See explanation on PNG color types.
 /// * `bitdepth`: the desired bit depth for the raw output image. See explanation on PNG color types.
-pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error> {
+pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut w = 0;
@@ -770,18 +770,18 @@ pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Re
 }
 
 /// Same as lodepng_decode_memory, but always decodes to 32-bit RGBA raw image
-pub fn decode32(input: &[u8]) -> Result<RawBitmap, Error> {
+pub fn decode32(input: &[u8]) -> Result<RawBitmap<u8>, Error> {
     decode_memory(input, LCT_RGBA, 8)
 }
 
 /// Same as lodepng_decode_memory, but always decodes to 24-bit RGB raw image
-pub fn decode24(input: &[u8]) -> Result<RawBitmap, Error> {
+pub fn decode24(input: &[u8]) -> Result<RawBitmap<u8>, Error> {
     decode_memory(input, LCT_RGB, 8)
 }
 
 /// Load PNG from disk, from file with given name.
 /// Same as the other decode functions, but instead takes a file path as input.
-pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error>  {
+pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap<u8>, Error>  {
     match File::open_mode(filepath, Open, Read).read_to_end() {
         Ok(file) => decode_memory(file.as_slice(), colortype, bitdepth),
         Err(_) => Err(Error(78)),
@@ -789,12 +789,12 @@ pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> R
 }
 
 /// Same as lodepng_decode_file, but always decodes to 32-bit RGBA raw image
-pub fn decode32_file(filepath: &Path) -> Result<RawBitmap, Error> {
+pub fn decode32_file(filepath: &Path) -> Result<RawBitmap<u8>, Error> {
     decode_file(filepath, LCT_RGBA, 8)
 }
 
 /// Same as lodepng_decode_file, but always decodes to 24-bit RGB raw image
-pub fn decode24_file(filepath: &Path) -> Result<RawBitmap, Error> {
+pub fn decode24_file(filepath: &Path) -> Result<RawBitmap<u8>, Error> {
     decode_file(filepath, LCT_RGB, 8)
 }
 
@@ -858,7 +858,7 @@ pub fn encode24_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Res
 }
 
 /// Converts from any color type to 24-bit or 32-bit (only)
-pub fn convert(input: &[u8], mode_out: &mut ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint, fix_png: bool) -> Result<RawBitmap, Error> {
+pub fn convert(input: &[u8], mode_out: &mut ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint, fix_png: bool) -> Result<RawBitmap<u8>, Error> {
     unsafe {
         let out = mem::zeroed();
         let res = with_buffer_for_type(input, w, h, mode_in.colortype, mode_in.bitdepth, |ptr| {
