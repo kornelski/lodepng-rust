@@ -90,6 +90,18 @@
 <span id="46">46</span>
 <span id="47">47</span>
 <span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
 </pre><pre class='rust '>
 
 <span class='kw'>use</span> <span class='ident'>libc</span>::<span class='ident'>c_void</span>;
@@ -99,33 +111,45 @@
 
 <span class='doccomment'>/// Horrible kludge to free memory allocated by lodepng</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
-    <span class='ident'>length</span>: <span class='ident'>usize</span>,
+    <span class='ident'>elements</span>: <span class='ident'>usize</span>,
     <span class='ident'>ptr</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>T</span>,
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>ptr</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>T</span>, <span class='ident'>length</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
-        <span class='ident'>CVec</span> {<span class='ident'>ptr</span>:<span class='ident'>ptr</span>, <span class='ident'>length</span>:<span class='ident'>length</span>}
+    <span class='kw'>pub</span> <span class='kw'>unsafe</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>ptr</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>T</span>, <span class='ident'>elements</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+        <span class='ident'>CVec</span> {<span class='ident'>ptr</span>:<span class='ident'>ptr</span>, <span class='ident'>elements</span>:<span class='ident'>elements</span>}
+    }
+
+    <span class='doccomment'>/// Number of elements (pixels for pixel type, bytes for u8 type only)</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>len</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span> {
+        <span class='self'>self</span>.<span class='ident'>elements</span>
     }
 
     <span class='doccomment'>/// *Copies* elements into a Vec</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>to_vec</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
         <span class='kw'>unsafe</span> {
-            <span class='ident'>Vec</span>::<span class='ident'>from_raw_buf</span>(<span class='self'>self</span>.<span class='ident'>ptr</span>, <span class='self'>self</span>.<span class='ident'>length</span>)
+            <span class='ident'>Vec</span>::<span class='ident'>from_raw_buf</span>(<span class='self'>self</span>.<span class='ident'>ptr</span>, <span class='self'>self</span>.<span class='ident'>elements</span>)
         }
     }
 
     <span class='doccomment'>/// Exposes memory as slice without copying</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>as_mut_slice</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> [<span class='ident'>T</span>] {
         <span class='kw'>unsafe</span> {
-            <span class='ident'>slice</span>::<span class='ident'>from_raw_mut_buf</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>.<span class='ident'>ptr</span>, <span class='self'>self</span>.<span class='ident'>length</span>)
+            <span class='ident'>slice</span>::<span class='ident'>from_raw_mut_buf</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>.<span class='ident'>ptr</span>, <span class='self'>self</span>.<span class='ident'>elements</span>)
         }
     }
 
     <span class='doccomment'>/// Exposes memory as slice without copying</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>as_slice</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>T</span>] {
         <span class='kw'>unsafe</span> {
-            <span class='ident'>slice</span>::<span class='ident'>from_raw_buf</span>(<span class='ident'>transmute</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>.<span class='ident'>ptr</span>), <span class='self'>self</span>.<span class='ident'>length</span>)
+            <span class='ident'>slice</span>::<span class='ident'>from_raw_buf</span>(<span class='ident'>transmute</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>.<span class='ident'>ptr</span>), <span class='self'>self</span>.<span class='ident'>elements</span>)
+        }
+    }
+
+    <span class='doccomment'>/// Exposes memory as slice without copying</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>as_u8_slice</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> [<span class='ident'>u8</span>] {
+        <span class='kw'>unsafe</span> {
+            <span class='ident'>slice</span>::<span class='ident'>from_raw_buf</span>(<span class='ident'>transmute</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>.<span class='ident'>ptr</span>), <span class='self'>self</span>.<span class='ident'>elements</span> <span class='op'>*</span> ::<span class='ident'>std</span>::<span class='ident'>mem</span>::<span class='ident'>size_of</span>::<span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>())
         }
     }
 }
