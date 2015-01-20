@@ -627,12 +627,13 @@ pub mod ffi {
             }
         }
 
-        pub fn inspect(&mut self, input: &[u8]) -> Result<(usize,usize), Error> {
+        /// Returns (width, height)
+        pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
             unsafe {
                 let mut w = 0;
                 let mut h = 0;
                 match lodepng_inspect(&mut w, &mut h, self, input.as_ptr(), input.len() as size_t) {
-                    Error(0) => Ok((w as usize,h as usize)),
+                    Error(0) => Ok((w as usize, h as usize)),
                     err => Err(err)
                 }
             }
