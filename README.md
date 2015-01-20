@@ -30,32 +30,10 @@ To load RGBA PNG file:
 lodepng::decode32_file(&Path::new("in.png"))
 ```
 
-returns `lodepng::RawBitmap` with `.width`, `.height` and `u8` `.buffer`.
+returns `lodepng::RawBitmap` with `.width`, `.height` and `RGBA` `.buffer`.
 
 To save RGBA PNG file:
 
 ```rust
-lodepng::encode32_file(&Path::new("out.png"), buffer.as_slice(), width, height)
-```
-
-If you'd rather work with RGBA structure than u8 arrays, here's a handy function:
-
-```rust
-#[repr(C)]
-#[deriving(Clone)]
-struct RGBA {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-    pub a: u8,
-}
-
-fn convert(bytes: &mut [u8]) -> &mut [RGBA] {
-    unsafe {
-        std::mem::transmute(std::raw::Slice {
-            data: bytes.as_mut_ptr() as *const RGBA,
-            len: bytes.len() / 4,
-        })
-    }
-}
+lodepng::encode32_file(&Path::new("out.png"), buffer.as_u8_slice(), width, height)
 ```
