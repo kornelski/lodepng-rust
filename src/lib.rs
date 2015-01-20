@@ -45,18 +45,20 @@ pub mod ffi {
             }
         }
     }
+
+    /// Type for `decode`, `encode`, etc. Same as standard PNG color types.
     #[repr(C)]
     #[derive(Copy)]
     pub enum ColorType {
-        /// greyscale: 1,2,4,8,16 bit
+        /// greyscale: 1, 2, 4, 8, 16 bit
         LCT_GREY = 0,
-        /// RGB: 8,16 bit
+        /// RGB: 8, 16 bit
         LCT_RGB = 2,
-        /// palette: 1,2,4,8 bit
+        /// palette: 1, 2, 4, 8 bit
         LCT_PALETTE = 3,
-        /// greyscale with alpha: 8,16 bit
+        /// greyscale with alpha: 8, 16 bit
         LCT_GREY_ALPHA = 4,
-        /// RGB with alpha: 8,16 bit
+        /// RGB with alpha: 8, 16 bit
         LCT_RGBA = 6,
     }
 
@@ -70,7 +72,7 @@ pub mod ffi {
         /// bits per sample, see PNG standard
         pub bitdepth: c_uint,
 
-        /// palette (PLTE and tRNS)
+        /// palette (`PLTE` and `tRNS`)
         /// Dynamically allocated with the colors of the palette, including alpha.
         /// When encoding a PNG, to store your colors in the palette of the LodePNGColorMode, first use
         /// lodepng_palette_clear, then for each color use lodepng_palette_add.
@@ -84,7 +86,7 @@ pub mod ffi {
         /// palette size in number of colors (amount of bytes is 4 * `palettesize`)
         pub palettesize: size_t,
 
-        /// transparent color key (tRNS)
+        /// transparent color key (`tRNS`)
         ///
         /// This color uses the same bit depth as the bitdepth value in this struct, which can be 1-bit to 16-bit.
         /// For greyscale PNGs, r, g and b will all 3 be set to the same.
@@ -249,7 +251,7 @@ pub mod ffi {
         /// There are 3 buffers, one for each position in the PNG where unknown chunks can appear
         /// each buffer contains all unknown chunks for that position consecutively
         /// The 3 buffers are the unknown chunks between certain critical chunks:
-        /// 0: IHDR-PLTE, 1: PLTE-IDAT, 2: IDAT-IEND
+        /// 0: IHDR-`PLTE`, 1: `PLTE`-IDAT, 2: IDAT-IEND
         /// Do not allocate or traverse this data yourself. Use the chunk traversing functions declared
         /// later, such as lodepng_chunk_next and lodepng_chunk_append, to read/write this struct.
         unknown_chunks_data: [*const c_uchar; 3],
@@ -354,8 +356,8 @@ pub mod ffi {
         /// must be set to 0 to ensure this is also used on palette or low bitdepth images
         predefined_filters: *const u8,
 
-        /// force creating a PLTE chunk if colortype is 2 or 6 (= a suggested palette).
-        /// If colortype is 3, PLTE is _always_ created
+        /// force creating a `PLTE` chunk if colortype is 2 or 6 (= a suggested palette).
+        /// If colortype is 3, `PLTE` is _always_ created
         pub force_palette: c_uint,
         /// add LodePNG identifier and version as a text chunk, for debugging
         add_id: c_uint,
@@ -630,6 +632,13 @@ pub mod ffi {
             }
         }
 
+        /// Load PNG from buffer using State's settings
+        ///
+        ///     match try!(decode_file(filepath, LCT_RGBA, 8)) {
+        ///         Image::RGBA(with_alpha) => do_stuff(with_alpha),
+        ///         Image::RGB(without_alpha) => do_stuff(without_alpha),
+        ///         _ => panic!("¯\\_(ツ)_/¯")
+        ///     }
         pub fn decode(&mut self, input: &[u8]) -> Result<::Image, Error> {
             unsafe {
                 let mut out = mem::zeroed();
@@ -807,9 +816,13 @@ fn save_file(filepath: &Path, data: &[u8]) -> Result<(), Error> {
 
 /// Converts PNG data in memory to raw pixel data.
 ///
+/// `decode32` and `decode24` are more convenient if you want specific image format.
+///
+/// See `ffi::State::decode()` for advanced decoding.
+///
 /// * `in`: Memory buffer with the PNG file.
-/// * `colortype`: the desired color type for the raw output image. See explanation on PNG color types.
-/// * `bitdepth`: the desired bit depth for the raw output image. See explanation on PNG color types.
+/// * `colortype`: the desired color type for the raw output image. See `ColorType`.
+/// * `bitdepth`: the desired bit depth for the raw output image. 1, 2, 4, 8 or 16. Typically 8.
 pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
     unsafe {
         let mut out = mem::zeroed();
@@ -821,7 +834,7 @@ pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Re
     }
 }
 
-/// Same as lodepng_decode_memory, but always decodes to 32-bit RGBA raw image
+/// Same as `decode_memory`, but always decodes to 32-bit RGBA raw image
 pub fn decode32(input: &[u8]) -> Result<Bitmap<RGBA>, Error> {
     match try!(decode_memory(input, LCT_RGBA, 8)) {
         Image::RGBA(img) => Ok(img),
@@ -829,7 +842,7 @@ pub fn decode32(input: &[u8]) -> Result<Bitmap<RGBA>, Error> {
     }
 }
 
-/// Same as lodepng_decode_memory, but always decodes to 24-bit RGB raw image
+/// Same as `decode_memory`, but always decodes to 24-bit RGB raw image
 pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB>, Error> {
     match try!(decode_memory(input, LCT_RGB, 8)) {
         Image::RGB(img) => Ok(img),
@@ -839,6 +852,16 @@ pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB>, Error> {
 
 /// Load PNG from disk, from file with given name.
 /// Same as the other decode functions, but instead takes a file path as input.
+///
+/// `decode32_file` and `decode24_file` are more convenient if you want specific image format.
+///
+/// There's also `ffi::State::decode()` if you'd like to set more settings.
+///
+///     match try!(decode_file(filepath, LCT_RGBA, 8)) {
+///         Image::RGBA(with_alpha) => do_stuff(with_alpha),
+///         Image::RGB(without_alpha) => do_stuff(without_alpha),
+///         _ => panic!("¯\\_(ツ)_/¯")
+///     }
 pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error>  {
     match File::open_mode(filepath, Open, Read).read_to_end() {
         Ok(file) => decode_memory(file.as_slice(), colortype, bitdepth),
@@ -846,7 +869,7 @@ pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> R
     }
 }
 
-/// Same as lodepng_decode_file, but always decodes to 32-bit RGBA raw image
+/// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
 pub fn decode32_file(filepath: &Path) -> Result<Bitmap<RGBA>, Error> {
     match try!(decode_file(filepath, LCT_RGBA, 8)) {
         Image::RGBA(img) => Ok(img),
@@ -854,7 +877,7 @@ pub fn decode32_file(filepath: &Path) -> Result<Bitmap<RGBA>, Error> {
     }
 }
 
-/// Same as lodepng_decode_file, but always decodes to 24-bit RGB raw image
+/// Same as `decode_file`, but always decodes to 24-bit RGB raw image
 pub fn decode24_file(filepath: &Path) -> Result<Bitmap<RGB>, Error> {
     match try!(decode_file(filepath, LCT_RGB, 8)) {
         Image::RGB(img) => Ok(img),
@@ -872,16 +895,16 @@ fn with_buffer_for_type<F>(image: &[u8], w: usize, h: usize, colortype: ColorTyp
 }
 
 /// Converts raw pixel data into a PNG image in memory. The colortype and bitdepth
-///   of the output PNG image cannot be chosen, they are automatically determined
-///   by the colortype, bitdepth and content of the input pixel data.
+/// of the output PNG image cannot be chosen, they are automatically determined
+/// by the colortype, bitdepth and content of the input pixel data.
 ///
-///   Note: for 16-bit per channel colors, needs big endian format like PNG does.
+/// Note: for 16-bit per channel colors, needs big endian format like PNG does.
 ///
 /// * `image`: The raw pixel data to encode. The size of this buffer should be `w` * `h` * (bytes per pixel), bytes per pixel depends on colortype and bitdepth.
 /// * `w`: width of the raw pixel data in pixels.
 /// * `h`: height of the raw pixel data in pixels.
-/// * `colortype`: the color type of the raw input image. See explanation on PNG color types.
-/// * `bitdepth`: the bit depth of the raw input image. See explanation on PNG color types.
+/// * `colortype`: the color type of the raw input image. See `ColorType`.
+/// * `bitdepth`: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.
 pub fn encode_memory(image: &[u8], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
@@ -894,12 +917,12 @@ pub fn encode_memory(image: &[u8], w: usize, h: usize, colortype: ColorType, bit
     }
 }
 
-/// Same as lodepng_encode_memory, but always encodes from 32-bit RGBA raw image
+/// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
 pub fn encode32(image: &[u8], w: usize, h: usize) -> Result<CVec<u8>, Error>  {
     encode_memory(image, w, h, LCT_RGBA, 8)
 }
 
-/// Same as lodepng_encode_memory, but always encodes from 24-bit RGB raw image
+/// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
 pub fn encode24(image: &[u8], w: usize, h: usize) -> Result<CVec<u8>, Error> {
     encode_memory(image, w, h, LCT_RGB, 8)
 }
@@ -913,12 +936,12 @@ pub fn encode_file(filepath: &Path, image: &[u8], w: usize, h: usize, colortype:
     save_file(filepath, encoded.as_slice())
 }
 
-/// Same as lodepng_encode_file, but always encodes from 32-bit RGBA raw image
+/// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
 pub fn encode32_file(filepath: &Path, image: &[u8], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGBA, 8)
 }
 
-/// Same as lodepng_encode_file, but always encodes from 24-bit RGB raw image
+/// Same as `encode_file`, but always encodes from 24-bit RGB raw image
 pub fn encode24_file(filepath: &Path, image: &[u8], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGB, 8)
 }
