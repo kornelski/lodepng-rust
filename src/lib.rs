@@ -99,6 +99,19 @@ pub mod ffi {
         key_b: c_uint,
     }
 
+    impl ColorType {
+        /// Create color mode with given type and bitdepth
+        pub fn to_color_mode(&self, bitdepth: c_uint) -> ColorMode {
+            unsafe {
+                ColorMode {
+                    colortype: *self,
+                    bitdepth: bitdepth,
+                    .. mem::zeroed()
+                }
+            }
+        }
+    }
+
     #[repr(C)]
     struct DecompressSettings {
     pub ignore_adler32: c_uint,
@@ -623,7 +636,7 @@ pub mod ffi {
                 let mut h = 0;
 
                 let res = lodepng_decode(&mut out, &mut w, &mut h, self, input.as_ptr(), input.len() as size_t);
-                ::new_bitmap(res, out, w, h, ::required_size(w, h, self.info_raw.colortype, self.info_raw.bitdepth))
+                ::new_bitmap(res, out, w, h, self.info_raw.colortype, self.info_raw.bitdepth)
             }
         }
 
@@ -709,17 +722,11 @@ impl fmt::Show for RawBitmap {
 }
 
 fn required_size(w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> usize {
-    unsafe {
-        let color = ColorMode {
-            colortype: colortype,
-            bitdepth: bitdepth,
-            .. mem::zeroed()
-        };
-        color.raw_size(w, h)
-    }
+    colortype.to_color_mode(bitdepth).raw_size(w, h)
 }
 
-unsafe fn new_bitmap(res: Error, out: *mut u8, w: c_uint, h: c_uint, size: usize) -> Result<RawBitmap, Error>  {
+unsafe fn new_bitmap(res: Error, out: *mut u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Result<RawBitmap, Error>  {
+    let size = required_size(w, h, colortype, bitdepth);
     match res {
         Error(0) => Ok(RawBitmap {
             buffer: CVec::new(out, size),
@@ -758,7 +765,7 @@ pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Re
         let mut h = 0;
 
         let res = ffi::lodepng_decode_memory(&mut out, &mut w, &mut h, input.as_ptr(), input.len() as size_t, colortype, bitdepth);
-        new_bitmap(res, out, w, h, required_size(w, h, colortype, bitdepth))
+        new_bitmap(res, out, w, h, colortype, bitdepth)
     }
 }
 
@@ -857,7 +864,7 @@ pub fn convert(input: &[u8], mode_out: &mut ColorMode, mode_in: &ColorMode, w: c
         let res = with_buffer_for_type(input, w, h, mode_in.colortype, mode_in.bitdepth, |ptr| {
             ffi::lodepng_convert(out, ptr, mode_out, mode_in, w, h, fix_png as c_uint)
         });
-        new_bitmap(res, out, w, h, required_size(w, h, mode_out.colortype, mode_out.bitdepth))
+        new_bitmap(res, out, w, h, mode_out.colortype, mode_out.bitdepth)
     }
 }
 
