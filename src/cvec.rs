@@ -11,7 +11,7 @@ pub struct CVec<T> {
 }
 
 impl<T> CVec<T> {
-    pub fn new(ptr: *mut T, elements: usize) -> CVec<T> {
+    pub unsafe fn new(ptr: *mut T, elements: usize) -> CVec<T> {
         CVec {ptr:ptr, elements:elements}
     }
 
