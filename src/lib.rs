@@ -80,8 +80,8 @@ pub mod ffi {
         /// fills the palette colors in the pixels of the raw RGBA output.
         ///
         /// The palette is only supported for color type 3.
-        pub palette: *const c_uchar,
-        /// palette size in number of colors (amount of bytes is 4 * palettesize)*
+        pub palette: *const ::RGBA,
+        /// palette size in number of colors (amount of bytes is 4 * `palettesize`)
         pub palettesize: size_t,
 
         /// transparent color key (tRNS)
