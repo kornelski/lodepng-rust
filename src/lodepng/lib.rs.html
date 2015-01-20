@@ -1104,6 +1104,7 @@
 <span id="1060">1060</span>
 <span id="1061">1061</span>
 <span id="1062">1062</span>
+<span id="1063">1063</span>
 </pre><pre class='rust '>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>crate_name</span> <span class='op'>=</span> <span class='string'>&quot;lodepng&quot;</span>]</span>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>crate_type</span> <span class='op'>=</span> <span class='string'>&quot;lib&quot;</span>]</span>
@@ -1741,9 +1742,9 @@
 
         <span class='doccomment'>/// Load PNG from buffer using State&#39;s settings</span>
         <span class='doccomment'>///</span>
-        <span class='doccomment'>///     match try!(decode_file(filepath, LCT_RGBA, 8)) {</span>
+        <span class='doccomment'>///     self.info_raw.colortype = LCT_RGBA;</span>
+        <span class='doccomment'>///     match try!(state.decode(slice)) {</span>
         <span class='doccomment'>///         Image::RGBA(with_alpha) =&gt; do_stuff(with_alpha),</span>
-        <span class='doccomment'>///         Image::RGB(without_alpha) =&gt; do_stuff(without_alpha),</span>
         <span class='doccomment'>///         _ =&gt; panic!(&quot;¯\\_(ツ)_/¯&quot;)</span>
         <span class='doccomment'>///     }</span>
         <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>decode</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>input</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>]) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>::<span class='ident'>Image</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
@@ -1769,7 +1770,7 @@
             }
         }
 
-        <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
+        <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>PixelType</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
             <span class='kw'>unsafe</span> {
                 <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>out</span> <span class='op'>=</span> <span class='ident'>mem</span>::<span class='ident'>zeroed</span>();
                 <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>outsize</span> <span class='op'>=</span> <span class='number'>0</span>;
@@ -1781,7 +1782,7 @@
             }
         }
 
-        <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode_file</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>Error</span><span class='op'>&gt;</span> {
+        <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode_file</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>PixelType</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>Error</span><span class='op'>&gt;</span> {
             <span class='kw'>let</span> <span class='ident'>buf</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='self'>self</span>.<span class='ident'>encode</span>(<span class='ident'>image</span>, <span class='ident'>w</span>, <span class='ident'>h</span>));
             ::<span class='ident'>save_file</span>(<span class='ident'>filepath</span>, <span class='ident'>buf</span>.<span class='ident'>as_slice</span>())
         }
@@ -1866,19 +1867,19 @@
 }
 
 <span class='doccomment'>/// Low-level representation of an image</span>
-<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Bitmap</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Bitmap</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span> {
     <span class='doccomment'>/// Raw bitmap memory. Layout depends on color mode and bitdepth used to create it.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// * For RGB/RGBA images one element is one pixel.</span>
     <span class='doccomment'>/// * For &lt;8bpp images pixels are packed, so raw bytes are exposed and you need to do bit-twiddling youself</span>
-    <span class='kw'>pub</span> <span class='ident'>buffer</span>: <span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>,
+    <span class='kw'>pub</span> <span class='ident'>buffer</span>: <span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span>,
     <span class='doccomment'>/// Width in pixels</span>
     <span class='kw'>pub</span> <span class='ident'>width</span>: <span class='ident'>usize</span>,
     <span class='doccomment'>/// Height in pixels</span>
     <span class='kw'>pub</span> <span class='ident'>height</span>: <span class='ident'>usize</span>,
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> <span class='ident'>fmt</span>::<span class='ident'>Show</span> <span class='kw'>for</span> <span class='ident'>Bitmap</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span> <span class='ident'>fmt</span>::<span class='ident'>Show</span> <span class='kw'>for</span> <span class='ident'>Bitmap</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span> {
     <span class='kw'>fn</span> <span class='ident'>fmt</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>f</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>fmt</span>::<span class='ident'>Formatter</span>) <span class='op'>-&gt;</span> <span class='ident'>fmt</span>::<span class='prelude-ty'>Result</span> {
         <span class='macro'>write</span><span class='macro'>!</span>(<span class='ident'>f</span>, <span class='string'>&quot;{{{} × {} Bitmap}}&quot;</span>, <span class='self'>self</span>.<span class='ident'>width</span>, <span class='self'>self</span>.<span class='ident'>height</span>)
     }
@@ -1992,13 +1993,14 @@
     }
 }
 
-<span class='kw'>fn</span> <span class='ident'>with_buffer_for_type</span><span class='op'>&lt;</span><span class='ident'>F</span><span class='op'>&gt;</span>(<span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>, <span class='ident'>colortype</span>: <span class='ident'>ColorType</span>, <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>, <span class='kw-2'>mut</span> <span class='ident'>f</span>: <span class='ident'>F</span>) <span class='op'>-&gt;</span> <span class='ident'>Error</span>
+<span class='kw'>fn</span> <span class='ident'>with_buffer_for_type</span><span class='op'>&lt;</span><span class='ident'>PixelType</span>, <span class='ident'>F</span><span class='op'>&gt;</span>(<span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>PixelType</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>, <span class='ident'>colortype</span>: <span class='ident'>ColorType</span>, <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>, <span class='kw-2'>mut</span> <span class='ident'>f</span>: <span class='ident'>F</span>) <span class='op'>-&gt;</span> <span class='ident'>Error</span>
     <span class='kw'>where</span> <span class='ident'>F</span>: <span class='ident'>FnMut</span>(<span class='op'>*</span><span class='kw'>const</span> <span class='ident'>u8</span>) <span class='op'>-&gt;</span> <span class='ident'>Error</span>
 {
-    <span class='kw'>if</span> <span class='ident'>image</span>.<span class='ident'>len</span>() <span class='op'>!=</span> <span class='ident'>required_size</span>(<span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>colortype</span>, <span class='ident'>bitdepth</span>) {
+    <span class='kw'>if</span> <span class='ident'>image</span>.<span class='ident'>len</span>() <span class='op'>*</span> <span class='ident'>mem</span>::<span class='ident'>size_of</span>::<span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span>() <span class='op'>!=</span> <span class='ident'>required_size</span>(<span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>colortype</span>, <span class='ident'>bitdepth</span>) {
         <span class='kw'>return</span> <span class='ident'>Error</span>(<span class='number'>84</span>);
     }
-    <span class='ident'>f</span>(<span class='ident'>image</span>.<span class='ident'>as_ptr</span>())
+
+    <span class='ident'>f</span>(<span class='kw'>unsafe</span> {<span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>image</span>.<span class='ident'>as_ptr</span>())})
 }
 
 <span class='doccomment'>/// Converts raw pixel data into a PNG image in memory. The colortype and bitdepth</span>
@@ -2012,7 +2014,7 @@
 <span class='doccomment'>/// * `h`: height of the raw pixel data in pixels.</span>
 <span class='doccomment'>/// * `colortype`: the color type of the raw input image. See `ColorType`.</span>
 <span class='doccomment'>/// * `bitdepth`: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.</span>
-<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode_memory</span>(<span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>, <span class='ident'>colortype</span>: <span class='ident'>ColorType</span>, <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode_memory</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span>(<span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>PixelType</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>, <span class='ident'>colortype</span>: <span class='ident'>ColorType</span>, <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='kw'>unsafe</span> {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>out</span> <span class='op'>=</span> <span class='ident'>mem</span>::<span class='ident'>zeroed</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>outsize</span> <span class='op'>=</span> <span class='number'>0</span>;
@@ -2025,12 +2027,12 @@
 }
 
 <span class='doccomment'>/// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image</span>
-<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode32</span>(<span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span>  {
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode32</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span>(<span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>PixelType</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span>  {
     <span class='ident'>encode_memory</span>(<span class='ident'>image</span>, <span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>LCT_RGBA</span>, <span class='number'>8</span>)
 }
 
 <span class='doccomment'>/// Same as `encode_memory`, but always encodes from 24-bit RGB raw image</span>
-<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode24</span>(<span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode24</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span>(<span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>PixelType</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='ident'>encode_memory</span>(<span class='ident'>image</span>, <span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>LCT_RGB</span>, <span class='number'>8</span>)
 }
 
@@ -2038,23 +2040,23 @@
 <span class='doccomment'>/// Same as the other encode functions, but instead takes a file path as output.</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// NOTE: This overwrites existing files without warning!</span>
-<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode_file</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>, <span class='ident'>colortype</span>: <span class='ident'>ColorType</span>, <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>Error</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode_file</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>PixelType</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>, <span class='ident'>colortype</span>: <span class='ident'>ColorType</span>, <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='kw'>let</span> <span class='ident'>encoded</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>encode_memory</span>(<span class='ident'>image</span>, <span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>colortype</span>, <span class='ident'>bitdepth</span>));
     <span class='ident'>save_file</span>(<span class='ident'>filepath</span>, <span class='ident'>encoded</span>.<span class='ident'>as_slice</span>())
 }
 
 <span class='doccomment'>/// Same as `encode_file`, but always encodes from 32-bit RGBA raw image</span>
-<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode32_file</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>Error</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode32_file</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>PixelType</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='ident'>encode_file</span>(<span class='ident'>filepath</span>, <span class='ident'>image</span>, <span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>LCT_RGBA</span>, <span class='number'>8</span>)
 }
 
 <span class='doccomment'>/// Same as `encode_file`, but always encodes from 24-bit RGB raw image</span>
-<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode24_file</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>Error</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>encode24_file</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>image</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>PixelType</span>], <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='ident'>encode_file</span>(<span class='ident'>filepath</span>, <span class='ident'>image</span>, <span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>LCT_RGB</span>, <span class='number'>8</span>)
 }
 
 <span class='doccomment'>/// Converts from any color type to 24-bit or 32-bit (only)</span>
-<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>convert</span>(<span class='ident'>input</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>u8</span>], <span class='ident'>mode_out</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>ColorMode</span>, <span class='ident'>mode_in</span>: <span class='kw-2'>&amp;</span><span class='ident'>ColorMode</span>, <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>, <span class='ident'>fix_png</span>: <span class='ident'>bool</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Image</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
+<span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>convert</span><span class='op'>&lt;</span><span class='ident'>PixelType</span><span class='op'>&gt;</span>(<span class='ident'>input</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>PixelType</span>], <span class='ident'>mode_out</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>ColorMode</span>, <span class='ident'>mode_in</span>: <span class='kw-2'>&amp;</span><span class='ident'>ColorMode</span>, <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>, <span class='ident'>fix_png</span>: <span class='ident'>bool</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Image</span>, <span class='ident'>Error</span><span class='op'>&gt;</span> {
     <span class='kw'>unsafe</span> {
         <span class='kw'>let</span> <span class='ident'>out</span> <span class='op'>=</span> <span class='ident'>mem</span>::<span class='ident'>zeroed</span>();
         <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>with_buffer_for_type</span>(<span class='ident'>input</span>, <span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>mode_in</span>.<span class='ident'>colortype</span>, <span class='ident'>mode_in</span>.<span class='ident'>bitdepth</span>, <span class='op'>|</span><span class='ident'>ptr</span><span class='op'>|</span> {
