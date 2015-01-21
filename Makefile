@@ -12,10 +12,10 @@ $(OBJ): $(SRC)
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(SRC): $(HEADER)
-	curl -L http://lpi.googlecode.com/svn/trunk/lodepng.cpp -o $@
+	curl -L https://raw.githubusercontent.com/lvandeve/lodepng/master/lodepng.cpp -o $@
 
 $(HEADER):
-	curl -L http://lpi.googlecode.com/svn/trunk/lodepng.h -o $@
+	curl -L https://raw.githubusercontent.com/lvandeve/lodepng/master/lodepng.h -o $@
 
 doc: src/lib.rs
 	rustdoc --html-before-content doc/_header.html $^
