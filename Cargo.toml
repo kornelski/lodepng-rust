@@ -6,10 +6,10 @@ documentation = "http://pornel.github.io/lodepng-rust/lodepng/"
 homepage = "https://github.com/pornel/lodepng-rust#readme"
 repository = "https://github.com/pornel/lodepng-rust.git"
 readme = "README.md"
-keywords = ["PNG","lodepng","encoder","decoder","gzip","deflate"]
+keywords = ["PNG","lodepng","encoder","decoder"]
 license = "BSD-2-Clause"
-version = "0.2.1"
-authors = [ "pornel@pornel.net" ]
+version = "0.2.2"
+authors = [ "Kornel <pornel@pornel.net>" ]
 build = "sh build.sh"
 
 [[example]]
