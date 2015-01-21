@@ -864,7 +864,7 @@ pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB>, Error> {
 ///     }
 pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error>  {
     match File::open_mode(filepath, Open, Read).read_to_end() {
-        Ok(file) => decode_memory(file.as_slice(), colortype, bitdepth),
+        Ok(file) => decode_memory(&file[], colortype, bitdepth),
         Err(_) => Err(Error(78)),
     }
 }

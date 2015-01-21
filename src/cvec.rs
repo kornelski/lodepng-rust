@@ -33,15 +33,7 @@ impl<T> CVec<T> {
             slice::from_raw_mut_buf(&mut self.ptr, self.elements)
         }
     }
-
-    /// Exposes memory as slice without copying
-    pub fn as_slice<'a>(&'a self) -> &'a [T] {
-        unsafe {
-            slice::from_raw_buf(transmute(&self.ptr), self.elements)
-        }
-    }
-
-    /// Exposes memory as slice without copying
+    /// Exposes memory as raw bytes slice without copying
     pub fn as_u8_slice<'a>(&'a self) -> &'a [u8] {
         unsafe {
             slice::from_raw_buf(transmute(&self.ptr), self.elements * ::std::mem::size_of::<T>())
@@ -49,6 +41,14 @@ impl<T> CVec<T> {
     }
 }
 
+impl<T> AsSlice<T> for CVec<T> {
+    /// Exposes pixel's memory as slice without copying
+    fn as_slice(&self) -> &[T] {
+        unsafe {
+            slice::from_raw_buf(transmute(&self.ptr), self.elements)
+        }
+    }
+}
 
 #[unsafe_destructor]
 impl<T> Drop for CVec<T> {
