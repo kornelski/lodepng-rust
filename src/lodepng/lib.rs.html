@@ -1105,17 +1105,29 @@
 <span id="1061">1061</span>
 <span id="1062">1062</span>
 <span id="1063">1063</span>
+<span id="1064">1064</span>
+<span id="1065">1065</span>
+<span id="1066">1066</span>
+<span id="1067">1067</span>
+<span id="1068">1068</span>
+<span id="1069">1069</span>
+<span id="1070">1070</span>
+<span id="1071">1071</span>
+<span id="1072">1072</span>
 </pre><pre class='rust '>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>crate_name</span> <span class='op'>=</span> <span class='string'>&quot;lodepng&quot;</span>]</span>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>crate_type</span> <span class='op'>=</span> <span class='string'>&quot;lib&quot;</span>]</span>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>feature</span>(<span class='ident'>unsafe_destructor</span>)]</span>
+<span class='attribute'>#<span class='op'>!</span>[<span class='ident'>allow</span>(<span class='ident'>unstable</span>)]</span>
 
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>libc</span>;
-<span class='kw'>use</span> <span class='ident'>libc</span>::{<span class='ident'>c_char</span>, <span class='ident'>c_uchar</span>, <span class='ident'>c_uint</span>, <span class='ident'>size_t</span>};
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>c_vec</span>;
+
+<span class='kw'>use</span> <span class='ident'>libc</span>::{<span class='ident'>c_char</span>, <span class='ident'>c_uchar</span>, <span class='ident'>c_uint</span>, <span class='ident'>size_t</span>, <span class='ident'>c_void</span>, <span class='ident'>free</span>};
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>fmt</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>mem</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>io</span>::{<span class='ident'>File</span>, <span class='ident'>Open</span>, <span class='ident'>Read</span>};
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>cvec</span>::<span class='ident'>CVec</span>;
+<span class='kw'>use</span> <span class='ident'>c_vec</span>::<span class='ident'>CVec</span>;
 
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>ffi</span>::<span class='ident'>ColorType</span>;
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>ffi</span>::<span class='ident'>ColorType</span>::{<span class='ident'>LCT_GREY</span>, <span class='ident'>LCT_RGB</span>, <span class='ident'>LCT_PALETTE</span>, <span class='ident'>LCT_GREY_ALPHA</span>, <span class='ident'>LCT_RGBA</span>};
@@ -1132,13 +1144,11 @@
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>ffi</span>::<span class='ident'>State</span>;
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>ffi</span>::<span class='ident'>Error</span>;
 
-<span class='kw'>mod</span> <span class='ident'>cvec</span>;
-
 <span class='attribute'>#[<span class='ident'>allow</span>(<span class='ident'>non_camel_case_types</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>ffi</span> {
     <span class='kw'>use</span> <span class='ident'>libc</span>::{<span class='ident'>c_char</span>, <span class='ident'>c_uchar</span>, <span class='ident'>c_uint</span>, <span class='ident'>c_void</span>, <span class='ident'>size_t</span>};
-    <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>cvec</span>::<span class='ident'>CVec</span>;
     <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>mem</span>;
+    <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>c_vec</span>::<span class='ident'>CVec</span>;
 
     <span class='attribute'>#[<span class='ident'>repr</span>(<span class='ident'>C</span>)]</span>
     <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Copy</span>)]</span>
@@ -1889,20 +1899,28 @@
     <span class='ident'>colortype</span>.<span class='ident'>to_color_mode</span>(<span class='ident'>bitdepth</span>).<span class='ident'>raw_size</span>(<span class='ident'>w</span> <span class='kw'>as</span> <span class='ident'>c_uint</span>, <span class='ident'>h</span> <span class='kw'>as</span> <span class='ident'>c_uint</span>)
 }
 
+<span class='kw'>fn</span> <span class='ident'>cvec_with_free</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>(<span class='ident'>ptr</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>T</span>, <span class='ident'>elts</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='ident'>CVec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>
+    <span class='kw'>where</span> <span class='ident'>T</span>: <span class='ident'>Send</span> {
+    <span class='kw'>unsafe</span> {
+        <span class='kw'>let</span> <span class='ident'>uniq_ptr</span> <span class='op'>=</span> ::<span class='ident'>std</span>::<span class='ident'>ptr</span>::<span class='ident'>Unique</span>(<span class='ident'>ptr</span>);
+        <span class='ident'>CVec</span>::<span class='ident'>new_with_dtor</span>(<span class='ident'>ptr</span>, <span class='ident'>elts</span>, <span class='kw'>move</span> <span class='op'>||</span> <span class='ident'>free</span>(<span class='ident'>uniq_ptr</span>.<span class='number'>0</span> <span class='kw'>as</span> <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_void</span>))
+    }
+}
+
 <span class='kw'>unsafe</span> <span class='kw'>fn</span> <span class='ident'>new_bitmap</span>(<span class='ident'>out</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>u8</span>, <span class='ident'>w</span>: <span class='ident'>usize</span>, <span class='ident'>h</span>: <span class='ident'>usize</span>, <span class='ident'>colortype</span>: <span class='ident'>ColorType</span>, <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>) <span class='op'>-&gt;</span> <span class='ident'>Image</span>  {
     <span class='kw'>match</span> (<span class='ident'>colortype</span>, <span class='ident'>bitdepth</span>) {
         (<span class='ident'>LCT_RGBA</span>, <span class='number'>8</span>) <span class='op'>=&gt;</span> <span class='ident'>Image</span>::<span class='ident'>RGBA</span>(<span class='ident'>Bitmap</span> {
-            <span class='ident'>buffer</span>: <span class='ident'>CVec</span>::<span class='ident'>new</span>(<span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>out</span>), <span class='ident'>w</span> <span class='op'>*</span> <span class='ident'>h</span>),
+            <span class='ident'>buffer</span>: <span class='ident'>cvec_with_free</span>(<span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>out</span>), <span class='ident'>w</span> <span class='op'>*</span> <span class='ident'>h</span>),
             <span class='ident'>width</span>: <span class='ident'>w</span>,
             <span class='ident'>height</span>: <span class='ident'>h</span>,
         }),
         (<span class='ident'>LCT_RGB</span>, <span class='number'>8</span>) <span class='op'>=&gt;</span> <span class='ident'>Image</span>::<span class='ident'>RGB</span>(<span class='ident'>Bitmap</span> {
-            <span class='ident'>buffer</span>: <span class='ident'>CVec</span>::<span class='ident'>new</span>(<span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>out</span>), <span class='ident'>w</span> <span class='op'>*</span> <span class='ident'>h</span>),
+            <span class='ident'>buffer</span>: <span class='ident'>cvec_with_free</span>(<span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>out</span>), <span class='ident'>w</span> <span class='op'>*</span> <span class='ident'>h</span>),
             <span class='ident'>width</span>: <span class='ident'>w</span>,
             <span class='ident'>height</span>: <span class='ident'>h</span>,
         }),
         (<span class='ident'>c</span>,<span class='ident'>b</span>) <span class='op'>=&gt;</span> <span class='ident'>Image</span>::<span class='ident'>RawData</span>(<span class='ident'>Bitmap</span> {
-            <span class='ident'>buffer</span>: <span class='ident'>CVec</span>::<span class='ident'>new</span>(<span class='ident'>out</span>, <span class='ident'>required_size</span>(<span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>c</span>, <span class='ident'>b</span>)),
+            <span class='ident'>buffer</span>: <span class='ident'>cvec_with_free</span>(<span class='ident'>out</span>, <span class='ident'>required_size</span>(<span class='ident'>w</span>, <span class='ident'>h</span>, <span class='ident'>c</span>, <span class='ident'>b</span>)),
             <span class='ident'>width</span>: <span class='ident'>w</span>,
             <span class='ident'>height</span>: <span class='ident'>h</span>,
         }),
@@ -1972,7 +1990,7 @@
 <span class='doccomment'>///     }</span>
 <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>decode_file</span>(<span class='ident'>filepath</span>: <span class='kw-2'>&amp;</span><span class='ident'>Path</span>, <span class='ident'>colortype</span>: <span class='ident'>ColorType</span>, <span class='ident'>bitdepth</span>: <span class='ident'>c_uint</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>Image</span>, <span class='ident'>Error</span><span class='op'>&gt;</span>  {
     <span class='kw'>match</span> <span class='ident'>File</span>::<span class='ident'>open_mode</span>(<span class='ident'>filepath</span>, <span class='ident'>Open</span>, <span class='ident'>Read</span>).<span class='ident'>read_to_end</span>() {
-        <span class='prelude-val'>Ok</span>(<span class='ident'>file</span>) <span class='op'>=&gt;</span> <span class='ident'>decode_memory</span>(<span class='ident'>file</span>.<span class='ident'>as_slice</span>(), <span class='ident'>colortype</span>, <span class='ident'>bitdepth</span>),
+        <span class='prelude-val'>Ok</span>(<span class='ident'>file</span>) <span class='op'>=&gt;</span> <span class='ident'>decode_memory</span>(<span class='kw-2'>&amp;</span><span class='ident'>file</span>[], <span class='ident'>colortype</span>, <span class='ident'>bitdepth</span>),
         <span class='prelude-val'>Err</span>(_) <span class='op'>=&gt;</span> <span class='prelude-val'>Err</span>(<span class='ident'>Error</span>(<span class='number'>78</span>)),
     }
 }
