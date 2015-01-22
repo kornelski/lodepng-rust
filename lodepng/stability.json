@@ -1,1 +1,1 @@
-{"name":"lodepng","counts":{"deprecated":1,"experimental":11,"unstable":6,"stable":14,"frozen":0,"locked":0,"unmarked":147},"submodules":[{"name":"ffi","counts":{"deprecated":1,"experimental":0,"unstable":3,"stable":12,"frozen":0,"locked":0,"unmarked":122},"submodules":[]}]}
+{"name":"lodepng","counts":{"deprecated":1,"experimental":11,"unstable":11,"stable":28,"frozen":0,"locked":0,"unmarked":136},"submodules":[{"name":"ffi","counts":{"deprecated":1,"experimental":0,"unstable":5,"stable":26,"frozen":0,"locked":0,"unmarked":106},"submodules":[]}]}
