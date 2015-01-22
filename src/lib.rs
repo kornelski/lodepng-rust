@@ -39,6 +39,7 @@ pub mod ffi {
 
     impl Error {
         /// Returns an English description of the numerical error code.
+        #[stable]
         pub fn as_str(&self) -> &'static str {
             unsafe {
                 let bytes = ::std::ffi::c_str_to_bytes(lodepng_error_text(self.0));
@@ -50,6 +51,7 @@ pub mod ffi {
     /// Type for `decode`, `encode`, etc. Same as standard PNG color types.
     #[repr(C)]
     #[derive(Copy)]
+    #[stable]
     pub enum ColorType {
         /// greyscale: 1, 2, 4, 8, 16 bit
         LCT_GREY = 0,
@@ -83,7 +85,7 @@ pub mod ffi {
         /// fills the palette colors in the pixels of the raw RGBA output.
         ///
         /// The palette is only supported for color type 3.
-        pub palette: *const ::RGBA,
+        pub palette: *const ::RGBA<u8>,
         /// palette size in number of colors (amount of bytes is 4 * `palettesize`)
         pub palettesize: size_t,
 
@@ -176,6 +178,7 @@ pub mod ffi {
     /// The information of a Time chunk in PNG
     #[repr(C)]
     #[derive(Copy)]
+    #[stable]
     pub struct Time {
         pub year: c_uint,
         pub month: c_uint,
@@ -297,6 +300,7 @@ pub mod ffi {
     /// automatically use color type with less bits per pixel if losslessly possible. Default: AUTO
     #[repr(C)]
     #[derive(Copy)]
+    #[stable]
     pub enum FilterStrategy {
         /// every filter at zero
         LFS_ZERO = 0,
@@ -466,6 +470,7 @@ pub mod ffi {
     }
 
     impl ColorMode {
+        #[stable]
         pub fn new() -> ColorMode {
             unsafe {
                 let mut mode = mem::zeroed();
@@ -481,28 +486,32 @@ pub mod ffi {
         }
 
         /// add 1 color to the palette
-        pub fn palette_add(&mut self, r: c_uchar, g: c_uchar, b: c_uchar, a: c_uchar) -> Option<Error> {
+        #[stable]
+        pub fn palette_add(&mut self, r: u8, g: u8, b: u8, a: u8) -> Option<Error> {
             unsafe {
                 lodepng_palette_add(self, r, g, b, a).to_result().err()
             }
         }
 
         /// get the total amount of bits per pixel, based on colortype and bitdepth in the struct
-        pub fn bpp(&self) -> c_uint {
+        #[stable]
+        pub fn bpp(&self) -> usize {
             unsafe {
-                lodepng_get_bpp(self)
+                lodepng_get_bpp(self) as usize
             }
         }
 
         /// get the amount of color channels used, based on colortype in the struct.
         /// If a palette is used, it counts as 1 channel.
-        pub fn channels(&self) -> c_uint {
+        #[stable]
+        pub fn channels(&self) -> usize {
             unsafe {
-                lodepng_get_channels(self)
+                lodepng_get_channels(self) as usize
             }
         }
 
         /// is it a greyscale type? (only colortype 0 or 4)
+        #[stable]
         pub fn is_greyscale_type(&self) -> bool {
             unsafe {
                 lodepng_is_greyscale_type(self) != 0
@@ -510,6 +519,7 @@ pub mod ffi {
         }
 
         /// has it got an alpha channel? (only colortype 2 or 6)
+        #[stable]
         pub fn is_alpha_type(&self) -> bool {
             unsafe {
                 lodepng_is_alpha_type(self) != 0
@@ -517,6 +527,7 @@ pub mod ffi {
         }
 
         /// has it got a palette? (only colortype 3)
+        #[stable]
         pub fn is_palette_type(&self) -> bool {
             unsafe {
                 lodepng_is_palette_type(self) != 0
@@ -525,6 +536,7 @@ pub mod ffi {
 
         /// only returns true if there is a palette and there is a value in the palette with alpha < 255.
         /// Loops through the palette to check this.
+        #[stable]
         pub fn has_palette_alpha(&self) -> bool {
             unsafe {
                 lodepng_has_palette_alpha(self) != 0
@@ -536,6 +548,7 @@ pub mod ffi {
         /// Returns false if the image can only have opaque pixels.
         /// In detail, it returns true only if it's a color type with alpha, or has a palette with non-opaque values,
         /// or if "key_defined" is true.
+        #[stable]
         pub fn can_have_alpha(&self) -> bool {
             unsafe {
                 lodepng_can_have_alpha(self) != 0
@@ -559,6 +572,7 @@ pub mod ffi {
     }
 
     impl Clone for ColorMode {
+        #[stable]
         fn clone(&self) -> ColorMode {
             unsafe {
                 let mut dest = mem::zeroed();
@@ -585,6 +599,7 @@ pub mod ffi {
         }
 
         /// push back both texts at once
+        #[unstable]
         pub fn add_text(&mut self, key: *const c_char, str: *const c_char) -> Error {
             unsafe {
                 lodepng_add_text(self, key, str)
@@ -599,6 +614,7 @@ pub mod ffi {
         }
 
         /// push back the 4 texts of 1 chunk at once
+        #[unstable]
         pub fn add_itext(&mut self, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error {
             unsafe {
                 lodepng_add_itext(self, key, langtag, transkey, str)
@@ -615,6 +631,7 @@ pub mod ffi {
     }
 
     impl Clone for Info {
+        #[stable]
         fn clone(&self) -> Info {
             unsafe {
                 let mut dest = mem::zeroed();
@@ -625,6 +642,7 @@ pub mod ffi {
     }
 
     impl State {
+        #[stable]
         pub fn new() -> State {
             unsafe {
                 let mut state = mem::zeroed();
@@ -700,34 +718,46 @@ pub mod ffi {
     }
 }
 
-// RGBA 8bpp
+/// `RGBA<T>` with `T` appropriate for bit depth (`u8`, `u16`)
 #[repr(C)]
 #[derive(Copy)]
-pub struct RGBA {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
+pub struct RGBA<ComponentType> {
+    pub r: ComponentType,
+    pub g: ComponentType,
+    pub b: ComponentType,
     /// 0 = transparent, 255 = opaque
-    pub a: u8,
+    pub a: ComponentType,
 }
 
-/// RGB 8bpp
+/// `RGB<T>` with `T` appropriate for bit depth (`u8`, `u16`)
 #[repr(C)]
 #[derive(Copy)]
-pub struct RGB {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
+pub struct RGB<ComponentType> {
+    pub r: ComponentType,
+    pub g: ComponentType,
+    pub b: ComponentType,
 }
+
+/// Opaque greyscale pixel (acces with `px.0`)
+pub struct Grey<ComponentType>(ComponentType);
+
+/// Greyscale pixel with alpha (`px.1` is alpha)
+pub struct GreyAlpha<ComponentType>(ComponentType, ComponentType);
 
 /// Images with <8bpp are represented as a bunch of bytes
 ///
-/// To safely convert RGB/RGBA see Vec::map_in_place,
-/// or use transmute()
+/// To safely convert RGB/RGBA see `Vec::map_in_place`,
+/// or use `transmute()`
 pub enum Image {
     RawData(Bitmap<u8>),
-    RGBA(Bitmap<RGBA>),
-    RGB(Bitmap<RGB>),
+    Grey(Bitmap<Grey<u8>>),
+    Grey16(Bitmap<Grey<u16>>),
+    GreyAlpha(Bitmap<GreyAlpha<u8>>),
+    GreyAlpha16(Bitmap<GreyAlpha<u16>>),
+    RGBA(Bitmap<RGBA<u8>>),
+    RGB(Bitmap<RGB<u8>>),
+    RGBA16(Bitmap<RGBA<u16>>),
+    RGB16(Bitmap<RGB<u16>>),
 }
 
 impl fmt::String for Error {
@@ -736,13 +766,13 @@ impl fmt::String for Error {
     }
 }
 
-impl fmt::String for RGBA {
+impl<T: fmt::String> fmt::String for RGBA<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,"rgba({},{},{},{})", self.r,self.g,self.b,self.a)
     }
 }
 
-impl fmt::String for RGB {
+impl<T: fmt::String> fmt::String for RGB<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,"rgb({},{},{})", self.r,self.g,self.b)
     }
@@ -755,6 +785,7 @@ impl fmt::Show for Error {
 }
 
 #[allow(missing_copy_implementations)]
+#[unstable]
 pub struct Chunk {
     data: *mut c_uchar,
 }
@@ -772,6 +803,17 @@ pub struct Bitmap<PixelType> {
     pub height: usize,
 }
 
+impl<T: Send> Bitmap<T> {
+    unsafe fn from_buffer(out: *mut u8, w: usize, h: usize) -> Bitmap<T>
+        where T: Send {
+        Bitmap::<T> {
+            buffer: cvec_with_free(mem::transmute(out), w * h),
+            width: w,
+            height: h,
+        }
+    }
+}
+
 impl<PixelType> fmt::Show for Bitmap<PixelType> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{{} × {} Bitmap}}", self.width, self.height)
@@ -782,26 +824,22 @@ fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> 
     colortype.to_color_mode(bitdepth).raw_size(w as c_uint, h as c_uint)
 }
 
-fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<T>
+unsafe fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<T>
     where T: Send {
-    unsafe {
-        let uniq_ptr = ::std::ptr::Unique(ptr);
-        CVec::new_with_dtor(ptr, elts, move || free(uniq_ptr.0 as *mut c_void))
-    }
+    let uniq_ptr = ::std::ptr::Unique(ptr);
+    CVec::new_with_dtor(ptr, elts, move || free(uniq_ptr.0 as *mut c_void))
 }
 
 unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Image  {
     match (colortype, bitdepth) {
-        (LCT_RGBA, 8) => Image::RGBA(Bitmap {
-            buffer: cvec_with_free(mem::transmute(out), w * h),
-            width: w,
-            height: h,
-        }),
-        (LCT_RGB, 8) => Image::RGB(Bitmap {
-            buffer: cvec_with_free(mem::transmute(out), w * h),
-            width: w,
-            height: h,
-        }),
+        (LCT_RGBA, 8) =>Image::RGBA(Bitmap::from_buffer(out, w, h)),
+        (LCT_RGB, 8) => Image::RGB(Bitmap::from_buffer(out, w, h)),
+        (LCT_RGBA, 16) => Image::RGBA16(Bitmap::from_buffer(out, w, h)),
+        (LCT_RGB, 16) => Image::RGB16(Bitmap::from_buffer(out, w, h)),
+        (LCT_GREY, 8) => Image::Grey(Bitmap::from_buffer(out, w, h)),
+        (LCT_GREY, 16) => Image::Grey16(Bitmap::from_buffer(out, w, h)),
+        (LCT_GREY_ALPHA, 8) => Image::GreyAlpha(Bitmap::from_buffer(out, w, h)),
+        (LCT_GREY_ALPHA, 16) => Image::GreyAlpha16(Bitmap::from_buffer(out, w, h)),
         (c,b) => Image::RawData(Bitmap {
             buffer: cvec_with_free(out, required_size(w, h, c, b)),
             width: w,
@@ -844,7 +882,7 @@ pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Re
 }
 
 /// Same as `decode_memory`, but always decodes to 32-bit RGBA raw image
-pub fn decode32(input: &[u8]) -> Result<Bitmap<RGBA>, Error> {
+pub fn decode32(input: &[u8]) -> Result<Bitmap<RGBA<u8>>, Error> {
     match try!(decode_memory(input, LCT_RGBA, 8)) {
         Image::RGBA(img) => Ok(img),
         _ => Err(Error(56)), // given output image colortype or bitdepth not supported for color conversion
@@ -852,7 +890,7 @@ pub fn decode32(input: &[u8]) -> Result<Bitmap<RGBA>, Error> {
 }
 
 /// Same as `decode_memory`, but always decodes to 24-bit RGB raw image
-pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB>, Error> {
+pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB<u8>>, Error> {
     match try!(decode_memory(input, LCT_RGB, 8)) {
         Image::RGB(img) => Ok(img),
         _ => Err(Error(56)),
@@ -879,7 +917,7 @@ pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> R
 }
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
-pub fn decode32_file(filepath: &Path) -> Result<Bitmap<RGBA>, Error> {
+pub fn decode32_file(filepath: &Path) -> Result<Bitmap<RGBA<u8>>, Error> {
     match try!(decode_file(filepath, LCT_RGBA, 8)) {
         Image::RGBA(img) => Ok(img),
         _ => Err(Error(56)),
@@ -887,7 +925,7 @@ pub fn decode32_file(filepath: &Path) -> Result<Bitmap<RGBA>, Error> {
 }
 
 /// Same as `decode_file`, but always decodes to 24-bit RGB raw image
-pub fn decode24_file(filepath: &Path) -> Result<Bitmap<RGB>, Error> {
+pub fn decode24_file(filepath: &Path) -> Result<Bitmap<RGB<u8>>, Error> {
     match try!(decode_file(filepath, LCT_RGB, 8)) {
         Image::RGB(img) => Ok(img),
         _ => Err(Error(56)),
@@ -1050,6 +1088,7 @@ impl Chunk {
 /// Compresses data with Zlib.
 /// Zlib adds a small header and trailer around the deflate data.
 /// The data is output in the format of the zlib specification.
+#[unstable]
 pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
@@ -1061,6 +1100,7 @@ pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u
 }
 
 /// Compress a buffer with deflate. See RFC 1951.
+#[unstable]
 pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
