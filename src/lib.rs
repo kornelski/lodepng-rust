@@ -1,13 +1,16 @@
 #![crate_name = "lodepng"]
 #![crate_type = "lib"]
 #![feature(unsafe_destructor)]
+#![allow(unstable)]
 
 extern crate libc;
-use libc::{c_char, c_uchar, c_uint, size_t};
+extern crate c_vec;
+
+use libc::{c_char, c_uchar, c_uint, size_t, c_void, free};
 use std::fmt;
 use std::mem;
 use std::io::{File, Open, Read};
-pub use cvec::CVec;
+use c_vec::CVec;
 
 pub use ffi::ColorType;
 pub use ffi::ColorType::{LCT_GREY, LCT_RGB, LCT_PALETTE, LCT_GREY_ALPHA, LCT_RGBA};
@@ -24,13 +27,11 @@ pub use ffi::EncoderSettings;
 pub use ffi::State;
 pub use ffi::Error;
 
-mod cvec;
-
 #[allow(non_camel_case_types)]
 pub mod ffi {
     use libc::{c_char, c_uchar, c_uint, c_void, size_t};
-    pub use cvec::CVec;
     use std::mem;
+    pub use c_vec::CVec;
 
     #[repr(C)]
     #[derive(Copy)]
@@ -781,20 +782,28 @@ fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> 
     colortype.to_color_mode(bitdepth).raw_size(w as c_uint, h as c_uint)
 }
 
+fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<T>
+    where T: Send {
+    unsafe {
+        let uniq_ptr = ::std::ptr::Unique(ptr);
+        CVec::new_with_dtor(ptr, elts, move || free(uniq_ptr.0 as *mut c_void))
+    }
+}
+
 unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Image  {
     match (colortype, bitdepth) {
         (LCT_RGBA, 8) => Image::RGBA(Bitmap {
-            buffer: CVec::new(mem::transmute(out), w * h),
+            buffer: cvec_with_free(mem::transmute(out), w * h),
             width: w,
             height: h,
         }),
         (LCT_RGB, 8) => Image::RGB(Bitmap {
-            buffer: CVec::new(mem::transmute(out), w * h),
+            buffer: cvec_with_free(mem::transmute(out), w * h),
             width: w,
             height: h,
         }),
         (c,b) => Image::RawData(Bitmap {
-            buffer: CVec::new(out, required_size(w, h, c, b)),
+            buffer: cvec_with_free(out, required_size(w, h, c, b)),
             width: w,
             height: h,
         }),

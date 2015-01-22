@@ -8,9 +8,12 @@ repository = "https://github.com/pornel/lodepng-rust.git"
 readme = "README.md"
 keywords = ["PNG","lodepng","encoder","decoder"]
 license = "BSD-2-Clause"
-version = "0.2.2"
+version = "0.3.0"
 authors = [ "Kornel <pornel@pornel.net>" ]
 build = "sh build.sh"
+
+[dependencies]
+c_vec = "1.0.1"
 
 [[example]]
 name = "read"
