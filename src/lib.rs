@@ -1,7 +1,9 @@
 #![crate_name = "lodepng"]
 #![crate_type = "lib"]
-#![feature(unsafe_destructor)]
-#![allow(unstable)]
+#![feature(io)]
+#![feature(libc)]
+#![feature(std_misc)]
+#![feature(core)]
 
 extern crate libc;
 extern crate c_vec;
@@ -9,7 +11,7 @@ extern crate c_vec;
 use libc::{c_char, c_uchar, c_uint, size_t, c_void, free};
 use std::fmt;
 use std::mem;
-use std::io::{File, Open, Read};
+use std::old_io::{File, Open, Read};
 use c_vec::CVec;
 
 pub use ffi::ColorType;
@@ -760,25 +762,19 @@ pub enum Image {
     RGB16(Bitmap<RGB<u16>>),
 }
 
-impl fmt::String for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{}", self.as_str())
-    }
-}
-
-impl<T: fmt::String> fmt::String for RGBA<T> {
+impl<T: fmt::Display> fmt::Display for RGBA<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,"rgba({},{},{},{})", self.r,self.g,self.b,self.a)
     }
 }
 
-impl<T: fmt::String> fmt::String for RGB<T> {
+impl<T: fmt::Display> fmt::Display for RGB<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,"rgb({},{},{})", self.r,self.g,self.b)
     }
 }
 
-impl fmt::Show for Error {
+impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,"{}", self.as_str())
     }
@@ -814,7 +810,7 @@ impl<T: Send> Bitmap<T> {
     }
 }
 
-impl<PixelType> fmt::Show for Bitmap<PixelType> {
+impl<PixelType> fmt::Debug for Bitmap<PixelType> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{{} × {} Bitmap}}", self.width, self.height)
     }
@@ -854,7 +850,7 @@ unsafe fn new_buffer(out: *mut u8, size: size_t) -> CVec<u8> {
 
 fn save_file(filepath: &Path, data: &[u8]) -> Result<(), Error> {
     if let Ok(mut file) = File::create(filepath) {
-        if file.write(data).is_ok() {
+        if file.write_all(data).is_ok() {
             return Ok(());
         }
     }
