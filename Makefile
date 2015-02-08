@@ -12,6 +12,8 @@ $(OBJ): $(SRC)
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(SRC): $(HEADER)
+
+$(SRC):
 	curl -L https://raw.githubusercontent.com/lvandeve/lodepng/master/lodepng.cpp -o $@
 
 $(HEADER):
