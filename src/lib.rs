@@ -792,7 +792,7 @@ pub struct Bitmap<PixelType> {
     ///
     /// * For RGB/RGBA images one element is one pixel.
     /// * For <8bpp images pixels are packed, so raw bytes are exposed and you need to do bit-twiddling youself
-    pub buffer: CVec<PixelType>,
+    pub buffer: CVec<'static, PixelType>,
     /// Width in pixels
     pub width: usize,
     /// Height in pixels
@@ -820,7 +820,7 @@ fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> 
     colortype.to_color_mode(bitdepth).raw_size(w as c_uint, h as c_uint)
 }
 
-unsafe fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<T>
+unsafe fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<'static, T>
     where T: Send {
     let uniq_ptr = ::std::ptr::Unique(ptr);
     CVec::new_with_dtor(ptr, elts, move || free(uniq_ptr.0 as *mut c_void))
@@ -844,7 +844,7 @@ unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bit
     }
 }
 
-unsafe fn new_buffer(out: *mut u8, size: size_t) -> CVec<u8> {
+unsafe fn new_buffer(out: *mut u8, size: size_t) -> CVec<'static, u8> {
     CVec::new(out, size as usize)
 }
 
@@ -1084,7 +1084,7 @@ impl Chunk {
 /// Zlib adds a small header and trailer around the deflate data.
 /// The data is output in the format of the zlib specification.
 #[unstable]
-pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
+pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<'static, u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut outsize = 0;
@@ -1096,7 +1096,7 @@ pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u
 
 /// Compress a buffer with deflate. See RFC 1951.
 #[unstable]
-pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
+pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<'static, u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut outsize = 0;
