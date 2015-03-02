@@ -1,10 +1,9 @@
-#![feature(io)]
+#![feature(process)]
+#![feature(env)]
 fn main() {
-    if !std::old_io::Command::new("make")
-        .stdout(::std::old_io::process::InheritFd(1))
-        .stderr(::std::old_io::process::InheritFd(2))
+    if !std::process::Command::new("make")
         .status().unwrap().success() {
         panic!("Script failed");
     }
-    println!("cargo:rustc-flags=-L {}", std::env::var_string("OUT_DIR").unwrap());
+    println!("cargo:rustc-flags=-L {}", std::env::var("OUT_DIR").unwrap());
 }

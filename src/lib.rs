@@ -907,7 +907,7 @@ pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB<u8>>, Error> {
 ///     }
 pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error>  {
     match File::open_mode(filepath, Open, Read).read_to_end() {
-        Ok(file) => decode_memory(&file[], colortype, bitdepth),
+        Ok(file) => decode_memory(&file[..], colortype, bitdepth),
         Err(_) => Err(Error(78)),
     }
 }
@@ -1015,7 +1015,6 @@ pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h
     }
 }
 
-#[experimental]
 impl Chunk {
     pub fn len(&self) -> usize {
         unsafe {
