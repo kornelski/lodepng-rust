@@ -1,5 +1,3 @@
-#![feature(process)]
-#![feature(env)]
 fn main() {
     if !std::process::Command::new("make")
         .status().unwrap().success() {

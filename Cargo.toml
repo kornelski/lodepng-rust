@@ -13,7 +13,7 @@ authors = [ "Kornel <pornel@pornel.net>" ]
 build = "build.rs"
 
 [dependencies]
-c_vec = "1.0.4"
+c_vec = "1.0.11"
 
 [[example]]
 name = "read"
