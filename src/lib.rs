@@ -782,6 +782,12 @@ impl fmt::Debug for Error {
     }
 }
 
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{}", self.as_str())
+    }
+}
+
 #[allow(missing_copy_implementations)]
 #[unstable]
 pub struct Chunk {
