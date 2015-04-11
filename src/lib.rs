@@ -19,7 +19,6 @@ pub use ffi::ColorType;
 pub use ffi::ColorType::{LCT_GREY, LCT_RGB, LCT_PALETTE, LCT_GREY_ALPHA, LCT_RGBA};
 pub use ffi::CompressSettings;
 pub use ffi::Time;
-pub use ffi::Info;
 pub use ffi::DecoderSettings;
 pub use ffi::FilterStrategy;
 pub use ffi::FilterStrategy::{LFS_ZERO, LFS_MINSUM, LFS_ENTROPY, LFS_BRUTE_FORCE, LFS_PREDEFINED};
@@ -152,6 +151,71 @@ impl Clone for ColorMode {
         }
     }
 }
+
+
+pub struct Info {
+    data: ffi::Info,
+}
+
+impl Info {
+    pub fn new() -> Info {
+        unsafe {
+            let mut info = Info{ data: mem::zeroed() };
+            ffi::lodepng_info_init(&mut info.data);
+            return info;
+        }
+    }
+
+    /// use this to clear the texts again after you filled them in
+    pub fn clear_text(&mut self) {
+        unsafe {
+            ffi::lodepng_clear_text(&mut self.data)
+        }
+    }
+
+    /// push back both texts at once
+    #[unstable]
+    pub fn add_text(&mut self, key: *const c_char, str: *const c_char) -> Error {
+        unsafe {
+            ffi::lodepng_add_text(&mut self.data, key, str)
+        }
+    }
+
+    /// use this to clear the itexts again after you filled them in
+    pub fn clear_itext(&mut self) {
+        unsafe {
+            ffi::lodepng_clear_itext(&mut self.data)
+        }
+    }
+
+    /// push back the 4 texts of 1 chunk at once
+    #[unstable]
+    pub fn add_itext(&mut self, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error {
+        unsafe {
+            ffi::lodepng_add_itext(&mut self.data, key, langtag, transkey, str)
+        }
+    }
+}
+
+impl Drop for Info {
+    fn drop(&mut self) {
+        unsafe {
+            ffi::lodepng_info_cleanup(&mut self.data)
+        }
+    }
+}
+
+impl Clone for Info {
+    #[stable]
+    fn clone(&self) -> Info {
+        unsafe {
+            let mut dest = Info{ data:mem::zeroed() };
+            ffi::lodepng_info_copy(&mut dest.data, &self.data).to_result().unwrap();
+            return dest;
+        }
+    }
+}
+
 #[allow(non_camel_case_types)]
 pub mod ffi {
     use libc::{c_char, c_uchar, c_uint, c_void, size_t};
@@ -591,65 +655,6 @@ pub mod ffi {
                 let mut settings = mem::zeroed();
                 lodepng_compress_settings_init(&mut settings);
                 return settings;
-            }
-        }
-    }
-
-    impl Info {
-        pub fn new() -> Info {
-            unsafe {
-                let mut info = mem::zeroed();
-                lodepng_info_init(&mut info);
-                return info;
-            }
-        }
-
-        /// use this to clear the texts again after you filled them in
-        pub fn clear_text(&mut self) {
-            unsafe {
-                lodepng_clear_text(self)
-            }
-        }
-
-        /// push back both texts at once
-        #[unstable]
-        pub fn add_text(&mut self, key: *const c_char, str: *const c_char) -> Error {
-            unsafe {
-                lodepng_add_text(self, key, str)
-            }
-        }
-
-        /// use this to clear the itexts again after you filled them in
-        pub fn clear_itext(&mut self) {
-            unsafe {
-                lodepng_clear_itext(self)
-            }
-        }
-
-        /// push back the 4 texts of 1 chunk at once
-        #[unstable]
-        pub fn add_itext(&mut self, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error {
-            unsafe {
-                lodepng_add_itext(self, key, langtag, transkey, str)
-            }
-        }
-    }
-
-    impl Drop for Info {
-        fn drop(&mut self) {
-            unsafe {
-                lodepng_info_cleanup(self)
-            }
-        }
-    }
-
-    impl Clone for Info {
-        #[stable]
-        fn clone(&self) -> Info {
-            unsafe {
-                let mut dest = mem::zeroed();
-                lodepng_info_copy(&mut dest, self).to_result().unwrap();
-                return dest;
             }
         }
     }
