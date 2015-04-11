@@ -25,7 +25,6 @@ pub use ffi::FilterStrategy::{LFS_ZERO, LFS_MINSUM, LFS_ENTROPY, LFS_BRUTE_FORCE
 pub use ffi::AutoConvert;
 pub use ffi::AutoConvert::{LAC_NO, LAC_ALPHA, LAC_AUTO, LAC_AUTO_NO_NIBBLES, LAC_AUTO_NO_PALETTE, LAC_AUTO_NO_NIBBLES_NO_PALETTE};
 pub use ffi::EncoderSettings;
-pub use ffi::State;
 pub use ffi::Error;
 
 pub struct ColorMode {
@@ -216,12 +215,104 @@ impl Clone for Info {
     }
 }
 
+pub struct State {
+    data: ffi::State,
+}
+
+impl State {
+    #[stable]
+    pub fn new() -> State {
+        unsafe {
+            let mut state = State { data:mem::zeroed() };
+            ffi::lodepng_state_init(&mut state.data);
+            return state;
+        }
+    }
+
+    pub fn info_raw(&mut self) -> &mut ffi::ColorMode {
+        return &mut self.data.info_raw;
+    }
+
+    pub fn info_png(&mut self) -> &mut ffi::Info {
+        return &mut self.data.info_png;
+    }
+
+    /// Load PNG from buffer using State's settings
+    ///
+    ///  ```no_run
+    ///  # use lodepng::*; let mut state = State::new();
+    ///  # let slice = [0u8]; fn do_stuff<T>(buf: T) {}
+    ///
+    ///  state.info_raw().colortype = LCT_RGBA;
+    ///  match state.decode(&slice) {
+    ///      Ok(Image::RGBA(with_alpha)) => do_stuff(with_alpha),
+    ///      _ => panic!("¯\\_(ツ)_/¯")
+    ///  }
+    ///  ```
+    pub fn decode(&mut self, input: &[u8]) -> Result<::Image, Error> {
+        unsafe {
+            let mut out = mem::zeroed();
+            let mut w = 0;
+            let mut h = 0;
+
+            try!(ffi::lodepng_decode(&mut out, &mut w, &mut h, &mut self.data, input.as_ptr(), input.len() as size_t).to_result());
+            Ok(::new_bitmap(out, w as usize, h as usize, self.data.info_raw.colortype, self.data.info_raw.bitdepth))
+        }
+    }
+
+    /// Returns (width, height)
+    pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
+        unsafe {
+            let mut w = 0;
+            let mut h = 0;
+            match ffi::lodepng_inspect(&mut w, &mut h, &mut self.data, input.as_ptr(), input.len() as size_t) {
+                Error(0) => Ok((w as usize, h as usize)),
+                err => Err(err)
+            }
+        }
+    }
+
+    pub fn encode<PixelType>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
+        unsafe {
+            let mut out = mem::zeroed();
+            let mut outsize = 0;
+
+            try!(::with_buffer_for_type(image, w, h, self.data.info_raw.colortype, self.data.info_raw.bitdepth, |ptr| {
+                ffi::lodepng_encode(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, &mut self.data)
+            }).to_result());
+            Ok(::cvec_with_free(out, outsize as usize))
+        }
+    }
+
+    pub fn encode_file<PixelType>(&mut self, filepath: &Path, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+        let buf = try!(self.encode(image, w, h));
+        ::save_file(filepath, buf.as_cslice().as_ref())
+    }
+}
+
+impl Drop for State {
+    fn drop(&mut self) {
+        unsafe {
+            ffi::lodepng_state_cleanup(&mut self.data)
+        }
+    }
+}
+
+impl Clone for State {
+    fn clone(&self) -> State {
+        unsafe {
+            let mut dest = State{ data:mem::zeroed() };
+            ffi::lodepng_state_copy(&mut dest.data, &self.data);
+            return dest;
+        }
+    }
+}
+
 #[allow(non_camel_case_types)]
 pub mod ffi {
     use libc::{c_char, c_uchar, c_uint, c_void, size_t};
     use std::mem;
     pub use c_vec::CVec;
-    use std::path::Path;
 
     #[repr(C)]
     #[derive(Copy, Clone)]
@@ -658,87 +749,6 @@ pub mod ffi {
             }
         }
     }
-
-    impl State {
-        #[stable]
-        pub fn new() -> State {
-            unsafe {
-                let mut state = mem::zeroed();
-                lodepng_state_init(&mut state);
-                return state;
-            }
-        }
-
-        /// Load PNG from buffer using State's settings
-        ///
-        ///  ```no_run
-        ///  # use lodepng::*; let mut state = State::new();
-        ///  # let slice = [0u8]; fn do_stuff<T>(buf: T) {}
-        ///
-        ///  state.info_raw.colortype = LCT_RGBA;
-        ///  match state.decode(&slice) {
-        ///      Ok(Image::RGBA(with_alpha)) => do_stuff(with_alpha),
-        ///      _ => panic!("¯\\_(ツ)_/¯")
-        ///  }
-        ///  ```
-        pub fn decode(&mut self, input: &[u8]) -> Result<::Image, Error> {
-            unsafe {
-                let mut out = mem::zeroed();
-                let mut w = 0;
-                let mut h = 0;
-
-                try!(lodepng_decode(&mut out, &mut w, &mut h, self, input.as_ptr(), input.len() as size_t).to_result());
-                Ok(::new_bitmap(out, w as usize, h as usize, self.info_raw.colortype, self.info_raw.bitdepth))
-            }
-        }
-
-        /// Returns (width, height)
-        pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
-            unsafe {
-                let mut w = 0;
-                let mut h = 0;
-                match lodepng_inspect(&mut w, &mut h, self, input.as_ptr(), input.len() as size_t) {
-                    Error(0) => Ok((w as usize, h as usize)),
-                    err => Err(err)
-                }
-            }
-        }
-
-        pub fn encode<PixelType>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
-            unsafe {
-                let mut out = mem::zeroed();
-                let mut outsize = 0;
-
-                try!(::with_buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth, |ptr| {
-                    lodepng_encode(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, self)
-                }).to_result());
-                Ok(::cvec_with_free(out, outsize as usize))
-            }
-        }
-
-        pub fn encode_file<PixelType>(&mut self, filepath: &Path, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
-            let buf = try!(self.encode(image, w, h));
-            ::save_file(filepath, buf.as_cslice().as_ref())
-        }
-    }
-
-    impl Drop for State {
-        fn drop(&mut self) {
-            unsafe {
-                lodepng_state_cleanup(self)
-            }
-        }
-    }
-
-    impl Clone for State {
-        fn clone(&self) -> State {
-            unsafe {
-                let mut dest = mem::zeroed();
-                lodepng_state_copy(&mut dest, self);
-                return dest;
-            }
-        }
-    }
 }
 
 /// `RGBA<T>` with `T` appropriate for bit depth (`u8`, `u16`)
@@ -1161,7 +1171,7 @@ mod test {
     #[test]
     fn create_and_dstroy2() {
         ColorMode::new().clone();
-        Info::new();
-        State::new();
+        Info::new().clone();
+        State::new().clone().info_raw();
     }
 }
