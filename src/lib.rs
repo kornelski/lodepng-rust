@@ -657,11 +657,16 @@ pub mod ffi {
 
         /// Load PNG from buffer using State's settings
         ///
-        ///     self.info_raw.colortype = LCT_RGBA;
-        ///     match try!(state.decode(slice)) {
-        ///         Image::RGBA(with_alpha) => do_stuff(with_alpha),
-        ///         _ => panic!("¯\\_(ツ)_/¯")
-        ///     }
+        ///  ```no_run
+        ///  # use lodepng::*; let mut state = State::new();
+        ///  # let slice = [0u8]; fn do_stuff<T>(buf: T) {}
+        ///
+        ///  state.info_raw.colortype = LCT_RGBA;
+        ///  match state.decode(&slice) {
+        ///      Ok(Image::RGBA(with_alpha)) => do_stuff(with_alpha),
+        ///      _ => panic!("¯\\_(ツ)_/¯")
+        ///  }
+        ///  ```
         pub fn decode(&mut self, input: &[u8]) -> Result<::Image, Error> {
             unsafe {
                 let mut out = mem::zeroed();
@@ -905,11 +910,16 @@ pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB<u8>>, Error> {
 ///
 /// There's also `ffi::State::decode()` if you'd like to set more settings.
 ///
-///     match try!(decode_file(filepath, LCT_RGBA, 8)) {
-///         Image::RGBA(with_alpha) => do_stuff(with_alpha),
-///         Image::RGB(without_alpha) => do_stuff(without_alpha),
-///         _ => panic!("¯\\_(ツ)_/¯")
-///     }
+///  ```no_run
+///  # use lodepng::*; let filepath = std::path::Path::new("");
+///  # fn do_stuff<T>(buf: T) {}
+///
+///  match decode_file(filepath, LCT_RGBA, 8) {
+///      Ok(Image::RGBA(with_alpha)) => do_stuff(with_alpha),
+///      Ok(Image::RGB(without_alpha)) => do_stuff(without_alpha),
+///      _ => panic!("¯\\_(ツ)_/¯")
+///  }
+///  ```
 pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error>  {
     if let Ok(mut file) = File::open(filepath) {
         let mut data = Vec::new();
