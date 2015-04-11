@@ -1,6 +1,7 @@
 #![crate_name = "lodepng"]
 #![crate_type = "lib"]
 #![feature(libc)]
+#![feature(unique)]
 
 extern crate libc;
 extern crate c_vec;
@@ -692,13 +693,13 @@ pub mod ffi {
                 try!(::with_buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth, |ptr| {
                     lodepng_encode(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, self)
                 }).to_result());
-                Ok(::new_buffer(out, outsize))
+                Ok(::cvec_with_free(out, outsize as usize))
             }
         }
 
         pub fn encode_file<PixelType>(&mut self, filepath: &Path, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
             let buf = try!(self.encode(image, w, h));
-            ::save_file(filepath, buf.as_slice())
+            ::save_file(filepath, buf.as_cslice().as_ref())
         }
     }
 
@@ -793,7 +794,7 @@ pub struct Bitmap<PixelType> {
     ///
     /// * For RGB/RGBA images one element is one pixel.
     /// * For <8bpp images pixels are packed, so raw bytes are exposed and you need to do bit-twiddling youself
-    pub buffer: CVec<'static, PixelType>,
+    pub buffer: CVec<PixelType>,
     /// Width in pixels
     pub width: usize,
     /// Height in pixels
@@ -821,10 +822,11 @@ fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> 
     colortype.to_color_mode(bitdepth).raw_size(w as c_uint, h as c_uint)
 }
 
-unsafe fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<'static, T>
+unsafe fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<T>
     where T: Send {
-    let uniq_ptr = ::std::ptr::Unique(ptr);
-    CVec::new_with_dtor(ptr, elts, move || free(uniq_ptr.0 as *mut c_void))
+    CVec::new_with_dtor(::std::ptr::Unique::new(ptr), elts, |base: *mut T| {
+        free(base as *mut c_void);
+    })
 }
 
 unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Image  {
@@ -843,10 +845,6 @@ unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bit
             height: h,
         }),
     }
-}
-
-unsafe fn new_buffer(out: *mut u8, size: size_t) -> CVec<'static, u8> {
-    CVec::new(out, size as usize)
 }
 
 fn save_file(filepath: &Path, data: &[u8]) -> Result<(), Error> {
@@ -961,7 +959,7 @@ pub fn encode_memory<PixelType>(image: &[PixelType], w: usize, h: usize, colorty
         try!(with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| {
             ffi::lodepng_encode_memory(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, colortype, bitdepth)
         }).to_result());
-        Ok(new_buffer(out, outsize))
+        Ok(cvec_with_free(out, outsize as usize))
     }
 }
 
@@ -981,7 +979,7 @@ pub fn encode24<PixelType>(image: &[PixelType], w: usize, h: usize) -> Result<CV
 /// NOTE: This overwrites existing files without warning!
 pub fn encode_file<PixelType>(filepath: &Path, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = try!(encode_memory(image, w, h, colortype, bitdepth));
-    save_file(filepath, encoded.as_slice())
+    save_file(filepath, encoded.as_cslice().as_ref())
 }
 
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
@@ -1088,24 +1086,24 @@ impl Chunk {
 /// Zlib adds a small header and trailer around the deflate data.
 /// The data is output in the format of the zlib specification.
 #[unstable]
-pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<'static, u8>, Error> {
+pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
         try!(ffi::lodepng_zlib_compress(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).to_result());
-        Ok(new_buffer(out, outsize))
+        Ok(cvec_with_free(out, outsize as usize))
     }
 }
 
 /// Compress a buffer with deflate. See RFC 1951.
 #[unstable]
-pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<'static, u8>, Error> {
+pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
         try!(ffi::lodepng_deflate(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).to_result());
-        Ok(new_buffer(out, outsize))
+        Ok(cvec_with_free(out, outsize as usize))
     }
 }
