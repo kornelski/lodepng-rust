@@ -1,9 +1,6 @@
 #![crate_name = "lodepng"]
 #![crate_type = "lib"]
-#![feature(io)]
 #![feature(libc)]
-#![feature(std_misc)]
-#![feature(core)]
 
 extern crate libc;
 extern crate c_vec;
@@ -11,8 +8,11 @@ extern crate c_vec;
 use libc::{c_char, c_uchar, c_uint, size_t, c_void, free};
 use std::fmt;
 use std::mem;
-use std::old_io::{File, Open, Read};
+use std::fs::File;
+use std::io::Write;
+use std::io::Read;
 use c_vec::CVec;
+use std::path::Path;
 
 pub use ffi::ColorType;
 pub use ffi::ColorType::{LCT_GREY, LCT_RGB, LCT_PALETTE, LCT_GREY_ALPHA, LCT_RGBA};
@@ -34,9 +34,10 @@ pub mod ffi {
     use libc::{c_char, c_uchar, c_uint, c_void, size_t};
     use std::mem;
     pub use c_vec::CVec;
+    use std::path::Path;
 
     #[repr(C)]
-    #[derive(Copy)]
+    #[derive(Copy, Clone)]
     pub struct Error(pub c_uint);
 
     impl Error {
@@ -44,15 +45,15 @@ pub mod ffi {
         #[stable]
         pub fn as_str(&self) -> &'static str {
             unsafe {
-                let bytes = ::std::ffi::c_str_to_bytes(lodepng_error_text(self.0));
-                ::std::str::from_utf8_unchecked(bytes)
+                let cstr = ::std::ffi::CStr::from_ptr(lodepng_error_text(self.0));
+                ::std::str::from_utf8(cstr.to_bytes()).unwrap()
             }
         }
     }
 
     /// Type for `decode`, `encode`, etc. Same as standard PNG color types.
     #[repr(C)]
-    #[derive(Copy)]
+    #[derive(Copy, Clone)]
     #[stable]
     pub enum ColorType {
         /// greyscale: 1, 2, 4, 8, 16 bit
@@ -179,7 +180,7 @@ pub mod ffi {
 
     /// The information of a Time chunk in PNG
     #[repr(C)]
-    #[derive(Copy)]
+    #[derive(Copy, Clone)]
     #[stable]
     pub struct Time {
         pub year: c_uint,
@@ -301,7 +302,7 @@ pub mod ffi {
 
     /// automatically use color type with less bits per pixel if losslessly possible. Default: AUTO
     #[repr(C)]
-    #[derive(Copy)]
+    #[derive(Copy, Clone)]
     #[stable]
     pub enum FilterStrategy {
         /// every filter at zero
@@ -320,7 +321,7 @@ pub mod ffi {
 
     /// automatically use color type with less bits per pixel if losslessly possible. Default: LAC_AUTO
     #[repr(C)]
-    #[derive(Copy)]
+    #[derive(Copy, Clone)]
     pub enum AutoConvert {
         /// use color type user requested
         LAC_NO = 0,
@@ -401,7 +402,7 @@ pub mod ffi {
     extern {
         pub fn lodepng_decode_memory(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, input: *const u8, insize: size_t, colortype: ColorType, bitdepth: c_uint) -> Error;
         pub fn lodepng_encode_memory(out: &mut *mut u8, outsize: &mut size_t, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
-        fn lodepng_error_text(code: c_uint) -> &*const i8;
+        fn lodepng_error_text(code: c_uint) -> *const i8;
         pub fn lodepng_compress_settings_init(settings: &mut CompressSettings);
         pub fn lodepng_color_mode_init(info: &mut ColorMode);
         pub fn lodepng_color_mode_cleanup(info: &mut ColorMode);
@@ -722,7 +723,7 @@ pub mod ffi {
 
 /// `RGBA<T>` with `T` appropriate for bit depth (`u8`, `u16`)
 #[repr(C)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub struct RGBA<ComponentType> {
     pub r: ComponentType,
     pub g: ComponentType,
@@ -733,7 +734,7 @@ pub struct RGBA<ComponentType> {
 
 /// `RGB<T>` with `T` appropriate for bit depth (`u8`, `u16`)
 #[repr(C)]
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub struct RGB<ComponentType> {
     pub r: ComponentType,
     pub g: ComponentType,
@@ -906,10 +907,13 @@ pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB<u8>>, Error> {
 ///         _ => panic!("¯\\_(ツ)_/¯")
 ///     }
 pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error>  {
-    match File::open_mode(filepath, Open, Read).read_to_end() {
-        Ok(file) => decode_memory(&file[..], colortype, bitdepth),
-        Err(_) => Err(Error(78)),
+    if let Ok(mut file) = File::open(filepath) {
+        let mut data = Vec::new();
+        if file.read_to_end(&mut data).is_ok() {
+            return decode_memory(&data, colortype, bitdepth);
+        }
     }
+    return Err(Error(78));
 }
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image

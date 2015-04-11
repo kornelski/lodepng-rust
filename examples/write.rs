@@ -1,4 +1,5 @@
 extern crate lodepng;
+use std::path::Path;
 
 fn main() {
     let path = &Path::new("write_test.png");
