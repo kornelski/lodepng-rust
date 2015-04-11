@@ -1123,3 +1123,31 @@ pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Er
         Ok(cvec_with_free(out, outsize as usize))
     }
 }
+
+#[cfg(test)]
+mod test {
+    use std::mem;
+    use super::*;
+
+    #[test]
+    fn pixel_sizes() {
+        assert_eq!(4, mem::size_of::<RGBA<u8>>());
+        assert_eq!(3, mem::size_of::<RGB<u8>>());
+        assert_eq!(2, mem::size_of::<GreyAlpha<u8>>());
+        assert_eq!(1, mem::size_of::<Grey<u8>>());
+    }
+
+    #[test]
+    fn create_and_dstroy1() {
+        DecoderSettings::new();
+        EncoderSettings::new();
+        CompressSettings::new();
+    }
+
+    #[test]
+    fn create_and_dstroy2() {
+        ColorMode::new();
+        Info::new();
+        State::new();
+    }
+}
