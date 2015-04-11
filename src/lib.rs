@@ -17,7 +17,6 @@ use std::path::Path;
 
 pub use ffi::ColorType;
 pub use ffi::ColorType::{LCT_GREY, LCT_RGB, LCT_PALETTE, LCT_GREY_ALPHA, LCT_RGBA};
-pub use ffi::ColorMode;
 pub use ffi::CompressSettings;
 pub use ffi::Time;
 pub use ffi::Info;
@@ -30,6 +29,129 @@ pub use ffi::EncoderSettings;
 pub use ffi::State;
 pub use ffi::Error;
 
+pub struct ColorMode {
+    data: ffi::ColorMode,
+}
+
+impl ColorMode {
+    pub fn new() -> ColorMode {
+        unsafe {
+            let mut mode = mem::zeroed();
+            ffi::lodepng_color_mode_init(&mut mode);
+            return ColorMode{data:mode};
+        }
+    }
+
+    pub fn colortype(&self) -> ColorType {
+        self.data.colortype
+    }
+
+    pub fn bitdepth(&self) -> c_uint {
+        self.data.bitdepth
+    }
+
+    pub fn palette_clear(&mut self) {
+        unsafe {
+            ffi::lodepng_palette_clear(&mut self.data)
+        }
+    }
+
+    /// add 1 color to the palette
+    #[stable]
+    pub fn palette_add(&mut self, r: u8, g: u8, b: u8, a: u8) -> Option<Error> {
+        unsafe {
+            ffi::lodepng_palette_add(&mut self.data, r, g, b, a).to_result().err()
+        }
+    }
+
+    /// get the total amount of bits per pixel, based on colortype and bitdepth in the struct
+    #[stable]
+    pub fn bpp(&self) -> usize {
+        unsafe {
+            ffi::lodepng_get_bpp(&self.data) as usize
+        }
+    }
+
+    /// get the amount of color channels used, based on colortype in the struct.
+    /// If a palette is used, it counts as 1 channel.
+    #[stable]
+    pub fn channels(&self) -> usize {
+        unsafe {
+            ffi::lodepng_get_channels(&self.data) as usize
+        }
+    }
+
+    /// is it a greyscale type? (only colortype 0 or 4)
+    #[stable]
+    pub fn is_greyscale_type(&self) -> bool {
+        unsafe {
+            ffi::lodepng_is_greyscale_type(&self.data) != 0
+        }
+    }
+
+    /// has it got an alpha channel? (only colortype 2 or 6)
+    #[stable]
+    pub fn is_alpha_type(&self) -> bool {
+        unsafe {
+            ffi::lodepng_is_alpha_type(&self.data) != 0
+        }
+    }
+
+    /// has it got a palette? (only colortype 3)
+    #[stable]
+    pub fn is_palette_type(&self) -> bool {
+        unsafe {
+            ffi::lodepng_is_palette_type(&self.data) != 0
+        }
+    }
+
+    /// only returns true if there is a palette and there is a value in the palette with alpha < 255.
+    /// Loops through the palette to check this.
+    #[stable]
+    pub fn has_palette_alpha(&self) -> bool {
+        unsafe {
+            ffi::lodepng_has_palette_alpha(&self.data) != 0
+        }
+    }
+
+    /// Check if the given color info indicates the possibility of having non-opaque pixels in the PNG image.
+    /// Returns true if the image can have translucent or invisible pixels (it still be opaque if it doesn't use such pixels).
+    /// Returns false if the image can only have opaque pixels.
+    /// In detail, it returns true only if it's a color type with alpha, or has a palette with non-opaque values,
+    /// or if "key_defined" is true.
+    #[stable]
+    pub fn can_have_alpha(&self) -> bool {
+        unsafe {
+            ffi::lodepng_can_have_alpha(&self.data) != 0
+        }
+    }
+
+    /// Returns the byte size of a raw image buffer with given width, height and color mode
+    pub fn raw_size(&self, w: c_uint, h: c_uint) -> usize {
+        unsafe {
+            ffi::lodepng_get_raw_size(w, h, &self.data) as usize
+        }
+    }
+}
+
+impl Drop for ColorMode {
+    fn drop(&mut self) {
+        unsafe {
+            ffi::lodepng_color_mode_cleanup(&mut self.data)
+        }
+    }
+}
+
+impl Clone for ColorMode {
+    #[stable]
+    fn clone(&self) -> ColorMode {
+        unsafe {
+            let mut dest = ColorMode{ data: mem::zeroed() };
+            ffi::lodepng_color_mode_copy(&mut dest.data, &self.data).to_result().unwrap();
+            return dest;
+        }
+    }
+}
 #[allow(non_camel_case_types)]
 pub mod ffi {
     use libc::{c_char, c_uchar, c_uint, c_void, size_t};
@@ -110,13 +232,13 @@ pub mod ffi {
 
     impl ColorType {
         /// Create color mode with given type and bitdepth
-        pub fn to_color_mode(&self, bitdepth: c_uint) -> ColorMode {
+        pub fn to_color_mode(&self, bitdepth: c_uint) -> super::ColorMode {
             unsafe {
-                ColorMode {
+                super::ColorMode { data: ColorMode{
                     colortype: *self,
                     bitdepth: bitdepth,
                     .. mem::zeroed()
-                }
+                }}
             }
         }
     }
@@ -469,119 +591,6 @@ pub mod ffi {
                 let mut settings = mem::zeroed();
                 lodepng_compress_settings_init(&mut settings);
                 return settings;
-            }
-        }
-    }
-
-    impl ColorMode {
-        #[stable]
-        pub fn new() -> ColorMode {
-            unsafe {
-                let mut mode = mem::zeroed();
-                lodepng_color_mode_init(&mut mode);
-                return mode;
-            }
-        }
-
-        pub fn palette_clear(&mut self) {
-            unsafe {
-                lodepng_palette_clear(self)
-            }
-        }
-
-        /// add 1 color to the palette
-        #[stable]
-        pub fn palette_add(&mut self, r: u8, g: u8, b: u8, a: u8) -> Option<Error> {
-            unsafe {
-                lodepng_palette_add(self, r, g, b, a).to_result().err()
-            }
-        }
-
-        /// get the total amount of bits per pixel, based on colortype and bitdepth in the struct
-        #[stable]
-        pub fn bpp(&self) -> usize {
-            unsafe {
-                lodepng_get_bpp(self) as usize
-            }
-        }
-
-        /// get the amount of color channels used, based on colortype in the struct.
-        /// If a palette is used, it counts as 1 channel.
-        #[stable]
-        pub fn channels(&self) -> usize {
-            unsafe {
-                lodepng_get_channels(self) as usize
-            }
-        }
-
-        /// is it a greyscale type? (only colortype 0 or 4)
-        #[stable]
-        pub fn is_greyscale_type(&self) -> bool {
-            unsafe {
-                lodepng_is_greyscale_type(self) != 0
-            }
-        }
-
-        /// has it got an alpha channel? (only colortype 2 or 6)
-        #[stable]
-        pub fn is_alpha_type(&self) -> bool {
-            unsafe {
-                lodepng_is_alpha_type(self) != 0
-            }
-        }
-
-        /// has it got a palette? (only colortype 3)
-        #[stable]
-        pub fn is_palette_type(&self) -> bool {
-            unsafe {
-                lodepng_is_palette_type(self) != 0
-            }
-        }
-
-        /// only returns true if there is a palette and there is a value in the palette with alpha < 255.
-        /// Loops through the palette to check this.
-        #[stable]
-        pub fn has_palette_alpha(&self) -> bool {
-            unsafe {
-                lodepng_has_palette_alpha(self) != 0
-            }
-        }
-
-        /// Check if the given color info indicates the possibility of having non-opaque pixels in the PNG image.
-        /// Returns true if the image can have translucent or invisible pixels (it still be opaque if it doesn't use such pixels).
-        /// Returns false if the image can only have opaque pixels.
-        /// In detail, it returns true only if it's a color type with alpha, or has a palette with non-opaque values,
-        /// or if "key_defined" is true.
-        #[stable]
-        pub fn can_have_alpha(&self) -> bool {
-            unsafe {
-                lodepng_can_have_alpha(self) != 0
-            }
-        }
-
-        /// Returns the byte size of a raw image buffer with given width, height and color mode
-        pub fn raw_size(&self, w: c_uint, h: c_uint) -> usize {
-            unsafe {
-                lodepng_get_raw_size(w, h, self) as usize
-            }
-        }
-    }
-
-    impl Drop for ColorMode {
-        fn drop(&mut self) {
-            unsafe {
-                lodepng_color_mode_cleanup(self)
-            }
-        }
-    }
-
-    impl Clone for ColorMode {
-        #[stable]
-        fn clone(&self) -> ColorMode {
-            unsafe {
-                let mut dest = mem::zeroed();
-                lodepng_color_mode_copy(&mut dest, self).to_result().unwrap();
-                return dest;
             }
         }
     }
@@ -1012,10 +1021,10 @@ pub fn encode24_file<PixelType>(filepath: &Path, image: &[PixelType], w: usize, 
 pub fn convert<PixelType>(input: &[PixelType], mode_out: &mut ColorMode, mode_in: &ColorMode, w: usize, h: usize, fix_png: bool) -> Result<Image, Error> {
     unsafe {
         let out = mem::zeroed();
-        try!(with_buffer_for_type(input, w, h, mode_in.colortype, mode_in.bitdepth, |ptr| {
-            ffi::lodepng_convert(out, ptr, mode_out, mode_in, w as c_uint, h as c_uint, fix_png as c_uint)
+        try!(with_buffer_for_type(input, w, h, mode_in.colortype(), mode_in.bitdepth(), |ptr| {
+            ffi::lodepng_convert(out, ptr, &mut mode_out.data, &mode_in.data, w as c_uint, h as c_uint, fix_png as c_uint)
         }).to_result());
-        Ok(new_bitmap(out, w, h, mode_out.colortype, mode_out.bitdepth))
+        Ok(new_bitmap(out, w, h, mode_out.colortype(), mode_out.bitdepth()))
     }
 }
 
@@ -1029,7 +1038,7 @@ pub fn convert<PixelType>(input: &[PixelType], mode_out: &mut ColorMode, mode_in
 /// contain the user chosen color model, but will be overwritten with the new chosen one.
 pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h: usize, mode_in: &ColorMode, auto_convert: AutoConvert) -> Result<(), Error> {
     unsafe {
-        ffi::lodepng_auto_choose_color(mode_out, image, w as c_uint, h as c_uint, mode_in, auto_convert).to_result()
+        ffi::lodepng_auto_choose_color(&mut mode_out.data, image, w as c_uint, h as c_uint, &mode_in.data, auto_convert).to_result()
     }
 }
 
@@ -1146,7 +1155,7 @@ mod test {
 
     #[test]
     fn create_and_dstroy2() {
-        ColorMode::new();
+        ColorMode::new().clone();
         Info::new();
         State::new();
     }
