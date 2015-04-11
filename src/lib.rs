@@ -44,7 +44,7 @@ impl ColorMode {
         self.data.colortype
     }
 
-    pub fn bitdepth(&self) -> c_uint {
+    pub fn bitdepth(&self) -> u32 {
         self.data.bitdepth
     }
 
@@ -64,18 +64,18 @@ impl ColorMode {
 
     /// get the total amount of bits per pixel, based on colortype and bitdepth in the struct
     #[stable]
-    pub fn bpp(&self) -> usize {
+    pub fn bpp(&self) -> u32 {
         unsafe {
-            ffi::lodepng_get_bpp(&self.data) as usize
+            ffi::lodepng_get_bpp(&self.data) as u32
         }
     }
 
     /// get the amount of color channels used, based on colortype in the struct.
     /// If a palette is used, it counts as 1 channel.
     #[stable]
-    pub fn channels(&self) -> usize {
+    pub fn channels(&self) -> u32 {
         unsafe {
-            ffi::lodepng_get_channels(&self.data) as usize
+            ffi::lodepng_get_channels(&self.data) as u32
         }
     }
 
@@ -853,7 +853,7 @@ impl<PixelType> fmt::Debug for Bitmap<PixelType> {
     }
 }
 
-fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> usize {
+fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> usize {
     colortype.to_color_mode(bitdepth).raw_size(w as c_uint, h as c_uint)
 }
 
@@ -970,7 +970,7 @@ pub fn decode24_file(filepath: &Path) -> Result<Bitmap<RGB<u8>>, Error> {
     }
 }
 
-fn with_buffer_for_type<PixelType, F>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint, mut f: F) -> Error
+fn with_buffer_for_type<PixelType, F>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32, mut f: F) -> Error
     where F: FnMut(*const u8) -> Error
 {
     if image.len() * mem::size_of::<PixelType>() != required_size(w, h, colortype, bitdepth) {
