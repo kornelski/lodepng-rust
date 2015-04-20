@@ -331,7 +331,7 @@ pub mod ffi {
 
     /// Type for `decode`, `encode`, etc. Same as standard PNG color types.
     #[repr(C)]
-    #[derive(Copy, Clone)]
+    #[derive(Copy, Clone, Debug)]
     #[stable]
     pub enum ColorType {
         /// greyscale: 1, 2, 4, 8, 16 bit
@@ -458,7 +458,7 @@ pub mod ffi {
 
     /// The information of a Time chunk in PNG
     #[repr(C)]
-    #[derive(Copy, Clone)]
+    #[derive(Copy, Clone, Debug)]
     #[stable]
     pub struct Time {
         pub year: c_uint,
@@ -580,7 +580,7 @@ pub mod ffi {
 
     /// automatically use color type with less bits per pixel if losslessly possible. Default: AUTO
     #[repr(C)]
-    #[derive(Copy, Clone)]
+    #[derive(Copy, Clone, Debug)]
     #[stable]
     pub enum FilterStrategy {
         /// every filter at zero
@@ -599,7 +599,7 @@ pub mod ffi {
 
     /// automatically use color type with less bits per pixel if losslessly possible. Default: LAC_AUTO
     #[repr(C)]
-    #[derive(Copy, Clone)]
+    #[derive(Copy, Clone, Debug)]
     pub enum AutoConvert {
         /// use color type user requested
         LAC_NO = 0,
@@ -753,7 +753,7 @@ pub mod ffi {
 
 /// `RGBA<T>` with `T` appropriate for bit depth (`u8`, `u16`)
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct RGBA<ComponentType> {
     pub r: ComponentType,
     pub g: ComponentType,
@@ -764,7 +764,7 @@ pub struct RGBA<ComponentType> {
 
 /// `RGB<T>` with `T` appropriate for bit depth (`u8`, `u16`)
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct RGB<ComponentType> {
     pub r: ComponentType,
     pub g: ComponentType,
