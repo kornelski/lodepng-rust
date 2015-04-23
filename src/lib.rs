@@ -55,7 +55,6 @@ impl ColorMode {
     }
 
     /// add 1 color to the palette
-    #[stable]
     pub fn palette_add(&mut self, r: u8, g: u8, b: u8, a: u8) -> Option<Error> {
         unsafe {
             ffi::lodepng_palette_add(&mut self.data, r, g, b, a).to_result().err()
@@ -63,7 +62,6 @@ impl ColorMode {
     }
 
     /// get the total amount of bits per pixel, based on colortype and bitdepth in the struct
-    #[stable]
     pub fn bpp(&self) -> u32 {
         unsafe {
             ffi::lodepng_get_bpp(&self.data) as u32
@@ -72,7 +70,6 @@ impl ColorMode {
 
     /// get the amount of color channels used, based on colortype in the struct.
     /// If a palette is used, it counts as 1 channel.
-    #[stable]
     pub fn channels(&self) -> u32 {
         unsafe {
             ffi::lodepng_get_channels(&self.data) as u32
@@ -80,7 +77,6 @@ impl ColorMode {
     }
 
     /// is it a greyscale type? (only colortype 0 or 4)
-    #[stable]
     pub fn is_greyscale_type(&self) -> bool {
         unsafe {
             ffi::lodepng_is_greyscale_type(&self.data) != 0
@@ -88,7 +84,6 @@ impl ColorMode {
     }
 
     /// has it got an alpha channel? (only colortype 2 or 6)
-    #[stable]
     pub fn is_alpha_type(&self) -> bool {
         unsafe {
             ffi::lodepng_is_alpha_type(&self.data) != 0
@@ -96,7 +91,6 @@ impl ColorMode {
     }
 
     /// has it got a palette? (only colortype 3)
-    #[stable]
     pub fn is_palette_type(&self) -> bool {
         unsafe {
             ffi::lodepng_is_palette_type(&self.data) != 0
@@ -105,7 +99,6 @@ impl ColorMode {
 
     /// only returns true if there is a palette and there is a value in the palette with alpha < 255.
     /// Loops through the palette to check this.
-    #[stable]
     pub fn has_palette_alpha(&self) -> bool {
         unsafe {
             ffi::lodepng_has_palette_alpha(&self.data) != 0
@@ -117,7 +110,6 @@ impl ColorMode {
     /// Returns false if the image can only have opaque pixels.
     /// In detail, it returns true only if it's a color type with alpha, or has a palette with non-opaque values,
     /// or if "key_defined" is true.
-    #[stable]
     pub fn can_have_alpha(&self) -> bool {
         unsafe {
             ffi::lodepng_can_have_alpha(&self.data) != 0
@@ -141,7 +133,6 @@ impl Drop for ColorMode {
 }
 
 impl Clone for ColorMode {
-    #[stable]
     fn clone(&self) -> ColorMode {
         unsafe {
             let mut dest = ColorMode{ data: mem::zeroed() };
@@ -173,7 +164,6 @@ impl Info {
     }
 
     /// push back both texts at once
-    #[unstable]
     pub fn add_text(&mut self, key: *const c_char, str: *const c_char) -> Error {
         unsafe {
             ffi::lodepng_add_text(&mut self.data, key, str)
@@ -188,7 +178,6 @@ impl Info {
     }
 
     /// push back the 4 texts of 1 chunk at once
-    #[unstable]
     pub fn add_itext(&mut self, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error {
         unsafe {
             ffi::lodepng_add_itext(&mut self.data, key, langtag, transkey, str)
@@ -205,7 +194,6 @@ impl Drop for Info {
 }
 
 impl Clone for Info {
-    #[stable]
     fn clone(&self) -> Info {
         unsafe {
             let mut dest = Info{ data:mem::zeroed() };
@@ -220,7 +208,6 @@ pub struct State {
 }
 
 impl State {
-    #[stable]
     pub fn new() -> State {
         unsafe {
             let mut state = State { data:mem::zeroed() };
@@ -320,8 +307,7 @@ pub mod ffi {
 
     impl Error {
         /// Returns an English description of the numerical error code.
-        #[stable]
-        pub fn as_str(&self) -> &'static str {
+            pub fn as_str(&self) -> &'static str {
             unsafe {
                 let cstr = ::std::ffi::CStr::from_ptr(lodepng_error_text(self.0));
                 ::std::str::from_utf8(cstr.to_bytes()).unwrap()
@@ -332,7 +318,6 @@ pub mod ffi {
     /// Type for `decode`, `encode`, etc. Same as standard PNG color types.
     #[repr(C)]
     #[derive(Copy, Clone, Debug)]
-    #[stable]
     pub enum ColorType {
         /// greyscale: 1, 2, 4, 8, 16 bit
         LCT_GREY = 0,
@@ -459,7 +444,6 @@ pub mod ffi {
     /// The information of a Time chunk in PNG
     #[repr(C)]
     #[derive(Copy, Clone, Debug)]
-    #[stable]
     pub struct Time {
         pub year: c_uint,
         pub month: c_uint,
@@ -581,7 +565,6 @@ pub mod ffi {
     /// automatically use color type with less bits per pixel if losslessly possible. Default: AUTO
     #[repr(C)]
     #[derive(Copy, Clone, Debug)]
-    #[stable]
     pub enum FilterStrategy {
         /// every filter at zero
         LFS_ZERO = 0,
@@ -818,7 +801,6 @@ impl fmt::Display for Error {
 }
 
 #[allow(missing_copy_implementations)]
-#[unstable]
 pub struct Chunk {
     data: *mut c_uchar,
 }
@@ -1125,7 +1107,6 @@ impl Chunk {
 /// Compresses data with Zlib.
 /// Zlib adds a small header and trailer around the deflate data.
 /// The data is output in the format of the zlib specification.
-#[unstable]
 pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
@@ -1137,7 +1118,6 @@ pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u
 }
 
 /// Compress a buffer with deflate. See RFC 1951.
-#[unstable]
 pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
