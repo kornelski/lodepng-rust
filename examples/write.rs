@@ -4,7 +4,7 @@ use std::path::Path;
 fn main() {
     let path = &Path::new("write_test.png");
 
-    let image = [255, 0, 0,   0, 255, 0,
+    let image = [255u8, 0, 0,   0, 255, 0,
                  0, 0, 255,   0, 99, 99];
 
     // encode_file takes the path to the image, a u8 array,
