@@ -755,12 +755,16 @@ pub struct RGB<ComponentType> {
 }
 
 /// Opaque greyscale pixel (acces with `px.0`)
+#[derive(Debug)]
 pub struct Grey<ComponentType>(ComponentType);
 
 /// Greyscale pixel with alpha (`px.1` is alpha)
+#[derive(Debug)]
 pub struct GreyAlpha<ComponentType>(ComponentType, ComponentType);
 
-/// Images with <8bpp are represented as a bunch of bytes
+/// Bitmap types. Also contains valid values for `<PixelType>`
+///
+/// Images with <8bpp are represented as a bunch of bytes.
 ///
 /// To safely convert RGB/RGBA see `Vec::map_in_place`,
 /// or use `transmute()`
@@ -790,7 +794,7 @@ impl<T: fmt::Display> fmt::Display for RGB<T> {
 
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{}", self.as_str())
+        write!(f,"{} ({})", self.as_str(), self.0)
     }
 }
 
