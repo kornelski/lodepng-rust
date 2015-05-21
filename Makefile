@@ -20,7 +20,7 @@ $(HEADER):
 	curl -L https://raw.githubusercontent.com/lvandeve/lodepng/master/lodepng.h -o $@
 
 doc: src/lib.rs
-	rustdoc --html-before-content doc/_header.html -L target/deps/ $^
+	rustdoc --html-before-content doc/_header.html -L target/debug/deps/ $^
 
 .PHONY: doc
 
