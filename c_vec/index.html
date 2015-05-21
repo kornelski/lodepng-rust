@@ -26,7 +26,7 @@
 
     <section class="sidebar">
         
-        <p class='location'></p>
+        <p class='location'></p><script>window.sidebarCurrent = {name: 'c_vec', ty: 'mod', relpath: '../'};</script>
     </section>
 
     <nav class="sub">
@@ -41,10 +41,11 @@
     </nav>
 
     <section id='main' class="content mod">
-<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>c_vec</a><wbr></span><span class='out-of-band'><a href='stability.html'>[stability]</a> <span id='render-detail'>
-            <a id="collapse-all" href="#">[-]
-            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-0' href='../src/c_vec/c_vec.rs.html#10-235'>[src]</a></span></h1>
+<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>c_vec</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-0' class='srclink' href='../src/c_vec/c_vec.rs.html#10-382' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'><p>Library to interface with chunks of memory allocated in C.</p>
 
 <p>It is often desirable to safely interface with memory allocated from C,
@@ -61,9 +62,9 @@ closure is provided.  Safety is ensured by bounds-checking accesses, which
 are marshalled through get and set functions.</p>
 
 <p>There are three unsafe functions: the two constructors, and the
-unwrap method. The constructors are unsafe for the
+unwrapping method. The constructors are unsafe for the
 obvious reason (they act on a pointer that cannot be checked inside the
-method), but <code>unwrap()</code> is somewhat more subtle in its unsafety.
+method), but <code>into_inner()</code> is somewhat more subtle in its unsafety.
 It returns the contained pointer, but at the same time destroys the CVec
 without running its destructor. This can be used to pass memory back to
 C, but care must be taken that the ownership of underlying resources are
@@ -71,11 +72,22 @@ handled correctly, i.e. that allocated memory is eventually freed
 if necessary.</p>
 </div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
-                    <tr>
-                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.CVec.html'
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.CSlice.html'
+                               title='c_vec::CSlice'>CSlice</a></td>
+                        <td class='docblock short'>
+                             <p>The type representing an &#39;unsafe&#39; foreign chunk of memory</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.CVec.html'
                                title='c_vec::CVec'>CVec</a></td>
-                        <td class='docblock short'><p>The type representing a foreign chunk of memory</p>
-</td>
+                        <td class='docblock short'>
+                             <p>The type representing a foreign chunk of memory</p>
+
+                        </td>
                     </tr>
                 </table></section>
     <section id='search' class="content hidden"></section>
@@ -109,6 +121,10 @@ if necessary.</p>
                 <code>struct</code>, <code>enum</code>,
                 <code>trait</code>, <code>typedef</code> (or
                 <code>tdef</code>).
+            </p>
+            <p>
+                Search functions by type signature (e.g.
+                <code>vec -> usize</code>)
             </p>
         </div>
     </div>

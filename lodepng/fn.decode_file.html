@@ -28,7 +28,7 @@
 
     <section class="sidebar">
         
-        <p class='location'><a href='index.html'>lodepng</a></p><div class='block mod'><h2>Modules</h2><a class='mod ' href='ffi/index.html'>ffi</a></div><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.Bitmap.html'>Bitmap</a><a class='struct ' href='struct.Chunk.html'>Chunk</a><a class='struct ' href='struct.Grey.html'>Grey</a><a class='struct ' href='struct.GreyAlpha.html'>GreyAlpha</a><a class='struct ' href='struct.RGB.html'>RGB</a><a class='struct ' href='struct.RGBA.html'>RGBA</a></div><div class='block enum'><h2>Enums</h2><a class='enum ' href='enum.Image.html'>Image</a></div><div class='block fn'><h2>Functions</h2><a class='fn ' href='fn.auto_choose_color.html'>auto_choose_color</a><a class='fn ' href='fn.convert.html'>convert</a><a class='fn ' href='fn.decode24.html'>decode24</a><a class='fn ' href='fn.decode24_file.html'>decode24_file</a><a class='fn ' href='fn.decode32.html'>decode32</a><a class='fn ' href='fn.decode32_file.html'>decode32_file</a><a class='fn current' href='fn.decode_file.html'>decode_file</a><a class='fn ' href='fn.decode_memory.html'>decode_memory</a><a class='fn ' href='fn.deflate.html'>deflate</a><a class='fn ' href='fn.encode24.html'>encode24</a><a class='fn ' href='fn.encode24_file.html'>encode24_file</a><a class='fn ' href='fn.encode32.html'>encode32</a><a class='fn ' href='fn.encode32_file.html'>encode32_file</a><a class='fn ' href='fn.encode_file.html'>encode_file</a><a class='fn ' href='fn.encode_memory.html'>encode_memory</a><a class='fn ' href='fn.zlib_compress.html'>zlib_compress</a></div>
+        <p class='location'><a href='index.html'>lodepng</a></p><script>window.sidebarCurrent = {name: 'decode_file', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </section>
 
     <nav class="sub">
@@ -43,22 +43,24 @@
     </nav>
 
     <section id='main' class="content fn">
-<h1 class='fqn'><span class='in-band'>Function <a href='index.html'>lodepng</a>::<wbr><a class='fn' href=''>decode_file</a><wbr></span><span class='out-of-band'><span id='render-detail'>
-            <a id="collapse-all" href="#">[-]
-            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-3145' href='../src/lodepng/lib.rs.html#912-917'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn decode_file(filepath: &amp;<a class='struct' href='http://doc.rust-lang.org/nightly/std/path/posix/struct.Path.html' title='std::path::posix::Path'>Path</a>, colortype: <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a>, bitdepth: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='enum' href='../lodepng/enum.Image.html' title='lodepng::Image'>Image</a>, <a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</pre><div class='docblock'><p>Load PNG from disk, from file with given name.
+<h1 class='fqn'><span class='in-band'>Function <a href='index.html'>lodepng</a>::<wbr><a class='fn' href=''>decode_file</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-3525' class='srclink' href='../src/lodepng/lib.rs.html#933-941' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn decode_file&lt;P: <a class='trait' href='http://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html' title='core::convert::AsRef'>AsRef</a>&lt;<a class='struct' href='http://doc.rust-lang.org/nightly/std/path/struct.Path.html' title='std::path::Path'>Path</a>&gt;&gt;(filepath: P, colortype: <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a>, bitdepth: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='enum' href='../lodepng/enum.Image.html' title='lodepng::Image'>Image</a>, <a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</pre><div class='docblock'><p>Load PNG from disk, from file with given name.
 Same as the other decode functions, but instead takes a file path as input.</p>
 
 <p><code>decode32_file</code> and <code>decode24_file</code> are more convenient if you want specific image format.</p>
 
 <p>There&#39;s also <code>ffi::State::decode()</code> if you&#39;d like to set more settings.</p>
 <pre id='rust-example-rendered' class='rust '>
-<span class='kw'>match</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>decode_file</span>(<span class='ident'>filepath</span>, <span class='ident'>LCT_RGBA</span>, <span class='number'>8</span>)) {
-    <span class='ident'>Image</span>::<span class='ident'>RGBA</span>(<span class='ident'>with_alpha</span>) <span class='op'>=&gt;</span> <span class='ident'>do_stuff</span>(<span class='ident'>with_alpha</span>),
-    <span class='ident'>Image</span>::<span class='ident'>RGB</span>(<span class='ident'>without_alpha</span>) <span class='op'>=&gt;</span> <span class='ident'>do_stuff</span>(<span class='ident'>without_alpha</span>),
-    _ <span class='op'>=&gt;</span> <span class='macro'>panic</span><span class='macro'>!</span>(<span class='string'>&quot;¯\\_(ツ)_/¯&quot;</span>)
-}
+
+ <span class='kw'>match</span> <span class='ident'>decode_file</span>(<span class='ident'>filepath</span>, <span class='ident'>LCT_RGBA</span>, <span class='number'>8</span>) {
+     <span class='prelude-val'>Ok</span>(<span class='ident'>Image</span>::<span class='ident'>RGBA</span>(<span class='ident'>with_alpha</span>)) <span class='op'>=&gt;</span> <span class='ident'>do_stuff</span>(<span class='ident'>with_alpha</span>),
+     <span class='prelude-val'>Ok</span>(<span class='ident'>Image</span>::<span class='ident'>RGB</span>(<span class='ident'>without_alpha</span>)) <span class='op'>=&gt;</span> <span class='ident'>do_stuff</span>(<span class='ident'>without_alpha</span>),
+     _ <span class='op'>=&gt;</span> <span class='macro'>panic</span><span class='macro'>!</span>(<span class='string'>&quot;¯\\_(ツ)_/¯&quot;</span>)
+ }
 </pre>
 </div></section>
     <section id='search' class="content hidden"></section>
@@ -92,6 +94,10 @@ Same as the other decode functions, but instead takes a file path as input.</p>
                 <code>struct</code>, <code>enum</code>,
                 <code>trait</code>, <code>typedef</code> (or
                 <code>tdef</code>).
+            </p>
+            <p>
+                Search functions by type signature (e.g.
+                <code>vec -> usize</code>)
             </p>
         </div>
     </div>

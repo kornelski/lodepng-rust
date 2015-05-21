@@ -15,6 +15,28 @@
     "use strict";
     var resizeTimeout, interval;
 
+    // This mapping table should match the discriminants of
+    // `rustdoc::html::item_type::ItemType` type in Rust.
+    var itemTypes = ["mod",
+                     "externcrate",
+                     "import",
+                     "struct",
+                     "enum",
+                     "fn",
+                     "type",
+                     "static",
+                     "trait",
+                     "impl",
+                     "tymethod",
+                     "method",
+                     "structfield",
+                     "variant",
+                     "macro",
+                     "primitive",
+                     "associatedtype",
+                     "constant",
+                     "associatedconstant"];
+
     $('.js-only').removeClass('js-only');
 
     function getQueryStringParams() {
@@ -32,23 +54,6 @@
     function browserSupportsHistoryApi() {
         return window.history && typeof window.history.pushState === "function";
     }
-
-    function resizeShortBlocks() {
-        if (resizeTimeout) {
-            clearTimeout(resizeTimeout);
-        }
-        resizeTimeout = setTimeout(function() {
-            var contentWidth = $('.content').width();
-            $('.docblock.short').width(function() {
-                return contentWidth - 40 - $(this).prev().width();
-            }).addClass('nowrap');
-            $('.summary-column').width(function() {
-                return contentWidth - 40 - $(this).prev().width();
-            })
-        }, 150);
-    }
-    resizeShortBlocks();
-    $(window).on('resize', resizeShortBlocks);
 
     function highlightSourceLines(ev) {
         var i, from, to, match = window.location.hash.match(/^#?(\d+)(?:-(\d+))?$/);
@@ -74,9 +79,11 @@
             return;
         }
 
-        if (e.which === 191 && $('#help').hasClass('hidden')) { // question mark
-            e.preventDefault();
-            $('#help').removeClass('hidden');
+        if (e.which === 191) { // question mark
+            if (e.shiftKey && $('#help').hasClass('hidden')) {
+                e.preventDefault();
+                $('#help').removeClass('hidden');
+            }
         } else if (e.which === 27) { // esc
             if (!$('#help').hasClass('hidden')) {
                 e.preventDefault();
@@ -205,6 +212,33 @@
                         break;
                     }
                 }
+            // searching by type
+            } else if (val.search("->") > -1) {
+                var trimmer = function (s) { return s.trim(); };
+                var parts = val.split("->").map(trimmer);
+                var input = parts[0];
+                // sort inputs so that order does not matter
+                var inputs = input.split(",").map(trimmer).sort();
+                var output = parts[1];
+
+                for (var i = 0; i < nSearchWords; ++i) {
+                    var type = searchIndex[i].type;
+                    if (!type) {
+                        continue;
+                    }
+
+                    // sort index inputs so that order does not matter
+                    var typeInputs = type.inputs.map(function (input) {
+                        return input.name;
+                    }).sort();
+
+                    // allow searching for void (no output) functions as well
+                    var typeOutput = type.output ? type.output.name : "";
+                    if (inputs.toString() === typeInputs.toString() &&
+                        output == typeOutput) {
+                        results.push({id: i, index: -1, dontValidate: true});
+                    }
+                }
             } else {
                 // gather matching search results up to a certain maximum
                 val = val.replace(/\_/g, "");
@@ -325,6 +359,11 @@
                     path = result.item.path.toLowerCase(),
                     parent = result.item.parent;
 
+                // this validation does not make sense when searching by types
+                if (result.dontValidate) {
+                    continue;
+                }
+
                 var valid = validateResult(name, path, split, parent);
                 if (!valid) {
                     result.id = -1;
@@ -432,6 +471,8 @@
                     if ($active.length) {
                         document.location.href = $active.find('a').prop('href');
                     }
+                } else {
+                  $active.removeClass('highlighted');
                 }
             });
         }
@@ -552,28 +593,6 @@
             showResults(results);
         }
 
-        // This mapping table should match the discriminants of
-        // `rustdoc::html::item_type::ItemType` type in Rust.
-        var itemTypes = ["mod",
-                         "struct",
-                         "enum",
-                         "fn",
-                         "type",
-                         "static",
-                         "trait",
-                         "impl",
-                         "viewitem",
-                         "tymethod",
-                         "method",
-                         "structfield",
-                         "variant",
-                         "ffi", // retained for backward compatibility
-                         "ffs", // retained for backward compatibility
-                         "macro",
-                         "primitive",
-                         "associatedtype",
-                         "constant"];
-
         function itemTypeFromName(typename) {
             for (var i = 0; i < itemTypes.length; ++i) {
                 if (itemTypes[i] === typename) return i;
@@ -591,7 +610,8 @@
                 //              (String) name,
                 //              (String) full path or empty string for previous path,
                 //              (String) description,
-                //              (optional Number) the parent path index to `paths`]
+                //              (Number | null) the parent path index to `paths`]
+                //              (Object | null) the type of the function (if any)
                 var items = rawSearchIndex[crate].items;
                 // an array of [(Number) item type,
                 //              (String) name]
@@ -616,7 +636,7 @@
                     var rawRow = items[i];
                     var row = {crate: crate, ty: rawRow[0], name: rawRow[1],
                                path: rawRow[2] || lastPath, desc: rawRow[3],
-                               parent: paths[rawRow[4]]};
+                               parent: paths[rawRow[4]], type: rawRow[5]};
                     searchIndex.push(row);
                     if (typeof row.name === "string") {
                         var word = row.name.toLowerCase();
@@ -669,6 +689,15 @@
             search();
         }
 
+        function plainSummaryLine(markdown) {
+            var str = markdown.replace(/\n/g, ' ')
+            str = str.replace(/'/g, "\'")
+            str = str.replace(/^#+? (.+?)/, "$1")
+            str = str.replace(/\[(.*?)\]\(.*?\)/g, "$1")
+            str = str.replace(/\[(.*?)\]\[.*?\]/g, "$1")
+            return str;
+        }
+
         index = buildIndex(rawSearchIndex);
         startSearch();
 
@@ -689,14 +718,62 @@
                 if (crates[i] == window.currentCrate) {
                     klass += ' current';
                 }
-                div.append($('<a>', {'href': '../' + crates[i] + '/index.html',
-                                    'class': klass}).text(crates[i]));
+                if (rawSearchIndex[crates[i]].items[0]) {
+                    var desc = rawSearchIndex[crates[i]].items[0][3];
+                    div.append($('<a>', {'href': '../' + crates[i] + '/index.html',
+                                         'title': plainSummaryLine(desc),
+                                         'class': klass}).text(crates[i]));
+                }
             }
             sidebar.append(div);
         }
     }
 
     window.initSearch = initSearch;
+
+    // delayed sidebar rendering.
+    function initSidebarItems(items) {
+        var sidebar = $('.sidebar');
+        var current = window.sidebarCurrent;
+
+        function block(shortty, longty) {
+            var filtered = items[shortty];
+            if (!filtered) return;
+
+            var div = $('<div>').attr('class', 'block ' + shortty);
+            div.append($('<h2>').text(longty));
+
+            for (var i = 0; i < filtered.length; ++i) {
+                var item = filtered[i];
+                var name = item[0];
+                var desc = item[1]; // can be null
+
+                var klass = shortty;
+                if (name === current.name && shortty == current.ty) {
+                    klass += ' current';
+                }
+                var path;
+                if (shortty === 'mod') {
+                    path = name + '/index.html';
+                } else {
+                    path = shortty + '.' + name + '.html';
+                }
+                div.append($('<a>', {'href': current.relpath + path,
+                                     'title': desc,
+                                     'class': klass}).text(name));
+            }
+            sidebar.append(div);
+        }
+
+        block("mod", "Modules");
+        block("struct", "Structs");
+        block("enum", "Enums");
+        block("trait", "Traits");
+        block("fn", "Functions");
+        block("macro", "Macros");
+    }
+
+    window.initSidebarItems = initSidebarItems;
 
     window.register_implementors = function(imp) {
         var list = $('#implementors-list');
@@ -726,34 +803,58 @@
     if (query['gotosrc']) {
         window.location = $('#src-' + query['gotosrc']).attr('href');
     }
+    if (query['gotomacrosrc']) {
+        window.location = $('.srclink').attr('href');
+    }
 
-    $("#expand-all").on("click", function() {
-        $(".docblock").show();
-        $(".toggle-label").hide();
-        $(".toggle-wrapper").removeClass("collapsed");
-        $(".collapse-toggle").children(".inner").html("-");
-    });
+    function labelForToggleButton(sectionIsCollapsed) {
+        if (sectionIsCollapsed) {
+            // button will expand the section
+            return "+";
+        } else {
+            // button will collapse the section
+            // note that this text is also set in the HTML template in render.rs
+            return "\u2212"; // "\u2212" is '−' minus sign
+        }
+    }
 
-    $("#collapse-all").on("click", function() {
-        $(".docblock").hide();
-        $(".toggle-label").show();
-        $(".toggle-wrapper").addClass("collapsed");
-        $(".collapse-toggle").children(".inner").html("+");
+    $("#toggle-all-docs").on("click", function() {
+        var toggle = $("#toggle-all-docs");
+        if (toggle.hasClass("will-expand")) {
+            toggle.removeClass("will-expand");
+            toggle.children(".inner").text(labelForToggleButton(false));
+            toggle.attr("title", "collapse all docs");
+            $(".docblock").show();
+            $(".toggle-label").hide();
+            $(".toggle-wrapper").removeClass("collapsed");
+            $(".collapse-toggle").children(".inner").text(labelForToggleButton(false));
+        } else {
+            toggle.addClass("will-expand");
+            toggle.children(".inner").text(labelForToggleButton(true));
+            toggle.attr("title", "expand all docs");
+            $(".docblock").hide();
+            $(".toggle-label").show();
+            $(".toggle-wrapper").addClass("collapsed");
+            $(".collapse-toggle").children(".inner").text(labelForToggleButton(true));
+        }
     });
 
     $(document).on("click", ".collapse-toggle", function() {
         var toggle = $(this);
         var relatedDoc = toggle.parent().next();
+        if (relatedDoc.is(".stability")) {
+            relatedDoc = relatedDoc.next();
+        }
         if (relatedDoc.is(".docblock")) {
             if (relatedDoc.is(":visible")) {
                 relatedDoc.slideUp({duration:'fast', easing:'linear'});
                 toggle.parent(".toggle-wrapper").addClass("collapsed");
-                toggle.children(".inner").html("+");
+                toggle.children(".inner").text(labelForToggleButton(true));
                 toggle.children(".toggle-label").fadeIn();
             } else {
                 relatedDoc.slideDown({duration:'fast', easing:'linear'});
                 toggle.parent(".toggle-wrapper").removeClass("collapsed");
-                toggle.children(".inner").html("-");
+                toggle.children(".inner").text(labelForToggleButton(false));
                 toggle.children(".toggle-label").hide();
             }
         }
@@ -761,12 +862,14 @@
 
     $(function() {
         var toggle = $("<a/>", {'href': 'javascript:void(0)', 'class': 'collapse-toggle'})
-            .html("[<span class='inner'>-</span>]");
+            .html("[<span class='inner'></span>]");
+        toggle.children(".inner").text(labelForToggleButton(false));
 
         $(".method").each(function() {
-           if ($(this).next().is(".docblock")) {
-               $(this).children().first().after(toggle.clone());
-           }
+            if ($(this).next().is(".docblock") ||
+                ($(this).next().is(".stability") && $(this).next().next().is(".docblock"))) {
+                    $(this).children().first().after(toggle.clone());
+            }
         });
 
         var mainToggle =

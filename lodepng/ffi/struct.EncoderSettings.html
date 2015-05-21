@@ -28,7 +28,7 @@
 
     <section class="sidebar">
         
-        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.CVec.html'>CVec</a><a class='struct ' href='struct.ColorMode.html'>ColorMode</a><a class='struct ' href='struct.CompressSettings.html'>CompressSettings</a><a class='struct ' href='struct.DecoderSettings.html'>DecoderSettings</a><a class='struct current' href='struct.EncoderSettings.html'>EncoderSettings</a><a class='struct ' href='struct.Error.html'>Error</a><a class='struct ' href='struct.Info.html'>Info</a><a class='struct ' href='struct.State.html'>State</a><a class='struct ' href='struct.Time.html'>Time</a></div><div class='block enum'><h2>Enums</h2><a class='enum ' href='enum.AutoConvert.html'>AutoConvert</a><a class='enum ' href='enum.ColorType.html'>ColorType</a><a class='enum ' href='enum.FilterStrategy.html'>FilterStrategy</a></div>
+        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'EncoderSettings', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </section>
 
     <nav class="sub">
@@ -43,10 +43,11 @@
     </nav>
 
     <section id='main' class="content struct">
-<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>EncoderSettings</a><wbr></span><span class='out-of-band'><span id='render-detail'>
-            <a id="collapse-all" href="#">[-]
-            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-512' href='../../src/lodepng/lib.rs.html#344-371'>[src]</a></span></h1>
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>EncoderSettings</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-1680' class='srclink' href='../../src/lodepng/lib.rs.html#608-635' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct EncoderSettings {
     pub zlibsettings: <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a>,
     pub auto_convert: <a class='enum' href='../../lodepng/ffi/enum.AutoConvert.html' title='lodepng::ffi::AutoConvert'>AutoConvert</a>,
@@ -55,17 +56,22 @@
     pub force_palette: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
     // some fields omitted
 }</pre><h2 class='fields'>Fields</h2>
-<table><tr><td id='structfield.zlibsettings'><a class='stability Unmarked' title='No stability level'></a><code>zlibsettings</code></td><td><div class='docblock'><p>settings for the zlib encoder, such as window size, ...</p>
-</div></td></tr><tr><td id='structfield.auto_convert'><a class='stability Unmarked' title='No stability level'></a><code>auto_convert</code></td><td><div class='docblock'><p>how to automatically choose output PNG color type, if at all</p>
-</div></td></tr><tr><td id='structfield.filter_palette_zero'><a class='stability Unmarked' title='No stability level'></a><code>filter_palette_zero</code></td><td><div class='docblock'><p>If true, follows the official PNG heuristic: if the PNG uses a palette or lower than
+<table><tr class='stab '>
+                                  <td id='structfield.zlibsettings'><code>zlibsettings</code></td><td><div class='docblock'><p>settings for the zlib encoder, such as window size, ...</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.auto_convert'><code>auto_convert</code></td><td><div class='docblock'><p>how to automatically choose output PNG color type, if at all</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.filter_palette_zero'><code>filter_palette_zero</code></td><td><div class='docblock'><p>If true, follows the official PNG heuristic: if the PNG uses a palette or lower than
 8 bit depth, set all filters to zero. Otherwise use the filter_strategy. Note that to
 completely follow the official PNG heuristic, filter_palette_zero must be true and
 filter_strategy must be LFS_MINSUM</p>
-</div></td></tr><tr><td id='structfield.filter_strategy'><a class='stability Unmarked' title='No stability level'></a><code>filter_strategy</code></td><td><div class='docblock'><p>Which filter strategy to use when not using zeroes due to filter_palette_zero.
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.filter_strategy'><code>filter_strategy</code></td><td><div class='docblock'><p>Which filter strategy to use when not using zeroes due to filter_palette_zero.
 Set filter_palette_zero to 0 to ensure always using your chosen strategy. Default: LFS_MINSUM</p>
-</div></td></tr><tr><td id='structfield.force_palette'><a class='stability Unmarked' title='No stability level'></a><code>force_palette</code></td><td><div class='docblock'><p>force creating a <code>PLTE</code> chunk if colortype is 2 or 6 (= a suggested palette).
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.force_palette'><code>force_palette</code></td><td><div class='docblock'><p>force creating a <code>PLTE</code> chunk if colortype is 2 or 6 (= a suggested palette).
 If colortype is 3, <code>PLTE</code> is <em>always</em> created</p>
-</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></code></h4>
+</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></code></h4>
 <div class='docblock'><p>Creates encoder settings initialized to defaults</p>
 </div></div></section>
     <section id='search' class="content hidden"></section>
@@ -99,6 +105,10 @@ If colortype is 3, <code>PLTE</code> is <em>always</em> created</p>
                 <code>struct</code>, <code>enum</code>,
                 <code>trait</code>, <code>typedef</code> (or
                 <code>tdef</code>).
+            </p>
+            <p>
+                Search functions by type signature (e.g.
+                <code>vec -> usize</code>)
             </p>
         </div>
     </div>

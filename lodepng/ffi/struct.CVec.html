@@ -28,7 +28,7 @@
 
     <section class="sidebar">
         
-        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><div class='block struct'><h2>Structs</h2><a class='struct current' href='struct.CVec.html'>CVec</a><a class='struct ' href='struct.ColorMode.html'>ColorMode</a><a class='struct ' href='struct.CompressSettings.html'>CompressSettings</a><a class='struct ' href='struct.DecoderSettings.html'>DecoderSettings</a><a class='struct ' href='struct.EncoderSettings.html'>EncoderSettings</a><a class='struct ' href='struct.Error.html'>Error</a><a class='struct ' href='struct.Info.html'>Info</a><a class='struct ' href='struct.State.html'>State</a><a class='struct ' href='struct.Time.html'>Time</a></div><div class='block enum'><h2>Enums</h2><a class='enum ' href='enum.AutoConvert.html'>AutoConvert</a><a class='enum ' href='enum.ColorType.html'>ColorType</a><a class='enum ' href='enum.FilterStrategy.html'>FilterStrategy</a></div>
+        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'CVec', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </section>
 
     <nav class="sub">
@@ -43,14 +43,15 @@
     </nav>
 
     <section id='main' class="content struct">
-<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>CVec</a><wbr></span><span class='out-of-band'><span id='render-detail'>
-            <a id="collapse-all" href="#">[-]
-            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-18' href='../../c_vec/struct.CVec.html?gotosrc=18'>[src]</a></span></h1>
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>CVec</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-11' class='srclink' href='../../c_vec/struct.CVec.html?gotosrc=11' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct CVec&lt;T&gt; {
     // some fields omitted
 }</pre><div class='docblock'><p>The type representing a foreign chunk of memory</p>
-</div><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl&lt;T&gt; <a class='struct' href='../../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.new' class='method'><a class='stability Unmarked' title='No stability level'></a><code>unsafe fn <a href='#method.new' class='fnname'>new</a>(base: *mut T, len: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;T&gt;</code></h4>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;T&gt; <a class='struct' href='../../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>unsafe fn <a href='#method.new' class='fnname'>new</a>(base: <a class='struct' href='http://doc.rust-lang.org/nightly/core/ptr/struct.Unique.html' title='core::ptr::Unique'>Unique</a>&lt;T&gt;, len: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;T&gt;</code></h4>
 <div class='docblock'><p>Create a <code>CVec</code> from a raw pointer to a buffer with a given length.</p>
 
 <p>Panics if the given pointer is null. The returned vector will not attempt
@@ -59,10 +60,10 @@ to deallocate the vector when dropped.</p>
 <h1 id="arguments" class='section-header'><a
                            href="#arguments">Arguments</a></h1>
 <ul>
-<li>base - A raw pointer to a buffer</li>
+<li>base - A unique pointer to a buffer</li>
 <li>len - The number of elements in the buffer</li>
 </ul>
-</div><h4 id='method.new_with_dtor' class='method'><a class='stability Unmarked' title='No stability level'></a><code>unsafe fn <a href='#method.new_with_dtor' class='fnname'>new_with_dtor</a>&lt;F&gt;(base: *mut T, len: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, dtor: F) -&gt; <a class='struct' href='../../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;T&gt; <span class='where'>where F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.FnOnce.html' title='core::ops::FnOnce'>FnOnce</a>(), F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Send.html' title='core::marker::Send'>Send</a></span></code></h4>
+</div><h4 id='method.new_with_dtor' class='method'><code>unsafe fn <a href='#method.new_with_dtor' class='fnname'>new_with_dtor</a>&lt;F&gt;(base: <a class='struct' href='http://doc.rust-lang.org/nightly/core/ptr/struct.Unique.html' title='core::ptr::Unique'>Unique</a>&lt;T&gt;, len: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, dtor: F) -&gt; <a class='struct' href='../../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;T&gt; <span class='where'>where F: <a class='trait' href='http://doc.rust-lang.org/nightly/alloc/boxed/trait.FnBox.html' title='alloc::boxed::FnBox'>FnBox</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut T</a>,)</a>, Output=<a href='http://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt; + 'static</span></code></h4>
 <div class='docblock'><p>Create a <code>CVec</code> from a foreign buffer, with a given length,
 and a function to run upon destruction.</p>
 
@@ -71,20 +72,19 @@ and a function to run upon destruction.</p>
 <h1 id="arguments" class='section-header'><a
                            href="#arguments">Arguments</a></h1>
 <ul>
-<li>base - A foreign pointer to a buffer</li>
+<li>base - A unique pointer to a buffer</li>
 <li>len - The number of elements in the buffer</li>
 <li>dtor - A fn to run when the value is destructed, useful
-     for freeing the buffer, etc.</li>
+     for freeing the buffer, etc. <code>base</code> will be passed
+     to it as an argument.</li>
 </ul>
-</div><h4 id='method.as_mut_slice' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.as_mut_slice' class='fnname'>as_mut_slice</a>(&amp;'a mut self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a mut [T]</a></code></h4>
-<div class='docblock'><p>View the stored data as a mutable slice.</p>
-</div><h4 id='method.get' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.get' class='fnname'>get</a>(&amp;'a self, ofs: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;'a T&gt;</code></h4>
+</div><h4 id='method.get' class='method'><code>fn <a href='#method.get' class='fnname'>get</a>(&amp;'a self, ofs: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;'a T&gt;</code></h4>
 <div class='docblock'><p>Retrieves an element at a given index, returning <code>None</code> if the requested
 index is greater than the length of the vector.</p>
-</div><h4 id='method.get_mut' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.get_mut' class='fnname'>get_mut</a>(&amp;'a mut self, ofs: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;'a mut T&gt;</code></h4>
+</div><h4 id='method.get_mut' class='method'><code>fn <a href='#method.get_mut' class='fnname'>get_mut</a>(&amp;'a mut self, ofs: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;'a mut T&gt;</code></h4>
 <div class='docblock'><p>Retrieves a mutable element at a given index, returning <code>None</code> if the
 requested index is greater than the length of the vector.</p>
-</div><h4 id='method.into_inner' class='method'><a class='stability Unmarked' title='No stability level'></a><code>unsafe fn <a href='#method.into_inner' class='fnname'>into_inner</a>(self) -&gt; *mut T</code></h4>
+</div><h4 id='method.into_inner' class='method'><code>unsafe fn <a href='#method.into_inner' class='fnname'>into_inner</a>(self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut T</a></code></h4>
 <div class='docblock'><p>Unwrap the pointer without running the destructor</p>
 
 <p>This method retrieves the underlying pointer, and in the process
@@ -95,16 +95,16 @@ in this case you would not want to run the destructor.</p>
 <p>Note that if you want to access the underlying pointer without
 cancelling the destructor, you can simply call <code>transmute</code> on the return
 value of <code>get(0)</code>.</p>
-</div><h4 id='method.unwrap' class='method'><a class='stability Deprecated' title='Deprecated: renamed to into_inner()'></a><code>unsafe fn <a href='#method.unwrap' class='fnname'>unwrap</a>(self) -&gt; *mut T</code></h4>
-<div class='docblock'><p>Deprecated, use into_inner() instead</p>
-</div><h4 id='method.len' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.len' class='fnname'>len</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+</div><h4 id='method.len' class='method'><code>fn <a href='#method.len' class='fnname'>len</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
 <div class='docblock'><p>Returns the number of items in this vector.</p>
-</div><h4 id='method.is_empty' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.is_empty' class='fnname'>is_empty</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+</div><h4 id='method.is_empty' class='method'><code>fn <a href='#method.is_empty' class='fnname'>is_empty</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
 <div class='docblock'><p>Returns whether this vector is empty.</p>
-</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><a class='stability Stable' title='Stable'></a><code>impl&lt;T&gt; <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Drop.html' title='core::ops::Drop'>Drop</a> for <a class='struct' href='../../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.drop' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.drop' class='fnname'>drop</a>(&amp;mut self)</code></h4>
-</div><h3 class='impl'><a class='stability Unstable' title='Unstable: will be replaced by slice syntax'></a><code>impl&lt;T&gt; <a class='trait' href='http://doc.rust-lang.org/nightly/core/slice/trait.AsSlice.html' title='core::slice::AsSlice'>AsSlice</a>&lt;T&gt; for <a class='struct' href='../../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.as_slice' class='method'><a class='stability Unstable' title='Unstable: will be replaced by slice syntax'></a><code>fn <a href='#method.as_slice' class='fnname'>as_slice</a>(&amp;'a self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [T]</a></code></h4>
-<div class='docblock'><p>View the stored data as a slice.</p>
-</div></div></section>
+</div><h4 id='method.as_cslice' class='method'><code>fn <a href='#method.as_cslice' class='fnname'>as_cslice</a>(&amp;self) -&gt; <a class='struct' href='../../c_vec/struct.CSlice.html' title='c_vec::CSlice'>CSlice</a>&lt;T&gt;</code></h4>
+<div class='docblock'><p>Convert to CSlice</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl&lt;T&gt; <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Drop.html' title='core::ops::Drop'>Drop</a> for <a class='struct' href='../../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.drop' class='method'><code>fn <a href='http://doc.rust-lang.org/nightly/core/ops/trait.Drop.html#method.drop' class='fnname'>drop</a>(&amp;mut self)</code></h4>
+</div><h3 class='impl'><code>impl&lt;T&gt; <a class='trait' href='http://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html' title='core::convert::AsRef'>AsRef</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>[T]</a>&gt; for <a class='struct' href='../../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.as_ref' class='method'><code>fn <a href='http://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html#method.as_ref' class='fnname'>as_ref</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[T]</a></code></h4>
+</div><h3 class='impl'><code>impl&lt;T&gt; <a class='trait' href='http://doc.rust-lang.org/nightly/core/convert/trait.AsMut.html' title='core::convert::AsMut'>AsMut</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>[T]</a>&gt; for <a class='struct' href='../../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.as_mut' class='method'><code>fn <a href='http://doc.rust-lang.org/nightly/core/convert/trait.AsMut.html#method.as_mut' class='fnname'>as_mut</a>(&amp;mut self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [T]</a></code></h4>
+</div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -136,6 +136,10 @@ value of <code>get(0)</code>.</p>
                 <code>struct</code>, <code>enum</code>,
                 <code>trait</code>, <code>typedef</code> (or
                 <code>tdef</code>).
+            </p>
+            <p>
+                Search functions by type signature (e.g.
+                <code>vec -> usize</code>)
             </p>
         </div>
     </div>

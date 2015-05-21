@@ -28,7 +28,7 @@
 
     <section class="sidebar">
         
-        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.CVec.html'>CVec</a><a class='struct current' href='struct.ColorMode.html'>ColorMode</a><a class='struct ' href='struct.CompressSettings.html'>CompressSettings</a><a class='struct ' href='struct.DecoderSettings.html'>DecoderSettings</a><a class='struct ' href='struct.EncoderSettings.html'>EncoderSettings</a><a class='struct ' href='struct.Error.html'>Error</a><a class='struct ' href='struct.Info.html'>Info</a><a class='struct ' href='struct.State.html'>State</a><a class='struct ' href='struct.Time.html'>Time</a></div><div class='block enum'><h2>Enums</h2><a class='enum ' href='enum.AutoConvert.html'>AutoConvert</a><a class='enum ' href='enum.ColorType.html'>ColorType</a><a class='enum ' href='enum.FilterStrategy.html'>FilterStrategy</a></div>
+        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'ColorMode', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </section>
 
     <nav class="sub">
@@ -43,23 +43,27 @@
     </nav>
 
     <section id='main' class="content struct">
-<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>ColorMode</a><wbr></span><span class='out-of-band'><span id='render-detail'>
-            <a id="collapse-all" href="#">[-]
-            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-116' href='../../src/lodepng/lib.rs.html#72-105'>[src]</a></span></h1>
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>ColorMode</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-1057' class='srclink' href='../../src/lodepng/lib.rs.html#338-371' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct ColorMode {
     pub colortype: <a class='enum' href='../../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a>,
     pub bitdepth: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub palette: *const <a class='struct' href='../../lodepng/struct.RGBA.html' title='lodepng::RGBA'>RGBA</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;,
+    pub palette: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const <a class='struct' href='../../lodepng/struct.RGBA.html' title='lodepng::RGBA'>RGBA</a>&lt;<a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;</a>,
     pub palettesize: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a>,
     // some fields omitted
 }</pre><div class='docblock'><p>Color mode of an image. Contains all information required to decode the pixel
 bits to RGBA colors. This information is the same as used in the PNG file
 format, and is used both for PNG and raw image data in LodePNG.</p>
 </div><h2 class='fields'>Fields</h2>
-<table><tr><td id='structfield.colortype'><a class='stability Unmarked' title='No stability level'></a><code>colortype</code></td><td><div class='docblock'><p>color type, see PNG standard</p>
-</div></td></tr><tr><td id='structfield.bitdepth'><a class='stability Unmarked' title='No stability level'></a><code>bitdepth</code></td><td><div class='docblock'><p>bits per sample, see PNG standard</p>
-</div></td></tr><tr><td id='structfield.palette'><a class='stability Unmarked' title='No stability level'></a><code>palette</code></td><td><div class='docblock'><p>palette (<code>PLTE</code> and <code>tRNS</code>)
+<table><tr class='stab '>
+                                  <td id='structfield.colortype'><code>colortype</code></td><td><div class='docblock'><p>color type, see PNG standard</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.bitdepth'><code>bitdepth</code></td><td><div class='docblock'><p>bits per sample, see PNG standard</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.palette'><code>palette</code></td><td><div class='docblock'><p>palette (<code>PLTE</code> and <code>tRNS</code>)
 Dynamically allocated with the colors of the palette, including alpha.
 When encoding a PNG, to store your colors in the palette of the LodePNGColorMode, first use
 lodepng_palette_clear, then for each color use lodepng_palette_add.
@@ -69,37 +73,9 @@ If you encode an image without alpha with palette, don&#39;t forget to put value
 fills the palette colors in the pixels of the raw RGBA output.</p>
 
 <p>The palette is only supported for color type 3.</p>
-</div></td></tr><tr><td id='structfield.palettesize'><a class='stability Unmarked' title='No stability level'></a><code>palettesize</code></td><td><div class='docblock'><p>palette size in number of colors (amount of bytes is 4 * <code>palettesize</code>)</p>
-</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='struct' href='../../lodepng/ffi/struct.ColorMode.html' title='lodepng::ffi::ColorMode'>ColorMode</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../../lodepng/ffi/struct.ColorMode.html' title='lodepng::ffi::ColorMode'>ColorMode</a></code></h4>
-<h4 id='method.palette_clear' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.palette_clear' class='fnname'>palette_clear</a>(&amp;mut self)</code></h4>
-<h4 id='method.palette_add' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.palette_add' class='fnname'>palette_add</a>(&amp;mut self, r: <a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, g: <a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, b: <a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, a: <a href='http://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</code></h4>
-<div class='docblock'><p>add 1 color to the palette</p>
-</div><h4 id='method.bpp' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.bpp' class='fnname'>bpp</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
-<div class='docblock'><p>get the total amount of bits per pixel, based on colortype and bitdepth in the struct</p>
-</div><h4 id='method.channels' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.channels' class='fnname'>channels</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
-<div class='docblock'><p>get the amount of color channels used, based on colortype in the struct.
-If a palette is used, it counts as 1 channel.</p>
-</div><h4 id='method.is_greyscale_type' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.is_greyscale_type' class='fnname'>is_greyscale_type</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
-<div class='docblock'><p>is it a greyscale type? (only colortype 0 or 4)</p>
-</div><h4 id='method.is_alpha_type' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.is_alpha_type' class='fnname'>is_alpha_type</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
-<div class='docblock'><p>has it got an alpha channel? (only colortype 2 or 6)</p>
-</div><h4 id='method.is_palette_type' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.is_palette_type' class='fnname'>is_palette_type</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
-<div class='docblock'><p>has it got a palette? (only colortype 3)</p>
-</div><h4 id='method.has_palette_alpha' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.has_palette_alpha' class='fnname'>has_palette_alpha</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
-<div class='docblock'><p>only returns true if there is a palette and there is a value in the palette with alpha &lt; 255.
-Loops through the palette to check this.</p>
-</div><h4 id='method.can_have_alpha' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.can_have_alpha' class='fnname'>can_have_alpha</a>(&amp;self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
-<div class='docblock'><p>Check if the given color info indicates the possibility of having non-opaque pixels in the PNG image.
-Returns true if the image can have translucent or invisible pixels (it still be opaque if it doesn&#39;t use such pixels).
-Returns false if the image can only have opaque pixels.
-In detail, it returns true only if it&#39;s a color type with alpha, or has a palette with non-opaque values,
-or if &quot;key_defined&quot; is true.</p>
-</div><h4 id='method.raw_size' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.raw_size' class='fnname'>raw_size</a>(&amp;self, w: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>, h: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
-<div class='docblock'><p>Returns the byte size of a raw image buffer with given width, height and color mode</p>
-</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><a class='stability Stable' title='Stable'></a><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.Drop.html' title='core::ops::Drop'>Drop</a> for <a class='struct' href='../../lodepng/ffi/struct.ColorMode.html' title='lodepng::ffi::ColorMode'>ColorMode</a></code></h3><div class='impl-items'><h4 id='method.drop' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.drop' class='fnname'>drop</a>(&amp;mut self)</code></h4>
-</div><h3 class='impl'><a class='stability Stable' title='Stable'></a><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='struct' href='../../lodepng/ffi/struct.ColorMode.html' title='lodepng::ffi::ColorMode'>ColorMode</a></code></h3><div class='impl-items'><h4 id='method.clone' class='method'><a class='stability Stable' title='Stable'></a><code>fn <a href='#method.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class='struct' href='../../lodepng/ffi/struct.ColorMode.html' title='lodepng::ffi::ColorMode'>ColorMode</a></code></h4>
-<h4 id='method.clone_from' class='tymethod'><a class='stability Unstable' title='Unstable: this function is rarely used'></a><code>fn <a href='#tymethod.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code></h4>
-</div></section>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.palettesize'><code>palettesize</code></td><td><div class='docblock'><p>palette size in number of colors (amount of bytes is 4 * <code>palettesize</code>)</p>
+</div></td></tr></table></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -131,6 +107,10 @@ or if &quot;key_defined&quot; is true.</p>
                 <code>struct</code>, <code>enum</code>,
                 <code>trait</code>, <code>typedef</code> (or
                 <code>tdef</code>).
+            </p>
+            <p>
+                Search functions by type signature (e.g.
+                <code>vec -> usize</code>)
             </p>
         </div>
     </div>

@@ -28,7 +28,7 @@
 
     <section class="sidebar">
         
-        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.CVec.html'>CVec</a><a class='struct ' href='struct.ColorMode.html'>ColorMode</a><a class='struct ' href='struct.CompressSettings.html'>CompressSettings</a><a class='struct ' href='struct.DecoderSettings.html'>DecoderSettings</a><a class='struct ' href='struct.EncoderSettings.html'>EncoderSettings</a><a class='struct ' href='struct.Error.html'>Error</a><a class='struct ' href='struct.Info.html'>Info</a><a class='struct ' href='struct.State.html'>State</a><a class='struct ' href='struct.Time.html'>Time</a></div><div class='block enum'><h2>Enums</h2><a class='enum ' href='enum.AutoConvert.html'>AutoConvert</a><a class='enum ' href='enum.ColorType.html'>ColorType</a><a class='enum current' href='enum.FilterStrategy.html'>FilterStrategy</a></div>
+        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'FilterStrategy', ty: 'enum', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </section>
 
     <nav class="sub">
@@ -43,10 +43,11 @@
     </nav>
 
     <section id='main' class="content enum">
-<h1 class='fqn'><span class='in-band'>Enum <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='enum' href=''>FilterStrategy</a><wbr><a class='stability Stable' title=''>Stable</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="collapse-all" href="#">[-]
-            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-485' href='../../src/lodepng/lib.rs.html#304-317'>[src]</a></span></h1>
+<h1 class='fqn'><span class='in-band'>Enum <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='enum' href=''>FilterStrategy</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-1462' class='srclink' href='../../src/lodepng/lib.rs.html#568-581' title='goto source code'>[src]</a></span></h1>
 <pre class='rust enum'>pub enum FilterStrategy {
     LFS_ZERO,
     LFS_MINSUM,
@@ -55,14 +56,17 @@
     LFS_PREDEFINED,
 }</pre><div class='docblock'><p>automatically use color type with less bits per pixel if losslessly possible. Default: AUTO</p>
 </div><h2 class='variants'>Variants</h2>
-<table><tr><td id='variant.LFS_ZERO'><a class='stability Unmarked' title='No stability level'></a><code>LFS_ZERO</code></td><td><div class='docblock'><p>every filter at zero</p>
-</div></td></tr><tr><td id='variant.LFS_MINSUM'><a class='stability Unmarked' title='No stability level'></a><code>LFS_MINSUM</code></td><td><div class='docblock'><p>Use filter that gives minumum sum, as described in the official PNG filter heuristic.</p>
-</div></td></tr><tr><td id='variant.LFS_ENTROPY'><a class='stability Unmarked' title='No stability level'></a><code>LFS_ENTROPY</code></td><td><div class='docblock'><p>Use the filter type that gives smallest Shannon entropy for this scanline. Depending
+<table><tr><td id='variant.LFS_ZERO'><code>LFS_ZERO</code></td><td><div class='docblock'><p>every filter at zero</p>
+</div></td></tr><tr><td id='variant.LFS_MINSUM'><code>LFS_MINSUM</code></td><td><div class='docblock'><p>Use filter that gives minumum sum, as described in the official PNG filter heuristic.</p>
+</div></td></tr><tr><td id='variant.LFS_ENTROPY'><code>LFS_ENTROPY</code></td><td><div class='docblock'><p>Use the filter type that gives smallest Shannon entropy for this scanline. Depending
 on the image, this is better or worse than minsum.</p>
-</div></td></tr><tr><td id='variant.LFS_BRUTE_FORCE'><a class='stability Unmarked' title='No stability level'></a><code>LFS_BRUTE_FORCE</code></td><td><div class='docblock'><p>Brute-force-search PNG filters by compressing each filter for each scanline.
+</div></td></tr><tr><td id='variant.LFS_BRUTE_FORCE'><code>LFS_BRUTE_FORCE</code></td><td><div class='docblock'><p>Brute-force-search PNG filters by compressing each filter for each scanline.
 Experimental, very slow, and only rarely gives better compression than MINSUM.</p>
-</div></td></tr><tr><td id='variant.LFS_PREDEFINED'><a class='stability Unmarked' title='No stability level'></a><code>LFS_PREDEFINED</code></td><td><div class='docblock'><p>use predefined_filters buffer: you specify the filter type for each scanline</p>
-</div></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><a class='stability Stable' title='Stable'></a><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a> for <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></h3><div class='impl-items'></div></section>
+</div></td></tr><tr><td id='variant.LFS_PREDEFINED'><code>LFS_PREDEFINED</code></td><td><div class='docblock'><p>use predefined_filters buffer: you specify the filter type for each scanline</p>
+</div></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='http://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#method.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='http://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='http://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div><h3 class='impl'><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></h3><div class='impl-items'><h4 id='method.clone' class='method'><code>fn <a href='http://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></h4>
+<h4 id='method.clone_from' class='method'><code>fn <a href='http://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code></h4>
+</div><h3 class='impl'><code>impl <a class='trait' href='http://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a> for <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></h3><div class='impl-items'></div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -94,6 +98,10 @@ Experimental, very slow, and only rarely gives better compression than MINSUM.</
                 <code>struct</code>, <code>enum</code>,
                 <code>trait</code>, <code>typedef</code> (or
                 <code>tdef</code>).
+            </p>
+            <p>
+                Search functions by type signature (e.g.
+                <code>vec -> usize</code>)
             </p>
         </div>
     </div>

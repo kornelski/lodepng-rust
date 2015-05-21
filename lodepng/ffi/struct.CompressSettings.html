@@ -28,7 +28,7 @@
 
     <section class="sidebar">
         
-        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.CVec.html'>CVec</a><a class='struct ' href='struct.ColorMode.html'>ColorMode</a><a class='struct current' href='struct.CompressSettings.html'>CompressSettings</a><a class='struct ' href='struct.DecoderSettings.html'>DecoderSettings</a><a class='struct ' href='struct.EncoderSettings.html'>EncoderSettings</a><a class='struct ' href='struct.Error.html'>Error</a><a class='struct ' href='struct.Info.html'>Info</a><a class='struct ' href='struct.State.html'>State</a><a class='struct ' href='struct.Time.html'>Time</a></div><div class='block enum'><h2>Enums</h2><a class='enum ' href='enum.AutoConvert.html'>AutoConvert</a><a class='enum ' href='enum.ColorType.html'>ColorType</a><a class='enum ' href='enum.FilterStrategy.html'>FilterStrategy</a></div>
+        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'CompressSettings', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </section>
 
     <nav class="sub">
@@ -43,10 +43,11 @@
     </nav>
 
     <section id='main' class="content struct">
-<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>CompressSettings</a><wbr></span><span class='out-of-band'><span id='render-detail'>
-            <a id="collapse-all" href="#">[-]
-            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-240' href='../../src/lodepng/lib.rs.html#143-176'>[src]</a></span></h1>
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>CompressSettings</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-1154' class='srclink' href='../../src/lodepng/lib.rs.html#409-442' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct CompressSettings {
     pub btype: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
     pub use_lz77: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
@@ -54,23 +55,32 @@
     pub minmatch: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
     pub nicematch: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
     pub lazymatching: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub custom_zlib: <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt; extern "C" fn(arg1: *mut *mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a>, arg2: *mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a>, arg3: *const <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a>, arg4: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a>, arg5: *const <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a>) -&gt; <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>&gt;,
-    pub custom_deflate: <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt; extern "C" fn(arg1: *mut *mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a>, arg2: *mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a>, arg3: *const <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a>, arg4: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a>, arg5: *const <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a>) -&gt; <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>&gt;,
-    pub custom_context: *const <a class='enum' href='http://doc.rust-lang.org/nightly/libc/types/common/c95/enum.c_void.html' title='libc::types::common::c95::c_void'>c_void</a>,
+    pub custom_zlib: <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt; extern "C" fn(arg1: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a></a></a>, arg2: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a></a>, arg3: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a></a>, arg4: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a>, arg5: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a></a>) -&gt; <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>&gt;,
+    pub custom_deflate: <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt; extern "C" fn(arg1: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a></a></a>, arg2: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a></a>, arg3: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a></a>, arg4: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a>, arg5: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a></a>) -&gt; <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>&gt;,
+    pub custom_context: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const <a class='enum' href='http://doc.rust-lang.org/nightly/libc/types/common/c95/enum.c_void.html' title='libc::types::common::c95::c_void'>c_void</a></a>,
 }</pre><div class='docblock'><p>Settings for zlib compression. Tweaking these settings tweaks the balance between speed and compression ratio.</p>
 </div><h2 class='fields'>Fields</h2>
-<table><tr><td id='structfield.btype'><a class='stability Unmarked' title='No stability level'></a><code>btype</code></td><td><div class='docblock'><p>the block type for LZ (0, 1, 2 or 3, see zlib standard). Should be 2 for proper compression.</p>
-</div></td></tr><tr><td id='structfield.use_lz77'><a class='stability Unmarked' title='No stability level'></a><code>use_lz77</code></td><td><div class='docblock'><p>whether or not to use LZ77. Should be 1 for proper compression.</p>
-</div></td></tr><tr><td id='structfield.windowsize'><a class='stability Unmarked' title='No stability level'></a><code>windowsize</code></td><td><div class='docblock'><p>must be a power of two &lt;= 32768. higher compresses more but is slower. Typical value: 2048.</p>
-</div></td></tr><tr><td id='structfield.minmatch'><a class='stability Unmarked' title='No stability level'></a><code>minmatch</code></td><td><div class='docblock'><p>mininum lz77 length. 3 is normally best, 6 can be better for some PNGs. Default: 0</p>
-</div></td></tr><tr><td id='structfield.nicematch'><a class='stability Unmarked' title='No stability level'></a><code>nicematch</code></td><td><div class='docblock'><p>stop searching if &gt;= this length found. Set to 258 for best compression. Default: 128</p>
-</div></td></tr><tr><td id='structfield.lazymatching'><a class='stability Unmarked' title='No stability level'></a><code>lazymatching</code></td><td><div class='docblock'><p>use lazy matching: better compression but a bit slower. Default: true</p>
-</div></td></tr><tr><td id='structfield.custom_zlib'><a class='stability Unmarked' title='No stability level'></a><code>custom_zlib</code></td><td><div class='docblock'><p>use custom zlib encoder instead of built in one (default: None)</p>
-</div></td></tr><tr><td id='structfield.custom_deflate'><a class='stability Unmarked' title='No stability level'></a><code>custom_deflate</code></td><td><div class='docblock'><p>use custom deflate encoder instead of built in one (default: null)
+<table><tr class='stab '>
+                                  <td id='structfield.btype'><code>btype</code></td><td><div class='docblock'><p>the block type for LZ (0, 1, 2 or 3, see zlib standard). Should be 2 for proper compression.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.use_lz77'><code>use_lz77</code></td><td><div class='docblock'><p>whether or not to use LZ77. Should be 1 for proper compression.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.windowsize'><code>windowsize</code></td><td><div class='docblock'><p>must be a power of two &lt;= 32768. higher compresses more but is slower. Typical value: 2048.</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.minmatch'><code>minmatch</code></td><td><div class='docblock'><p>mininum lz77 length. 3 is normally best, 6 can be better for some PNGs. Default: 0</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.nicematch'><code>nicematch</code></td><td><div class='docblock'><p>stop searching if &gt;= this length found. Set to 258 for best compression. Default: 128</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.lazymatching'><code>lazymatching</code></td><td><div class='docblock'><p>use lazy matching: better compression but a bit slower. Default: true</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.custom_zlib'><code>custom_zlib</code></td><td><div class='docblock'><p>use custom zlib encoder instead of built in one (default: None)</p>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.custom_deflate'><code>custom_deflate</code></td><td><div class='docblock'><p>use custom deflate encoder instead of built in one (default: null)
 if custom_zlib is used, custom_deflate is ignored since only the built in
 zlib function will call custom_deflate</p>
-</div></td></tr><tr><td id='structfield.custom_context'><a class='stability Unmarked' title='No stability level'></a><code>custom_context</code></td><td><div class='docblock'><p>optional custom settings for custom functions</p>
-</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a></code></h4>
+</div></td></tr><tr class='stab '>
+                                  <td id='structfield.custom_context'><code>custom_context</code></td><td><div class='docblock'><p>optional custom settings for custom functions</p>
+</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a></code></h4>
 <div class='docblock'><p>Default compression settings</p>
 </div></div></section>
     <section id='search' class="content hidden"></section>
@@ -104,6 +114,10 @@ zlib function will call custom_deflate</p>
                 <code>struct</code>, <code>enum</code>,
                 <code>trait</code>, <code>typedef</code> (or
                 <code>tdef</code>).
+            </p>
+            <p>
+                Search functions by type signature (e.g.
+                <code>vec -> usize</code>)
             </p>
         </div>
     </div>
