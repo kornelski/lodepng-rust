@@ -2,12 +2,12 @@ extern crate lodepng;
 use std::path::Path;
 
 fn main() {
-    let from_path = &Path::new("test.png");
+    let from_path = "test.png";
 
     // Since we're using decode24_file, we get an RGB bitmap
     let bitmap = match lodepng::decode24_file(from_path) {
         Ok(bitmap) => bitmap,
-        Err(reason) => panic!("Could not load {}, because: {}", from_path.display(), reason),
+        Err(reason) => panic!("Could not load {}, because: {}", from_path, reason),
     };
 
     let to_path = &Path::new("write_test.png");
@@ -20,5 +20,5 @@ fn main() {
         panic!("failed to write png: {}", e);
     }
 
-    println!("Copied {} to {}", from_path.display(), to_path.display());
+    println!("Copied {} to {}", from_path, to_path.display());
 }

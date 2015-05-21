@@ -271,7 +271,7 @@ impl State {
         }
     }
 
-    pub fn encode_file<PixelType>(&mut self, filepath: &Path, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+    pub fn encode_file<PixelType, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = try!(self.encode(image, w, h));
         ::save_file(filepath, buf.as_cslice().as_ref())
     }
@@ -868,7 +868,7 @@ unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bit
     }
 }
 
-fn save_file(filepath: &Path, data: &[u8]) -> Result<(), Error> {
+fn save_file<P: AsRef<Path>>(filepath: P, data: &[u8]) -> Result<(), Error> {
     if let Ok(mut file) = File::create(filepath) {
         if file.write_all(data).is_ok() {
             return Ok(());
@@ -930,7 +930,7 @@ pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB<u8>>, Error> {
 ///      _ => panic!("¯\\_(ツ)_/¯")
 ///  }
 ///  ```
-pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error>  {
+pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error>  {
     if let Ok(mut file) = File::open(filepath) {
         let mut data = Vec::new();
         if file.read_to_end(&mut data).is_ok() {
@@ -941,7 +941,7 @@ pub fn decode_file(filepath: &Path, colortype: ColorType, bitdepth: c_uint) -> R
 }
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
-pub fn decode32_file(filepath: &Path) -> Result<Bitmap<RGBA<u8>>, Error> {
+pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA<u8>>, Error> {
     match try!(decode_file(filepath, LCT_RGBA, 8)) {
         Image::RGBA(img) => Ok(img),
         _ => Err(Error(56)),
@@ -949,7 +949,7 @@ pub fn decode32_file(filepath: &Path) -> Result<Bitmap<RGBA<u8>>, Error> {
 }
 
 /// Same as `decode_file`, but always decodes to 24-bit RGB raw image
-pub fn decode24_file(filepath: &Path) -> Result<Bitmap<RGB<u8>>, Error> {
+pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Error> {
     match try!(decode_file(filepath, LCT_RGB, 8)) {
         Image::RGB(img) => Ok(img),
         _ => Err(Error(56)),
@@ -1003,18 +1003,18 @@ pub fn encode24<PixelType>(image: &[PixelType], w: usize, h: usize) -> Result<CV
 /// Same as the other encode functions, but instead takes a file path as output.
 ///
 /// NOTE: This overwrites existing files without warning!
-pub fn encode_file<PixelType>(filepath: &Path, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
+pub fn encode_file<PixelType, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = try!(encode_memory(image, w, h, colortype, bitdepth));
     save_file(filepath, encoded.as_cslice().as_ref())
 }
 
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
-pub fn encode32_file<PixelType>(filepath: &Path, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode32_file<PixelType, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGBA, 8)
 }
 
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
-pub fn encode24_file<PixelType>(filepath: &Path, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode24_file<PixelType, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGB, 8)
 }
 

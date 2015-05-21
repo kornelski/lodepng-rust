@@ -27,7 +27,7 @@ See [API documentation](http://pornel.github.io/lodepng-rust/lodepng/) for detai
 To load RGBA PNG file:
 
 ```rust
-lodepng::decode32_file(&Path::new("in.png"))
+lodepng::decode32_file("in.png")
 ```
 
 returns `lodepng::RawBitmap` with `.width`, `.height` and `RGBA` `.buffer`.
@@ -35,5 +35,5 @@ returns `lodepng::RawBitmap` with `.width`, `.height` and `RGBA` `.buffer`.
 To save RGBA PNG file:
 
 ```rust
-lodepng::encode32_file(&Path::new("out.png"), buffer.as_slice(), width, height)
+lodepng::encode32_file("out.png", buffer.as_slice(), width, height)
 ```
