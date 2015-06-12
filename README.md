@@ -30,7 +30,7 @@ To load RGBA PNG file:
 lodepng::decode32_file("in.png")
 ```
 
-returns `lodepng::RawBitmap` with `.width`, `.height` and `RGBA` `.buffer`.
+returns `lodepng::Bitmap<lodepng::RGBA<u8>>` with `.width`, `.height`, and `.buffer`.
 
 To save RGBA PNG file:
 
