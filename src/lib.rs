@@ -1,7 +1,5 @@
 #![crate_name = "lodepng"]
 #![crate_type = "lib"]
-#![feature(libc)]
-#![feature(unique)]
 
 extern crate libc;
 extern crate c_vec;
@@ -845,7 +843,7 @@ fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> usi
 
 unsafe fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<T>
     where T: Send {
-    CVec::new_with_dtor(::std::ptr::Unique::new(ptr), elts, |base: *mut T| {
+    CVec::new_with_dtor(ptr, elts, |base: *mut T| {
         free(base as *mut c_void);
     })
 }
