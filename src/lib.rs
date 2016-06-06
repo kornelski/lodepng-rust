@@ -307,7 +307,7 @@ pub mod ffi {
         /// Returns an English description of the numerical error code.
             pub fn as_str(&self) -> &'static str {
             unsafe {
-                let cstr = ::std::ffi::CStr::from_ptr(lodepng_error_text(self.0));
+                let cstr = ::std::ffi::CStr::from_ptr(lodepng_error_text(self.0) as *const _);
                 ::std::str::from_utf8(cstr.to_bytes()).unwrap()
             }
         }
