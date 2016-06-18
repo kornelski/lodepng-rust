@@ -2,7 +2,11 @@
 #![crate_type = "lib"]
 
 extern crate libc;
+extern crate rgb;
 extern crate c_vec;
+
+pub use rgb::RGB;
+pub use rgb::RGBA;
 
 use libc::{c_char, c_uchar, c_uint, size_t, c_void, free};
 use std::fmt;
@@ -732,26 +736,6 @@ pub mod ffi {
     }
 }
 
-/// `RGBA<T>` with `T` appropriate for bit depth (`u8`, `u16`)
-#[repr(C)]
-#[derive(Copy, Clone, Debug)]
-pub struct RGBA<ComponentType> {
-    pub r: ComponentType,
-    pub g: ComponentType,
-    pub b: ComponentType,
-    /// 0 = transparent, 255 = opaque
-    pub a: ComponentType,
-}
-
-/// `RGB<T>` with `T` appropriate for bit depth (`u8`, `u16`)
-#[repr(C)]
-#[derive(Copy, Clone, Debug)]
-pub struct RGB<ComponentType> {
-    pub r: ComponentType,
-    pub g: ComponentType,
-    pub b: ComponentType,
-}
-
 /// Opaque greyscale pixel (acces with `px.0`)
 #[derive(Debug)]
 pub struct Grey<ComponentType>(ComponentType);
@@ -776,18 +760,6 @@ pub enum Image {
     RGB(Bitmap<RGB<u8>>),
     RGBA16(Bitmap<RGBA<u16>>),
     RGB16(Bitmap<RGB<u16>>),
-}
-
-impl<T: fmt::Display> fmt::Display for RGBA<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"rgba({},{},{},{})", self.r,self.g,self.b,self.a)
-    }
-}
-
-impl<T: fmt::Display> fmt::Display for RGB<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"rgb({},{},{})", self.r,self.g,self.b)
-    }
 }
 
 impl fmt::Debug for Error {
