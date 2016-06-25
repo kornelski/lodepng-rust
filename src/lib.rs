@@ -11,6 +11,7 @@ pub use rgb::RGBA;
 use libc::{c_char, c_uchar, c_uint, size_t, c_void, free};
 use std::fmt;
 use std::mem;
+use std::io;
 use std::fs::File;
 use std::io::Write;
 use std::io::Read;
@@ -774,6 +775,15 @@ impl fmt::Display for Error {
     }
 }
 
+impl std::convert::From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        match err.kind() {
+            io::ErrorKind::NotFound | io::ErrorKind::UnexpectedEof => {Error(78)}
+            _ => {Error(79)}
+        }
+    }
+}
+
 #[allow(missing_copy_implementations)]
 pub struct Chunk {
     data: *mut c_uchar,
@@ -839,12 +849,9 @@ unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bit
 }
 
 fn save_file<P: AsRef<Path>>(filepath: P, data: &[u8]) -> Result<(), Error> {
-    if let Ok(mut file) = File::create(filepath) {
-        if file.write_all(data).is_ok() {
-            return Ok(());
-        }
-    }
-    return Err(Error(79));
+    let mut file = try!(File::create(filepath));
+    try!(file.write_all(data));
+    return Ok(());
 }
 
 /// Converts PNG data in memory to raw pixel data.
@@ -901,13 +908,10 @@ pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB<u8>>, Error> {
 ///  }
 ///  ```
 pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error>  {
-    if let Ok(mut file) = File::open(filepath) {
-        let mut data = Vec::new();
-        if file.read_to_end(&mut data).is_ok() {
-            return decode_memory(&data, colortype, bitdepth);
-        }
-    }
-    return Err(Error(78));
+    let mut file = try!(File::open(filepath));
+    let mut data = Vec::new();
+    try!(file.read_to_end(&mut data));
+    return decode_memory(&data, colortype, bitdepth);
 }
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
