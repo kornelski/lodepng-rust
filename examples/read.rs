@@ -1,12 +1,9 @@
 extern crate lodepng;
-use std::path::Path;
 
 fn main() {
-    let path = &Path::new("test.png");
-
-    match lodepng::decode32_file(path) {
-        Ok(bitmap) => println!("Decoded image {} x {} and the first pixel's red value is {}",
-                                bitmap.width, bitmap.height, bitmap.buffer.get(0).unwrap()),
-        Err(reason) => println!("Could not load {}, because: {}", path.display(), reason),
+    match lodepng::decode32_file("test.png") {
+        Ok(bitmap) => println!("Decoded image {} x {} and the first pixel's value is {}",
+                                bitmap.width, bitmap.height, bitmap.buffer.as_ref()[0]),
+        Err(reason) => println!("Could not load, because: {}", reason),
     }
 }
