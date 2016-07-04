@@ -250,6 +250,10 @@ impl State {
         }
     }
 
+    pub fn decode_file<P: AsRef<Path>>(&mut self, filepath: P) -> Result<::Image, Error> {
+        self.decode(&try!(::load_file(filepath)))
+    }
+
     /// Returns (width, height)
     pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
         unsafe {
