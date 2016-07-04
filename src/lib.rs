@@ -338,6 +338,7 @@ pub mod ffi {
     /// bits to RGBA colors. This information is the same as used in the PNG file
     /// format, and is used both for PNG and raw image data in LodePNG.
     #[repr(C)]
+    #[derive(Debug)]
     pub struct ColorMode {
         /// color type, see PNG standard
         pub colortype: ColorType,
@@ -751,6 +752,7 @@ pub struct GreyAlpha<ComponentType>(ComponentType, ComponentType);
 ///
 /// To safely convert RGB/RGBA see `Vec::map_in_place`,
 /// or use `transmute()`
+#[derive(Debug)]
 pub enum Image {
     RawData(Bitmap<u8>),
     Grey(Bitmap<Grey<u8>>),
