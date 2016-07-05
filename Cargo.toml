@@ -26,3 +26,6 @@ name = "write"
 
 [[example]]
 name = "passthrough"
+
+[[example]]
+name = "read_advanced"
