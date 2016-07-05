@@ -9,7 +9,9 @@
 
     <title>lodepng::ffi::State - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
+    
 
     
     
@@ -26,17 +28,17 @@
 
 
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'State', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
@@ -44,10 +46,10 @@
 
     <section id='main' class="content struct">
 <h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>State</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1719' class='srclink' href='../../src/lodepng/lib.rs.html#650-660' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-227' class='srclink' href='../../src/lodepng/src/ffi.rs.html#355-365' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct State {
     pub decoder: <a class='struct' href='../../lodepng/ffi/struct.DecoderSettings.html' title='lodepng::ffi::DecoderSettings'>DecoderSettings</a>,
     pub encoder: <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a>,
@@ -55,52 +57,62 @@
     pub info_png: <a class='struct' href='../../lodepng/ffi/struct.Info.html' title='lodepng::ffi::Info'>Info</a>,
     // some fields omitted
 }</pre><div class='docblock'><p>The settings, state and information for extended encoding and decoding</p>
-</div><h2 class='fields'>Fields</h2>
-<table><tr class='stab '>
-                                  <td id='structfield.decoder'><code>decoder</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.encoder'><code>encoder</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.info_raw'><code>info_raw</code></td><td><div class='docblock'><p>specifies the format in which you would like to get the raw pixel buffer</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.info_png'><code>info_png</code></td><td><div class='docblock'><p>info of the PNG image obtained after decoding</p>
-</div></td></tr></table></section>
+</div><h2 class='fields'>Fields</h2><span id='structfield.decoder' class='structfield'><code>decoder: <a class='struct' href='../../lodepng/ffi/struct.DecoderSettings.html' title='lodepng::ffi::DecoderSettings'>DecoderSettings</a></code>
+                           </span><span class='stab '></span><span id='structfield.encoder' class='structfield'><code>encoder: <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></code>
+                           </span><span class='stab '></span><span id='structfield.info_raw' class='structfield'><code>info_raw: <a class='struct' href='../../lodepng/ffi/struct.ColorMode.html' title='lodepng::ffi::ColorMode'>ColorMode</a></code>
+                           </span><span class='stab '></span><div class='docblock'><p>specifies the format in which you would like to get the raw pixel buffer</p>
+</div><span id='structfield.info_png' class='structfield'><code>info_png: <a class='struct' href='../../lodepng/ffi/struct.Info.html' title='lodepng::ffi::Info'>Info</a></code>
+                           </span><span class='stab '></span><div class='docblock'><p>info of the PNG image obtained after decoding</p>
+</div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
@@ -112,6 +124,6 @@
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
     
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>

@@ -9,7 +9,9 @@
 
     <title>lodepng::ffi::Info - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
+    
 
     
     
@@ -26,17 +28,17 @@
 
 
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'Info', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
@@ -44,38 +46,37 @@
 
     <section id='main' class="content struct">
 <h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>Info</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1360' class='srclink' href='../../src/lodepng/lib.rs.html#458-528' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-136' class='srclink' href='../../src/lodepng/src/ffi.rs.html#163-233' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct Info {
-    pub compression_method: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub filter_method: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub interlace_method: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
+    pub compression_method: c_uint,
+    pub filter_method: c_uint,
+    pub interlace_method: c_uint,
     pub color: <a class='struct' href='../../lodepng/ffi/struct.ColorMode.html' title='lodepng::ffi::ColorMode'>ColorMode</a>,
-    pub background_defined: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub background_r: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub background_g: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub background_b: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub time_defined: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
+    pub background_defined: c_uint,
+    pub background_r: c_uint,
+    pub background_g: c_uint,
+    pub background_b: c_uint,
+    pub time_defined: c_uint,
     pub time: <a class='struct' href='../../lodepng/ffi/struct.Time.html' title='lodepng::ffi::Time'>Time</a>,
-    pub phys_defined: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub phys_x: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub phys_y: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub phys_unit: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
+    pub phys_defined: c_uint,
+    pub phys_x: c_uint,
+    pub phys_y: c_uint,
+    pub phys_unit: c_uint,
     // some fields omitted
 }</pre><div class='docblock'><p>Information about the PNG image, except pixels, width and height</p>
-</div><h2 class='fields'>Fields</h2>
-<table><tr class='stab '>
-                                  <td id='structfield.compression_method'><code>compression_method</code></td><td><div class='docblock'><p>compression method of the original file. Always 0.</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.filter_method'><code>filter_method</code></td><td><div class='docblock'><p>filter method of the original file</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.interlace_method'><code>interlace_method</code></td><td><div class='docblock'><p>interlace method of the original file</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.color'><code>color</code></td><td><div class='docblock'><p>color type and bits, palette and transparency of the PNG file</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.background_defined'><code>background_defined</code></td><td><div class='docblock'><p>suggested background color chunk (bKGD)
+</div><h2 class='fields'>Fields</h2><span id='structfield.compression_method' class='structfield'><code>compression_method: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>compression method of the original file. Always 0.</p>
+</div><span id='structfield.filter_method' class='structfield'><code>filter_method: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>filter method of the original file</p>
+</div><span id='structfield.interlace_method' class='structfield'><code>interlace_method: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>interlace method of the original file</p>
+</div><span id='structfield.color' class='structfield'><code>color: <a class='struct' href='../../lodepng/ffi/struct.ColorMode.html' title='lodepng::ffi::ColorMode'>ColorMode</a></code>
+                           </span><span class='stab '></span><div class='docblock'><p>color type and bits, palette and transparency of the PNG file</p>
+</div><span id='structfield.background_defined' class='structfield'><code>background_defined: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>suggested background color chunk (bKGD)
 This color uses the same color mode as the PNG (except alpha channel), which can be 1-bit to 16-bit.</p>
 
 <p>For greyscale PNGs, r, g and b will all 3 be set to the same. When encoding
@@ -84,63 +85,74 @@ will be stored, not a palette index. But when encoding, specify the index of
 the palette in background_r, the other two are then ignored.</p>
 
 <p>The decoder does not use this background color to edit the color of pixels.</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.background_r'><code>background_r</code></td><td><div class='docblock'><p>red component of suggested background color</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.background_g'><code>background_g</code></td><td><div class='docblock'><p>green component of suggested background color</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.background_b'><code>background_b</code></td><td><div class='docblock'><p>blue component of suggested background color</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.time_defined'><code>time_defined</code></td><td><div class='docblock'><p>time chunk (tIME)</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.time'><code>time</code></td><td><div class='docblock'><p>set to 1 to make the encoder generate a tIME chunk</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.phys_defined'><code>phys_defined</code></td><td><div class='docblock'><p>if 0, there is no pHYs chunk and the values below are undefined, if 1 else there is one</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.phys_x'><code>phys_x</code></td><td><div class='docblock'><p>pixels per unit in x direction</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.phys_y'><code>phys_y</code></td><td><div class='docblock'><p>pixels per unit in y direction</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.phys_unit'><code>phys_unit</code></td><td><div class='docblock'><p>may be 0 (unknown unit) or 1 (metre)</p>
-</div></td></tr></table></section>
+</div><span id='structfield.background_r' class='structfield'><code>background_r: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>red component of suggested background color</p>
+</div><span id='structfield.background_g' class='structfield'><code>background_g: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>green component of suggested background color</p>
+</div><span id='structfield.background_b' class='structfield'><code>background_b: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>blue component of suggested background color</p>
+</div><span id='structfield.time_defined' class='structfield'><code>time_defined: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>time chunk (tIME)</p>
+</div><span id='structfield.time' class='structfield'><code>time: <a class='struct' href='../../lodepng/ffi/struct.Time.html' title='lodepng::ffi::Time'>Time</a></code>
+                           </span><span class='stab '></span><div class='docblock'><p>set to 1 to make the encoder generate a tIME chunk</p>
+</div><span id='structfield.phys_defined' class='structfield'><code>phys_defined: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>if 0, there is no pHYs chunk and the values below are undefined, if 1 else there is one</p>
+</div><span id='structfield.phys_x' class='structfield'><code>phys_x: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>pixels per unit in x direction</p>
+</div><span id='structfield.phys_y' class='structfield'><code>phys_y: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>pixels per unit in y direction</p>
+</div><span id='structfield.phys_unit' class='structfield'><code>phys_unit: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>may be 0 (unknown unit) or 1 (metre)</p>
+</div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
@@ -152,6 +164,6 @@ the palette in background_r, the other two are then ignored.</p>
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
     
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>

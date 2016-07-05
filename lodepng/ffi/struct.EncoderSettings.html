@@ -9,7 +9,9 @@
 
     <title>lodepng::ffi::EncoderSettings - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
+    
 
     
     
@@ -26,17 +28,17 @@
 
 
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'EncoderSettings', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
@@ -44,74 +46,85 @@
 
     <section id='main' class="content struct">
 <h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>EncoderSettings</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1680' class='srclink' href='../../src/lodepng/lib.rs.html#608-635' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-215' class='srclink' href='../../src/lodepng/src/ffi.rs.html#313-340' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct EncoderSettings {
     pub zlibsettings: <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a>,
     pub auto_convert: <a class='enum' href='../../lodepng/ffi/enum.AutoConvert.html' title='lodepng::ffi::AutoConvert'>AutoConvert</a>,
-    pub filter_palette_zero: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
+    pub filter_palette_zero: c_uint,
     pub filter_strategy: <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a>,
-    pub force_palette: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
+    pub force_palette: c_uint,
     // some fields omitted
-}</pre><h2 class='fields'>Fields</h2>
-<table><tr class='stab '>
-                                  <td id='structfield.zlibsettings'><code>zlibsettings</code></td><td><div class='docblock'><p>settings for the zlib encoder, such as window size, ...</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.auto_convert'><code>auto_convert</code></td><td><div class='docblock'><p>how to automatically choose output PNG color type, if at all</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.filter_palette_zero'><code>filter_palette_zero</code></td><td><div class='docblock'><p>If true, follows the official PNG heuristic: if the PNG uses a palette or lower than
+}</pre><h2 class='fields'>Fields</h2><span id='structfield.zlibsettings' class='structfield'><code>zlibsettings: <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a></code>
+                           </span><span class='stab '></span><div class='docblock'><p>settings for the zlib encoder, such as window size, ...</p>
+</div><span id='structfield.auto_convert' class='structfield'><code>auto_convert: <a class='enum' href='../../lodepng/ffi/enum.AutoConvert.html' title='lodepng::ffi::AutoConvert'>AutoConvert</a></code>
+                           </span><span class='stab '></span><div class='docblock'><p>how to automatically choose output PNG color type, if at all</p>
+</div><span id='structfield.filter_palette_zero' class='structfield'><code>filter_palette_zero: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>If true, follows the official PNG heuristic: if the PNG uses a palette or lower than
 8 bit depth, set all filters to zero. Otherwise use the filter_strategy. Note that to
 completely follow the official PNG heuristic, filter_palette_zero must be true and
 filter_strategy must be LFS_MINSUM</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.filter_strategy'><code>filter_strategy</code></td><td><div class='docblock'><p>Which filter strategy to use when not using zeroes due to filter_palette_zero.
+</div><span id='structfield.filter_strategy' class='structfield'><code>filter_strategy: <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code>
+                           </span><span class='stab '></span><div class='docblock'><p>Which filter strategy to use when not using zeroes due to filter_palette_zero.
 Set filter_palette_zero to 0 to ensure always using your chosen strategy. Default: LFS_MINSUM</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.force_palette'><code>force_palette</code></td><td><div class='docblock'><p>force creating a <code>PLTE</code> chunk if colortype is 2 or 6 (= a suggested palette).
+</div><span id='structfield.force_palette' class='structfield'><code>force_palette: c_uint</code>
+                           </span><span class='stab '></span><div class='docblock'><p>force creating a <code>PLTE</code> chunk if colortype is 2 or 6 (= a suggested palette).
 If colortype is 3, <code>PLTE</code> is <em>always</em> created</p>
-</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></code></h4>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><span class='in-band'><code>impl <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-224' class='srclink' href='../../src/lodepng/src/ffi.rs.html#342-351' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></code></h4>
 <div class='docblock'><p>Creates encoder settings initialized to defaults</p>
 </div></div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
@@ -123,6 +136,6 @@ If colortype is 3, <code>PLTE</code> is <em>always</em> created</p>
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
     
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>
