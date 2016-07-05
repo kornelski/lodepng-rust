@@ -22,13 +22,16 @@ use c_vec::CVec;
 use std::path::Path;
 
 pub use ffi::ColorType;
+#[doc(hidden)]
 pub use ffi::ColorType::{LCT_GREY, LCT_RGB, LCT_PALETTE, LCT_GREY_ALPHA, LCT_RGBA};
 pub use ffi::CompressSettings;
 pub use ffi::Time;
 pub use ffi::DecoderSettings;
 pub use ffi::FilterStrategy;
+#[doc(hidden)]
 pub use ffi::FilterStrategy::{LFS_ZERO, LFS_MINSUM, LFS_ENTROPY, LFS_BRUTE_FORCE, LFS_PREDEFINED};
 pub use ffi::AutoConvert;
+#[doc(hidden)]
 pub use ffi::AutoConvert::{LAC_NO, LAC_ALPHA, LAC_AUTO, LAC_AUTO_NO_NIBBLES, LAC_AUTO_NO_PALETTE, LAC_AUTO_NO_NIBBLES_NO_PALETTE};
 pub use ffi::EncoderSettings;
 pub use ffi::Error;
@@ -344,6 +347,7 @@ impl fmt::Display for Error {
     }
 }
 
+#[doc(hidden)]
 impl std::convert::From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
         match err.kind() {
@@ -568,6 +572,7 @@ pub fn encode24_file<PixelType, P: AsRef<Path>>(filepath: P, image: &[PixelType]
 }
 
 /// Converts from any color type to 24-bit or 32-bit (only)
+#[doc(hidden)]
 pub fn convert<PixelType>(input: &[PixelType], mode_out: &mut ColorMode, mode_in: &ColorMode, w: usize, h: usize, fix_png: bool) -> Result<Image, Error> {
     unsafe {
         let out = mem::zeroed();
@@ -586,6 +591,7 @@ pub fn convert<PixelType>(input: &[PixelType], mode_out: &mut ColorMode, mode_in
 ///
 /// updates values of mode with a potentially smaller color model. mode_out should
 /// contain the user chosen color model, but will be overwritten with the new chosen one.
+#[doc(hidden)]
 pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h: usize, mode_in: &ColorMode, auto_convert: AutoConvert) -> Result<(), Error> {
     unsafe {
         ffi::lodepng_auto_choose_color(&mut mode_out.data, image, w as c_uint, h as c_uint, &mode_in.data, auto_convert).to_result()
@@ -660,6 +666,7 @@ impl Chunk {
 /// Compresses data with Zlib.
 /// Zlib adds a small header and trailer around the deflate data.
 /// The data is output in the format of the zlib specification.
+#[doc(hidden)]
 pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
@@ -671,6 +678,7 @@ pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u
 }
 
 /// Compress a buffer with deflate. See RFC 1951.
+#[doc(hidden)]
 pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
