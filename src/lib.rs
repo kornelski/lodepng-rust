@@ -42,7 +42,7 @@ impl ColorMode {
         unsafe {
             let mut mode = mem::zeroed();
             ffi::lodepng_color_mode_init(&mut mode);
-            return ColorMode{data:mode};
+            return ColorMode { data: mode };
         }
     }
 
@@ -141,7 +141,7 @@ impl Drop for ColorMode {
 impl Clone for ColorMode {
     fn clone(&self) -> ColorMode {
         unsafe {
-            let mut dest = ColorMode{ data: mem::zeroed() };
+            let mut dest = ColorMode { data: mem::zeroed() };
             ffi::lodepng_color_mode_copy(&mut dest.data, &self.data).to_result().unwrap();
             return dest;
         }
@@ -156,7 +156,7 @@ pub struct Info {
 impl Info {
     pub fn new() -> Info {
         unsafe {
-            let mut info = Info{ data: mem::zeroed() };
+            let mut info = Info { data: mem::zeroed() };
             ffi::lodepng_info_init(&mut info.data);
             return info;
         }
@@ -216,7 +216,7 @@ pub struct State {
 impl State {
     pub fn new() -> State {
         unsafe {
-            let mut state = State { data:mem::zeroed() };
+            let mut state = State { data: mem::zeroed() };
             ffi::lodepng_state_init(&mut state.data);
             return state;
         }
@@ -264,7 +264,7 @@ impl State {
             let mut h = 0;
             match ffi::lodepng_inspect(&mut w, &mut h, &mut self.data, input.as_ptr(), input.len() as size_t) {
                 Error(0) => Ok((w as usize, h as usize)),
-                err => Err(err)
+                err => Err(err),
             }
         }
     }
@@ -298,7 +298,7 @@ impl Drop for State {
 impl Clone for State {
     fn clone(&self) -> State {
         unsafe {
-            let mut dest = State{ data:mem::zeroed() };
+            let mut dest = State { data: mem::zeroed() };
             ffi::lodepng_state_copy(&mut dest.data, &self.data);
             return dest;
         }
@@ -334,13 +334,13 @@ pub enum Image {
 
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{} ({})", self.as_str(), self.0)
+        write!(f, "{} ({})", self.as_str(), self.0)
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{}", self.as_str())
+        write!(f, "{}", self.as_str())
     }
 }
 
@@ -373,7 +373,8 @@ pub struct Bitmap<PixelType> {
 
 impl<T: Send> Bitmap<T> {
     unsafe fn from_buffer(out: *mut u8, w: usize, h: usize) -> Bitmap<T>
-        where T: Send {
+        where T: Send
+    {
         Bitmap::<T> {
             buffer: cvec_with_free(mem::transmute(out), w * h),
             width: w,
@@ -393,15 +394,16 @@ fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> usi
 }
 
 unsafe fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<T>
-    where T: Send {
+    where T: Send
+{
     CVec::new_with_dtor(ptr, elts, |base: *mut T| {
         free(base as *mut c_void);
     })
 }
 
-unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Image  {
+unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Image {
     match (colortype, bitdepth) {
-        (LCT_RGBA, 8) =>Image::RGBA(Bitmap::from_buffer(out, w, h)),
+        (LCT_RGBA, 8) => Image::RGBA(Bitmap::from_buffer(out, w, h)),
         (LCT_RGB, 8) => Image::RGB(Bitmap::from_buffer(out, w, h)),
         (LCT_RGBA, 16) => Image::RGBA16(Bitmap::from_buffer(out, w, h)),
         (LCT_RGB, 16) => Image::RGB16(Bitmap::from_buffer(out, w, h)),
@@ -483,7 +485,7 @@ pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB<u8>>, Error> {
 ///      _ => panic!("¯\\_(ツ)_/¯")
 ///  }
 ///  ```
-pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error>  {
+pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
     return decode_memory(&try!(::load_file(filepath)), colortype, bitdepth);
 }
 
@@ -537,7 +539,7 @@ pub fn encode_memory<PixelType>(image: &[PixelType], w: usize, h: usize, colorty
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
-pub fn encode32<PixelType>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error>  {
+pub fn encode32<PixelType>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
     encode_memory(image, w, h, LCT_RGBA, 8)
 }
 
