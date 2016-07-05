@@ -10,8 +10,8 @@ keywords = ["PNG","lodepng","encoder","decoder"]
 license = "BSD-2-Clause"
 authors = [ "Kornel <pornel@pornel.net>" ]
 build = "build.rs"
-include = ["src/**/*", "examples/**/*", "build.rs", "Makefile", "COPYRIGHT", "README.md", "Cargo.toml"]
-version = "0.7.0"
+include = ["src/**/*", "vendor/**/*", "examples/**/*", "build.rs", "Makefile", "COPYRIGHT", "README.md", "Cargo.toml"]
+version = "0.8.0"
 
 [dependencies]
 libc = "0.2.0"
