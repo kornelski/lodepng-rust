@@ -239,15 +239,6 @@ pub struct DecoderSettings {
     zlibsettings: DecompressSettings,
     /// ignore CRC checksums
     pub ignore_crc: c_uint,
-
-    /// The fix_png setting, if 1, makes the decoder tolerant towards some PNG images
-    /// that do not correctly follow the PNG specification. This only supports errors
-    /// that are fixable, were found in images that are actually used on the web, and
-    /// are silently tolerated by other decoders as well. Currently only one such fix
-    /// is implemented: if a palette index is out of bounds given the palette size,
-    /// interpret it as opaque black.
-    /// By default this value is 0, which makes it stop with an error on such images.
-    pub fix_png: c_uint,
     /// whether to convert the PNG to the color type you want. Default: yes
     pub color_convert: c_uint,
     /// if false but remember_unknown_chunks is true, they're stored in the unknown chunks.

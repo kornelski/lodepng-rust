@@ -415,6 +415,7 @@ unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bit
         (LCT_GREY, 16) => Image::Grey16(Bitmap::from_buffer(out, w, h)),
         (LCT_GREY_ALPHA, 8) => Image::GreyAlpha(Bitmap::from_buffer(out, w, h)),
         (LCT_GREY_ALPHA, 16) => Image::GreyAlpha16(Bitmap::from_buffer(out, w, h)),
+        (_, 0) => panic!("Invalid depth"),
         (c,b) => Image::RawData(Bitmap {
             buffer: cvec_with_free(out, required_size(w, h, c, b)),
             width: w,
@@ -450,6 +451,7 @@ pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Re
         let mut out = mem::zeroed();
         let mut w = 0;
         let mut h = 0;
+        assert!(bitdepth > 0 && bitdepth <= 16);
 
         try!(ffi::lodepng_decode_memory(&mut out, &mut w, &mut h, input.as_ptr(), input.len() as size_t, colortype, bitdepth).to_result());
         Ok(new_bitmap(out, w as usize, h as usize, colortype, bitdepth))

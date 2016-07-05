@@ -11,7 +11,7 @@ license = "BSD-2-Clause"
 authors = [ "Kornel <pornel@pornel.net>" ]
 build = "build.rs"
 include = ["src/**/*", "vendor/**/*", "examples/**/*", "build.rs", "Makefile", "COPYRIGHT", "README.md", "Cargo.toml"]
-version = "0.8.0"
+version = "0.8.1"
 
 [dependencies]
 libc = "0.2.0"
