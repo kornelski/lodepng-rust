@@ -272,7 +272,7 @@ impl State {
         }
     }
 
-    pub fn encode<PixelType>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
+    pub fn encode<PixelType: Copy>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
         unsafe {
             let mut out = mem::zeroed();
             let mut outsize = 0;
@@ -284,7 +284,7 @@ impl State {
         }
     }
 
-    pub fn encode_file<PixelType, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+    pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = try!(self.encode(image, w, h));
         ::save_file(filepath, buf.as_cslice().as_ref())
     }
@@ -509,7 +509,7 @@ pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Err
     }
 }
 
-fn with_buffer_for_type<PixelType, F>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32, mut f: F) -> Error
+fn with_buffer_for_type<PixelType: Copy, F>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32, mut f: F) -> Error
     where F: FnMut(*const u8) -> Error
 {
     if image.len() * mem::size_of::<PixelType>() != required_size(w, h, colortype, bitdepth) {
@@ -530,7 +530,7 @@ fn with_buffer_for_type<PixelType, F>(image: &[PixelType], w: usize, h: usize, c
 /// * `h`: height of the raw pixel data in pixels.
 /// * `colortype`: the color type of the raw input image. See `ColorType`.
 /// * `bitdepth`: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.
-pub fn encode_memory<PixelType>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<CVec<u8>, Error> {
+pub fn encode_memory<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<CVec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut outsize = 0;
@@ -543,12 +543,12 @@ pub fn encode_memory<PixelType>(image: &[PixelType], w: usize, h: usize, colorty
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
-pub fn encode32<PixelType>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
+pub fn encode32<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error>  {
     encode_memory(image, w, h, LCT_RGBA, 8)
 }
 
 /// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
-pub fn encode24<PixelType>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
+pub fn encode24<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
     encode_memory(image, w, h, LCT_RGB, 8)
 }
 
@@ -556,24 +556,24 @@ pub fn encode24<PixelType>(image: &[PixelType], w: usize, h: usize) -> Result<CV
 /// Same as the other encode functions, but instead takes a file path as output.
 ///
 /// NOTE: This overwrites existing files without warning!
-pub fn encode_file<PixelType, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
+pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = try!(encode_memory(image, w, h, colortype, bitdepth));
     save_file(filepath, encoded.as_cslice().as_ref())
 }
 
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
-pub fn encode32_file<PixelType, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode32_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGBA, 8)
 }
 
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
-pub fn encode24_file<PixelType, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode24_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, LCT_RGB, 8)
 }
 
 /// Converts from any color type to 24-bit or 32-bit (only)
 #[doc(hidden)]
-pub fn convert<PixelType>(input: &[PixelType], mode_out: &mut ColorMode, mode_in: &ColorMode, w: usize, h: usize, fix_png: bool) -> Result<Image, Error> {
+pub fn convert<PixelType: Copy>(input: &[PixelType], mode_out: &mut ColorMode, mode_in: &ColorMode, w: usize, h: usize, fix_png: bool) -> Result<Image, Error> {
     unsafe {
         let out = mem::zeroed();
         try!(with_buffer_for_type(input, w, h, mode_in.colortype(), mode_in.bitdepth(), |ptr| {
