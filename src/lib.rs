@@ -514,7 +514,16 @@ pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Err
 fn with_buffer_for_type<PixelType: Copy, F>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32, mut f: F) -> Error
     where F: FnMut(*const u8) -> Error
 {
-    if image.len() * mem::size_of::<PixelType>() != required_size(w, h, colortype, bitdepth) {
+    let bytes_per_pixel = bitdepth as usize/8;
+    assert!(mem::size_of::<PixelType>() <= 4*bytes_per_pixel, "Implausibly large {}-byte pixel data type", mem::size_of::<PixelType>());
+
+    let px_bytes = mem::size_of::<PixelType>();
+    let image_bytes = image.len() * px_bytes;
+    let required_bytes = required_size(w, h, colortype, bitdepth);
+
+    if image_bytes != required_bytes {
+        debug_assert_eq!(image_bytes, required_bytes, "Image is {} bytes large ({}x{}x{}), but needs to be {} ({:?}, {})",
+            image_bytes, w,h,px_bytes, required_bytes, colortype, bitdepth);
         return Error(84);
     }
 
