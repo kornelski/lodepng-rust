@@ -64,9 +64,9 @@ impl ColorMode {
     }
 
     /// add 1 color to the palette
-    pub fn palette_add(&mut self, r: u8, g: u8, b: u8, a: u8) -> Option<Error> {
+    pub fn palette_add(&mut self, r: u8, g: u8, b: u8, a: u8) -> Result<(), Error> {
         unsafe {
-            ffi::lodepng_palette_add(&mut self.data, r, g, b, a).to_result().err()
+            ffi::lodepng_palette_add(&mut self.data, r, g, b, a).into()
         }
     }
 
@@ -251,7 +251,7 @@ impl State {
             let mut w = 0;
             let mut h = 0;
 
-            try!(ffi::lodepng_decode(&mut out, &mut w, &mut h, &mut self.data, input.as_ptr(), input.len() as size_t).to_result());
+            try!(ffi::lodepng_decode(&mut out, &mut w, &mut h, &mut self.data, input.as_ptr(), input.len() as size_t).into());
             Ok(::new_bitmap(out, w as usize, h as usize, self.data.info_raw.colortype, self.data.info_raw.bitdepth))
         }
     }
@@ -279,7 +279,7 @@ impl State {
 
             try!(::with_buffer_for_type(image, w, h, self.data.info_raw.colortype, self.data.info_raw.bitdepth, |ptr| {
                 ffi::lodepng_encode(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, &mut self.data)
-            }).to_result());
+            }).into());
             Ok(::cvec_with_free(out, outsize as usize))
         }
     }
@@ -453,7 +453,7 @@ pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Re
         let mut h = 0;
         assert!(bitdepth > 0 && bitdepth <= 16);
 
-        try!(ffi::lodepng_decode_memory(&mut out, &mut w, &mut h, input.as_ptr(), input.len() as size_t, colortype, bitdepth).to_result());
+        try!(ffi::lodepng_decode_memory(&mut out, &mut w, &mut h, input.as_ptr(), input.len() as size_t, colortype, bitdepth).into());
         Ok(new_bitmap(out, w as usize, h as usize, colortype, bitdepth))
     }
 }
@@ -548,7 +548,7 @@ pub fn encode_memory<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, c
 
         try!(with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| {
             ffi::lodepng_encode_memory(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, colortype, bitdepth)
-        }).to_result());
+        }).into());
         Ok(cvec_with_free(out, outsize as usize))
     }
 }
@@ -589,7 +589,7 @@ pub fn convert<PixelType: Copy>(input: &[PixelType], mode_out: &mut ColorMode, m
         let out = mem::zeroed();
         try!(with_buffer_for_type(input, w, h, mode_in.colortype(), mode_in.bitdepth(), |ptr| {
             ffi::lodepng_convert(out, ptr, &mut mode_out.data, &mode_in.data, w as c_uint, h as c_uint, fix_png as c_uint)
-        }).to_result());
+        }).into());
         Ok(new_bitmap(out, w, h, mode_out.colortype(), mode_out.bitdepth()))
     }
 }
@@ -605,7 +605,7 @@ pub fn convert<PixelType: Copy>(input: &[PixelType], mode_out: &mut ColorMode, m
 #[doc(hidden)]
 pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h: usize, mode_in: &ColorMode, auto_convert: AutoConvert) -> Result<(), Error> {
     unsafe {
-        ffi::lodepng_auto_choose_color(&mut mode_out.data, image, w as c_uint, h as c_uint, &mode_in.data, auto_convert).to_result()
+        ffi::lodepng_auto_choose_color(&mut mode_out.data, image, w as c_uint, h as c_uint, &mode_in.data, auto_convert).into()
     }
 }
 
@@ -663,13 +663,13 @@ impl Chunk {
 
     pub fn append(&self, out: &mut *mut u8, outlength: *const size_t) -> Result<(), Error> {
         unsafe {
-            ffi::lodepng_chunk_append(out, outlength, &*self.data).to_result()
+            ffi::lodepng_chunk_append(out, outlength, &*self.data).into()
         }
     }
 
     pub fn create(out: &mut *mut u8, outlength: *const size_t, length: c_uint, chtype: *const c_char, data: *const u8) -> Result<(), Error> {
         unsafe {
-            ffi::lodepng_chunk_create(out, outlength, length, chtype, data).to_result()
+            ffi::lodepng_chunk_create(out, outlength, length, chtype, data).into()
         }
     }
 }
@@ -683,7 +683,7 @@ pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
-        try!(ffi::lodepng_zlib_compress(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).to_result());
+        try!(ffi::lodepng_zlib_compress(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).into());
         Ok(cvec_with_free(out, outsize as usize))
     }
 }
@@ -695,7 +695,7 @@ pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Er
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
-        try!(ffi::lodepng_deflate(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).to_result());
+        try!(ffi::lodepng_deflate(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).into());
         Ok(cvec_with_free(out, outsize as usize))
     }
 }

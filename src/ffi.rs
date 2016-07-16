@@ -408,6 +408,12 @@ extern "C" {
     pub fn lodepng_deflate(out: &mut *mut u8, outsize: &mut size_t, input: *const u8, insize: size_t, settings: &CompressSettings) -> Error;
 }
 
+impl From<Error> for Result<(), Error> {
+    fn from(err: Error) -> Self {
+        err.to_result()
+    }
+}
+
 impl Error {
     /// Helper function for the library
     pub fn to_result(self) -> Result<(), Error> {
