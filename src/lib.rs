@@ -202,6 +202,15 @@ impl Info {
         }
     }
 
+    pub fn get<Name: AsRef<[u8]>> (&self, index: Name) -> Option<Chunk> {
+        let index = index.as_ref();
+        return self.unknown_chunks(ChunkPosition::IHDR)
+            .chain(self.unknown_chunks(ChunkPosition::PLTE))
+            .chain(self.unknown_chunks(ChunkPosition::IDAT))
+            .filter(|c| c.is_type(index))
+            .next();
+    }
+
     pub fn unknown_chunks(&self, position: ChunkPosition) -> Chunks {
         Chunks {
             data: self.unknown_chunks_data[position as usize],
@@ -683,6 +692,16 @@ impl Chunk {
         return tmp2;
     }
 
+    pub fn is_type<C: AsRef<[u8]>>(&self, name: C) -> bool {
+        let name = name.as_ref();
+        if name.len() != 4 {
+            return false;
+        }
+        unsafe {
+            ffi::lodepng_chunk_type_equals(self.data, name.as_ptr()) != 0
+        }
+    }
+
     pub fn is_ancillary(&self) -> c_uchar {
         unsafe {
             ffi::lodepng_chunk_ancillary(self.data)
@@ -791,13 +810,13 @@ mod test {
 
             let testdata = &[1,2,3];
             info.create_chunk(ChunkPosition::PLTE, &[255,0,100,32], testdata).unwrap();
+            assert_eq!(1, info.unknown_chunks(ChunkPosition::PLTE).count());
 
             info.create_chunk(ChunkPosition::IHDR, "foob", testdata).unwrap();
             assert_eq!(1, info.unknown_chunks(ChunkPosition::IHDR).count());
             info.create_chunk(ChunkPosition::IHDR, "foob", testdata).unwrap();
             assert_eq!(2, info.unknown_chunks(ChunkPosition::IHDR).count());
 
-            for _ in info.unknown_chunks(ChunkPosition::PLTE) {}
             for _ in info.unknown_chunks(ChunkPosition::IDAT) {}
             let chunk = info.unknown_chunks(ChunkPosition::IHDR).next().unwrap();
             assert_eq!("foob".as_bytes(), chunk.name());
@@ -816,5 +835,7 @@ mod test {
         dec.decode(img).unwrap();
         let chunk = dec.info_png().unknown_chunks(ChunkPosition::IHDR).next().unwrap();
         assert_eq!("foob".as_bytes(), chunk.name());
+        dec.info_png().get("foob").unwrap();
+
     }
 }
