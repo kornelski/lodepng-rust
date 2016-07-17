@@ -648,7 +648,7 @@ impl Chunk {
 
     pub fn check_crc(&self) -> bool {
         unsafe {
-            ffi::lodepng_chunk_check_crc(&*self.data) != 0
+            ffi::lodepng_chunk_check_crc(&*self.data) == 0
         }
     }
 
