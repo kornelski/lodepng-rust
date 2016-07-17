@@ -228,8 +228,8 @@ pub struct Info {
     /// 0: IHDR-`PLTE`, 1: `PLTE`-IDAT, 2: IDAT-IEND
     /// Do not allocate or traverse this data yourself. Use the chunk traversing functions declared
     /// later, such as lodepng_chunk_next and lodepng_chunk_append, to read/write this struct.
-    pub unknown_chunks_data: [*const c_uchar; 3],
-    pub unknown_chunks_size: [*const size_t; 3],
+    pub unknown_chunks_data: [*mut c_uchar; 3],
+    pub unknown_chunks_size: [size_t; 3],
 }
 
 /// Settings for the decoder. This contains settings for the PNG and the Zlib decoder, but not the Info settings from the Info structs.
@@ -392,7 +392,7 @@ extern "C" {
     pub fn lodepng_inspect(w: &mut c_uint, h: &mut c_uint, state: &mut State, input: *const u8, insize: size_t) -> Error;
     pub fn lodepng_encode(out: &mut *mut u8, outsize: &mut size_t, image: *const u8, w: c_uint, h: c_uint, state: &mut State) -> Error;
     pub fn lodepng_chunk_length(chunk: *const c_uchar) -> c_uint;
-    pub fn lodepng_chunk_type(chtype: [u8; 5], chunk: *const c_uchar);
+    pub fn lodepng_chunk_type(chtype: &mut [u8; 5], chunk: *const c_uchar);
     pub fn lodepng_chunk_type_equals(chunk: *const c_uchar, chtype: *const u8) -> c_uchar;
     pub fn lodepng_chunk_ancillary(chunk: *const c_uchar) -> c_uchar;
     pub fn lodepng_chunk_private(chunk: *const c_uchar) -> c_uchar;
@@ -401,8 +401,8 @@ extern "C" {
     pub fn lodepng_chunk_check_crc(chunk: *const c_uchar) -> c_uint;
     pub fn lodepng_chunk_generate_crc(chunk: *mut c_uchar);
     pub fn lodepng_chunk_next(chunk: *mut c_uchar) -> *mut c_uchar;
-    pub fn lodepng_chunk_append(out: &mut *mut u8, outlength: *const size_t, chunk: *const c_uchar) -> Error;
-    pub fn lodepng_chunk_create(out: &mut *mut u8, outlength: *const size_t, length: c_uint, chtype: *const c_char, data: *const u8) -> Error;
+    pub fn lodepng_chunk_append(out: &mut *mut u8, outlength: &mut size_t, chunk: *const c_uchar) -> Error;
+    pub fn lodepng_chunk_create(out: &mut *mut u8, outlength: &mut size_t, length: c_uint, chtype: *const c_char, data: *const u8) -> Error;
     pub fn lodepng_crc32(buf: *const u8, len: size_t) -> c_uint;
     pub fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut size_t, input: *const u8, insize: size_t, settings: &CompressSettings) -> Error;
     pub fn lodepng_deflate(out: &mut *mut u8, outsize: &mut size_t, input: *const u8, insize: size_t, settings: &CompressSettings) -> Error;

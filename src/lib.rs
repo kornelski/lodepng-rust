@@ -634,9 +634,9 @@ impl Chunk {
         }
     }
 
-    pub fn data(&self) -> *mut c_uchar {
+    pub fn data(&self) -> &[u8] {
         unsafe {
-            ffi::lodepng_chunk_data(self.data)
+            std::slice::from_raw_parts(ffi::lodepng_chunk_data(self.data), self.len())
         }
     }
 
