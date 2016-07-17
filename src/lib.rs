@@ -221,7 +221,8 @@ impl State {
     ///      _ => panic!("¯\\_(ツ)_/¯")
     ///  }
     ///  ```
-    pub fn decode(&mut self, input: &[u8]) -> Result<::Image, Error> {
+    pub fn decode<Bytes: AsRef<[u8]>>(&mut self, input: Bytes) -> Result<::Image, Error> {
+        let input = input.as_ref();
         unsafe {
             let mut out = mem::zeroed();
             let mut w = 0;
@@ -422,7 +423,8 @@ fn load_file<P: AsRef<Path>>(filepath: P) -> Result<Vec<u8>, Error> {
 /// * `in`: Memory buffer with the PNG file.
 /// * `colortype`: the desired color type for the raw output image. See `ColorType`.
 /// * `bitdepth`: the desired bit depth for the raw output image. 1, 2, 4, 8 or 16. Typically 8.
-pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
+pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
+    let input = input.as_ref();
     unsafe {
         let mut out = mem::zeroed();
         let mut w = 0;
@@ -435,7 +437,7 @@ pub fn decode_memory(input: &[u8], colortype: ColorType, bitdepth: c_uint) -> Re
 }
 
 /// Same as `decode_memory`, but always decodes to 32-bit RGBA raw image
-pub fn decode32(input: &[u8]) -> Result<Bitmap<RGBA<u8>>, Error> {
+pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA<u8>>, Error> {
     match try!(decode_memory(input, LCT_RGBA, 8)) {
         Image::RGBA(img) => Ok(img),
         _ => Err(Error(56)), // given output image colortype or bitdepth not supported for color conversion
@@ -443,7 +445,7 @@ pub fn decode32(input: &[u8]) -> Result<Bitmap<RGBA<u8>>, Error> {
 }
 
 /// Same as `decode_memory`, but always decodes to 24-bit RGB raw image
-pub fn decode24(input: &[u8]) -> Result<Bitmap<RGB<u8>>, Error> {
+pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Error> {
     match try!(decode_memory(input, LCT_RGB, 8)) {
         Image::RGB(img) => Ok(img),
         _ => Err(Error(56)),
