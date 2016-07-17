@@ -228,8 +228,8 @@ pub struct Info {
     /// 0: IHDR-`PLTE`, 1: `PLTE`-IDAT, 2: IDAT-IEND
     /// Do not allocate or traverse this data yourself. Use the chunk traversing functions declared
     /// later, such as lodepng_chunk_next and lodepng_chunk_append, to read/write this struct.
-    unknown_chunks_data: [*const c_uchar; 3],
-    unknown_chunks_size: [*const size_t; 3],
+    pub unknown_chunks_data: [*const c_uchar; 3],
+    pub unknown_chunks_size: [*const size_t; 3],
 }
 
 /// Settings for the decoder. This contains settings for the PNG and the Zlib decoder, but not the Info settings from the Info structs.

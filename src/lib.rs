@@ -628,7 +628,7 @@ impl Chunk {
         }
     }
 
-    pub fn is_safetocopy(&self) -> bool {
+    pub fn is_safe_to_copy(&self) -> bool {
         unsafe {
             ffi::lodepng_chunk_safetocopy(&*self.data) != 0
         }
