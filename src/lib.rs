@@ -640,6 +640,12 @@ impl Chunk {
         }
     }
 
+    pub fn data_mut(&mut self) -> &mut [u8] {
+        unsafe {
+            std::slice::from_raw_parts_mut(ffi::lodepng_chunk_data(self.data), self.len())
+        }
+    }
+
     pub fn check_crc(&self) -> bool {
         unsafe {
             ffi::lodepng_chunk_check_crc(&*self.data) != 0
