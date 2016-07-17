@@ -37,3 +37,21 @@ To save RGBA PNG file:
 ```rust
 lodepng::encode32_file("out.png", buffer.as_slice(), width, height)
 ```
+
+### Advanced
+
+```rust
+let mut state = lodepng::State::new();
+
+match state.decode("in.png") {
+    Ok(lodepng::Image::RGB(image)) => {…}
+    Ok(lodepng::Image::RGBA(image)) => {…}
+    Ok(lodepng::Image::RGBA16(image)) => {…}
+    Ok(lodepng::Image::Gray(image)) => {…}
+    Err(err) => {…}
+}
+
+for chunk in state.info_png().unknown_chunks() {
+    println!("{:?} = {:?}", chunk.name(), chunk.data());
+}
+```

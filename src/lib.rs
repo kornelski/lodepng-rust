@@ -20,6 +20,7 @@ use std::io::Write;
 use std::io::Read;
 use c_vec::CVec;
 use std::path::Path;
+use std::marker::PhantomData;
 
 pub use ffi::ColorType;
 #[doc(hidden)]
@@ -182,6 +183,61 @@ impl Info {
             ffi::lodepng_add_itext(self, key, langtag, transkey, str)
         }
     }
+
+    pub fn append_chunk(&mut self, position: ChunkPosition, chunk: &Chunk) -> Result<(), Error> {
+        unsafe {
+            ffi::lodepng_chunk_append(&mut self.unknown_chunks_data[position as usize], &mut self.unknown_chunks_size[position as usize],
+                chunk.data).to_result()
+        }
+    }
+
+    pub fn create_chunk<C: AsRef<[u8]>>(&mut self, position: ChunkPosition, chtype: C, data: &[u8]) -> Result<(), Error> {
+        let chtype = chtype.as_ref();
+        if chtype.len() != 4 {
+            return Error(67).into();
+        }
+        unsafe {
+            ffi::lodepng_chunk_create(&mut self.unknown_chunks_data[position as usize], &mut self.unknown_chunks_size[position as usize],
+                data.len() as c_uint, chtype.as_ptr() as *const c_char, data.as_ptr()).to_result()
+        }
+    }
+
+    pub fn unknown_chunks(&self, position: ChunkPosition) -> Chunks {
+        Chunks {
+            data: self.unknown_chunks_data[position as usize],
+            len: self.unknown_chunks_size[position as usize],
+            _ref: PhantomData,
+        }
+    }
+}
+
+pub struct Chunks<'a> {
+    data: *mut u8,
+    len: usize,
+    _ref: PhantomData<&'a u8>,
+}
+
+impl<'a> Iterator for Chunks<'a> {
+    type Item = Chunk;
+    fn next(&mut self) -> Option<Chunk> {
+        let chunk_header_len = 12;
+        if self.data.is_null() || self.len < chunk_header_len {
+            return None;
+        }
+
+        let c = Chunk { data: self.data };
+        let l = chunk_header_len + c.len();
+        if self.len < l {
+            return None;
+        }
+
+        self.len -= l;
+        unsafe {
+            self.data = ffi::lodepng_chunk_next(self.data);
+        }
+
+        return Some(c);
+    }
 }
 
 pub struct State {
@@ -207,6 +263,21 @@ impl State {
 
     pub fn info_png_mut(&mut self) -> &mut Info {
         return &mut self.data.info_png;
+    }
+
+
+    /// whether to convert the PNG to the color type you want. Default: yes
+    pub fn color_convert(&mut self, b: bool) {
+        self.data.decoder.color_convert = if b {1} else {0};
+    }
+    /// if false but remember_unknown_chunks is true, they're stored in the unknown chunks.
+    pub fn read_text_chunks(&mut self, b: bool) {
+        self.data.decoder.read_text_chunks = if b {1} else {0};
+    }
+
+    /// store all bytes from unknown chunks in the LodePNGInfo (off by default, useful for a png editor)
+    pub fn remember_unknown_chunks(&mut self, b: bool) {
+        self.data.decoder.remember_unknown_chunks = if b {1} else {0};
     }
 
     /// Load PNG from buffer using State's settings
@@ -332,6 +403,14 @@ impl std::convert::From<io::Error> for Error {
             _ => {Error(79)}
         }
     }
+}
+
+/// Position in the file section after…
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum ChunkPosition {
+    IHDR = 0,
+    PLTE = 1,
+    IDAT = 2,
 }
 
 #[allow(missing_copy_implementations)]
@@ -590,25 +669,35 @@ pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h
 impl Chunk {
     pub fn len(&self) -> usize {
         unsafe {
-            ffi::lodepng_chunk_length(&*self.data) as usize
+            ffi::lodepng_chunk_length(self.data) as usize
         }
+    }
+
+    pub fn name(&self) -> [u8; 4] {
+        let mut tmp = [0; 5];
+        unsafe {
+            ffi::lodepng_chunk_type(&mut tmp,  self.data)
+        }
+        let mut tmp2 = [0; 4];
+        tmp2.copy_from_slice(&tmp[0..4]);
+        return tmp2;
     }
 
     pub fn is_ancillary(&self) -> c_uchar {
         unsafe {
-            ffi::lodepng_chunk_ancillary(&*self.data)
+            ffi::lodepng_chunk_ancillary(self.data)
         }
     }
 
     pub fn is_private(&self) -> bool {
         unsafe {
-            ffi::lodepng_chunk_private(&*self.data) != 0
+            ffi::lodepng_chunk_private(self.data) != 0
         }
     }
 
     pub fn is_safe_to_copy(&self) -> bool {
         unsafe {
-            ffi::lodepng_chunk_safetocopy(&*self.data) != 0
+            ffi::lodepng_chunk_safetocopy(self.data) != 0
         }
     }
 
@@ -687,6 +776,45 @@ mod test {
     fn create_and_dstroy2() {
         ColorMode::new().clone();
         State::new().info_png();
+        State::new().info_png_mut();
         State::new().clone().info_raw();
+    }
+
+    #[test]
+    fn chunks() {
+        let mut state = State::new();
+        {
+            let info = state.info_png_mut();
+            for _ in info.unknown_chunks(ChunkPosition::IHDR) {
+                panic!("no chunks yet");
+            }
+
+            let testdata = &[1,2,3];
+            info.create_chunk(ChunkPosition::PLTE, &[255,0,100,32], testdata).unwrap();
+
+            info.create_chunk(ChunkPosition::IHDR, "foob", testdata).unwrap();
+            assert_eq!(1, info.unknown_chunks(ChunkPosition::IHDR).count());
+            info.create_chunk(ChunkPosition::IHDR, "foob", testdata).unwrap();
+            assert_eq!(2, info.unknown_chunks(ChunkPosition::IHDR).count());
+
+            for _ in info.unknown_chunks(ChunkPosition::PLTE) {}
+            for _ in info.unknown_chunks(ChunkPosition::IDAT) {}
+            let chunk = info.unknown_chunks(ChunkPosition::IHDR).next().unwrap();
+            assert_eq!("foob".as_bytes(), chunk.name());
+            assert!(chunk.is_type("foob"));
+            assert!(!chunk.is_type("foobar"));
+            assert!(!chunk.is_type("foo"));
+            assert!(!chunk.is_type("FOOB"));
+            assert!(chunk.check_crc());
+            assert_eq!(testdata, chunk.data());
+            info.get("foob").unwrap();
+        }
+
+        let img = state.encode(&[0u32], 1, 1).unwrap();
+        let mut dec = State::new();
+        dec.remember_unknown_chunks(true);
+        dec.decode(img).unwrap();
+        let chunk = dec.info_png().unknown_chunks(ChunkPosition::IHDR).next().unwrap();
+        assert_eq!("foob".as_bytes(), chunk.name());
     }
 }

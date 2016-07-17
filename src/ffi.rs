@@ -239,12 +239,9 @@ pub struct DecoderSettings {
     zlibsettings: DecompressSettings,
     /// ignore CRC checksums
     pub ignore_crc: c_uint,
-    /// whether to convert the PNG to the color type you want. Default: yes
     pub color_convert: c_uint,
-    /// if false but remember_unknown_chunks is true, they're stored in the unknown chunks.
-    read_text_chunks: c_uint,
-    /// store all bytes from unknown chunks in the LodePNGInfo (off by default, useful for a png editor)
-    remember_unknown_chunks: c_uint,
+    pub read_text_chunks: c_uint,
+    pub remember_unknown_chunks: c_uint,
 }
 
 impl DecoderSettings {
