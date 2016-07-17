@@ -36,6 +36,8 @@ pub use ffi::AutoConvert::{LAC_NO, LAC_ALPHA, LAC_AUTO, LAC_AUTO_NO_NIBBLES, LAC
 pub use ffi::EncoderSettings;
 pub use ffi::Error;
 
+pub use ffi::Info;
+
 pub struct ColorMode {
     data: ffi::ColorMode,
 }
@@ -151,63 +153,33 @@ impl Clone for ColorMode {
     }
 }
 
-
-pub struct Info {
-    data: ffi::Info,
-}
-
 impl Info {
-    pub fn new() -> Info {
-        unsafe {
-            let mut info = Info { data: mem::zeroed() };
-            ffi::lodepng_info_init(&mut info.data);
-            return info;
-        }
-    }
 
     /// use this to clear the texts again after you filled them in
     pub fn clear_text(&mut self) {
         unsafe {
-            ffi::lodepng_clear_text(&mut self.data)
+            ffi::lodepng_clear_text(self)
         }
     }
 
     /// push back both texts at once
     pub fn add_text(&mut self, key: *const c_char, str: *const c_char) -> Error {
         unsafe {
-            ffi::lodepng_add_text(&mut self.data, key, str)
+            ffi::lodepng_add_text(self, key, str)
         }
     }
 
     /// use this to clear the itexts again after you filled them in
     pub fn clear_itext(&mut self) {
         unsafe {
-            ffi::lodepng_clear_itext(&mut self.data)
+            ffi::lodepng_clear_itext(self)
         }
     }
 
     /// push back the 4 texts of 1 chunk at once
     pub fn add_itext(&mut self, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error {
         unsafe {
-            ffi::lodepng_add_itext(&mut self.data, key, langtag, transkey, str)
-        }
-    }
-}
-
-impl Drop for Info {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::lodepng_info_cleanup(&mut self.data)
-        }
-    }
-}
-
-impl Clone for Info {
-    fn clone(&self) -> Info {
-        unsafe {
-            let mut dest = Info{ data:mem::zeroed() };
-            ffi::lodepng_info_copy(&mut dest.data, &self.data).to_result().unwrap();
-            return dest;
+            ffi::lodepng_add_itext(self, key, langtag, transkey, str)
         }
     }
 }
@@ -229,7 +201,11 @@ impl State {
         return &mut self.data.info_raw;
     }
 
-    pub fn info_png(&mut self) -> &mut ffi::Info {
+    pub fn info_png(&self) -> &Info {
+        return &self.data.info_png;
+    }
+
+    pub fn info_png_mut(&mut self) -> &mut Info {
         return &mut self.data.info_png;
     }
 
@@ -657,27 +633,6 @@ impl Chunk {
             ffi::lodepng_chunk_generate_crc(self.data)
         }
     }
-
-    pub fn next(&self) -> Option<Chunk> {
-        unsafe {
-            match ffi::lodepng_chunk_next(self.data) {
-                ptr if !ptr.is_null() => Some(Chunk {data: ptr}),
-                _ => None,
-            }
-        }
-    }
-
-    pub fn append(&self, out: &mut *mut u8, outlength: *const size_t) -> Result<(), Error> {
-        unsafe {
-            ffi::lodepng_chunk_append(out, outlength, &*self.data).into()
-        }
-    }
-
-    pub fn create(out: &mut *mut u8, outlength: *const size_t, length: c_uint, chtype: *const c_char, data: *const u8) -> Result<(), Error> {
-        unsafe {
-            ffi::lodepng_chunk_create(out, outlength, length, chtype, data).into()
-        }
-    }
 }
 
 /// Compresses data with Zlib.
@@ -729,7 +684,7 @@ mod test {
     #[test]
     fn create_and_dstroy2() {
         ColorMode::new().clone();
-        Info::new().clone();
+        State::new().info_png();
         State::new().clone().info_raw();
     }
 }
