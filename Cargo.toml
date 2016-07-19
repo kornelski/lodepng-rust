@@ -3,19 +3,19 @@ name = "lodepng"
 description = "Reading and writing PNG files without external dependencies. Wrapper for lodepng."
 documentation = "http://pornel.github.io/lodepng-rust/lodepng/"
 homepage = "https://github.com/pornel/lodepng-rust#readme"
-repository = "https://github.com/pornel/lodepng-rust.git"
-readme = "README.md"
 keywords = ["PNG","lodepng","encoder","decoder"]
 license = "BSD-2-Clause"
 authors = [ "Kornel <pornel@pornel.net>" ]
 build = "build.rs"
 include = ["src/**/*", "vendor/**/*", "examples/**/*", "tests/**/*", "build.rs", "Makefile", "COPYRIGHT", "README.md", "Cargo.toml"]
-version = "0.10.1"
+readme = "README.md"
+repository = "https://github.com/pornel/lodepng-rust.git"
+version = "0.10.2"
 
 [dependencies]
-libc = "0.2.0"
 c_vec = "= 1.0.12"
-rgb = ">= 0.2.0"
+libc = "0.2.0"
+rgb = ">= 0.4.0"
 
 [[example]]
 name = "read"
