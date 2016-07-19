@@ -2,7 +2,7 @@ extern crate lodepng;
 use std::path::Path;
 
 fn main() {
-    let from_path = "test.png";
+    let from_path = "tests/test.png";
 
     // Since we're using decode24_file, we get an RGB bitmap
     let bitmap = match lodepng::decode24_file(from_path) {

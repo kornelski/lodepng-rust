@@ -836,6 +836,16 @@ mod test {
         let chunk = dec.info_png().unknown_chunks(ChunkPosition::IHDR).next().unwrap();
         assert_eq!("foob".as_bytes(), chunk.name());
         dec.info_png().get("foob").unwrap();
+    }
 
+    #[test]
+    fn read_icc() {
+        let mut s = State::new();
+        s.remember_unknown_chunks(true);
+        let f = s.decode_file("tests/profile.png");
+        f.unwrap();
+        let icc = s.info_png().get("iCCP").unwrap();
+        assert_eq!(275, icc.len());
+        assert_eq!("ICC ".as_bytes(), &icc.data()[0..4]);
     }
 }
