@@ -293,7 +293,7 @@ impl State {
     ///
     ///  ```no_run
     ///  # use lodepng::*; let mut state = State::new();
-    ///  # let slice = [0u8]; fn do_stuff<T>(buf: T) {}
+    ///  # let slice = [0u8]; #[allow(unused_variables)] fn do_stuff<T>(buf: T) {}
     ///
     ///  state.info_raw().colortype = LCT_RGBA;
     ///  match state.decode(&slice) {
