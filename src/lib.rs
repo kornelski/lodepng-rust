@@ -202,7 +202,7 @@ impl Info {
         }
     }
 
-    pub fn get<Name: AsRef<[u8]>> (&self, index: Name) -> Option<Chunk> {
+    pub fn get<Name: AsRef<[u8]>>(&self, index: Name) -> Option<Chunk> {
         let index = index.as_ref();
         return self.unknown_chunks(ChunkPosition::IHDR)
             .chain(self.unknown_chunks(ChunkPosition::PLTE))
@@ -274,19 +274,19 @@ impl State {
         return &mut self.data.info_png;
     }
 
-
     /// whether to convert the PNG to the color type you want. Default: yes
-    pub fn color_convert(&mut self, b: bool) {
-        self.data.decoder.color_convert = if b {1} else {0};
+    pub fn color_convert(&mut self, true_or_false: bool) {
+        self.data.decoder.color_convert = if true_or_false { 1 } else { 0 };
     }
+
     /// if false but remember_unknown_chunks is true, they're stored in the unknown chunks.
-    pub fn read_text_chunks(&mut self, b: bool) {
-        self.data.decoder.read_text_chunks = if b {1} else {0};
+    pub fn read_text_chunks(&mut self, true_or_false: bool) {
+        self.data.decoder.read_text_chunks = if true_or_false { 1 } else { 0 };
     }
 
     /// store all bytes from unknown chunks in the LodePNGInfo (off by default, useful for a png editor)
-    pub fn remember_unknown_chunks(&mut self, b: bool) {
-        self.data.decoder.remember_unknown_chunks = if b {1} else {0};
+    pub fn remember_unknown_chunks(&mut self, true_or_false: bool) {
+        self.data.decoder.remember_unknown_chunks = if true_or_false { 1 } else { 0 };
     }
 
     /// Load PNG from buffer using State's settings
@@ -620,7 +620,7 @@ pub fn encode_memory<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, c
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
-pub fn encode32<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error>  {
+pub fn encode32<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
     encode_memory(image, w, h, LCT_RGBA, 8)
 }
 
