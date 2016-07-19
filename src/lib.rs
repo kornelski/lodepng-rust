@@ -693,13 +693,11 @@ impl Chunk {
     }
 
     pub fn is_type<C: AsRef<[u8]>>(&self, name: C) -> bool {
-        let name = name.as_ref();
-        if name.len() != 4 {
-            return false;
-        }
+        let mut tmp = [0; 5];
         unsafe {
-            ffi::lodepng_chunk_type_equals(self.data, name.as_ptr()) != 0
+            ffi::lodepng_chunk_type(&mut tmp,  self.data)
         }
+        name.as_ref() == &tmp[0..4]
     }
 
     pub fn is_ancillary(&self) -> c_uchar {
