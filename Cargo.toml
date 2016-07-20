@@ -1,5 +1,4 @@
 [package]
-name = "lodepng"
 description = "Reading and writing PNG files without external dependencies. Wrapper for lodepng."
 documentation = "http://pornel.github.io/lodepng-rust/lodepng/"
 homepage = "https://github.com/pornel/lodepng-rust#readme"
@@ -8,9 +7,10 @@ license = "BSD-2-Clause"
 authors = [ "Kornel <pornel@pornel.net>" ]
 build = "build.rs"
 include = ["src/**/*", "vendor/**/*", "examples/**/*", "tests/**/*", "build.rs", "Makefile", "COPYRIGHT", "README.md", "Cargo.toml"]
+name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/pornel/lodepng-rust.git"
-version = "0.10.2"
+version = "0.11.0"
 
 [dependencies]
 c_vec = "= 1.0.12"

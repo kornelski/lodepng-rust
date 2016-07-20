@@ -89,7 +89,7 @@ impl ColorType {
 }
 
 #[repr(C)]
-struct DecompressSettings {
+pub struct DecompressSettings {
 pub ignore_adler32: c_uint,
     pub custom_zlib: ::std::option::Option<extern "C" fn
                                                (arg1: *mut *mut c_uchar,
@@ -236,7 +236,7 @@ pub struct Info {
 #[repr(C)]
 pub struct DecoderSettings {
     /// in here is the setting to ignore Adler32 checksums
-    zlibsettings: DecompressSettings,
+    pub zlibsettings: DecompressSettings,
     /// ignore CRC checksums
     pub ignore_crc: c_uint,
     pub color_convert: c_uint,
@@ -402,6 +402,7 @@ extern "C" {
     pub fn lodepng_chunk_create(out: &mut *mut u8, outlength: &mut size_t, length: c_uint, chtype: *const c_char, data: *const u8) -> Error;
     pub fn lodepng_crc32(buf: *const u8, len: size_t) -> c_uint;
     pub fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut size_t, input: *const u8, insize: size_t, settings: &CompressSettings) -> Error;
+    pub fn lodepng_zlib_decompress(out: &mut *mut u8, outsize: &mut size_t, input: *const u8, insize: size_t, settings: &DecompressSettings) -> Error;
     pub fn lodepng_deflate(out: &mut *mut u8, outsize: &mut size_t, input: *const u8, insize: size_t, settings: &CompressSettings) -> Error;
 }
 

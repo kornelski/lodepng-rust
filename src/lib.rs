@@ -14,6 +14,7 @@ pub use rgb::RGBA;
 use libc::{c_char, c_uchar, c_uint, size_t, c_void, free};
 use std::fmt;
 use std::mem;
+use std::cmp;
 use std::io;
 use std::fs::File;
 use std::io::Write;
@@ -26,6 +27,7 @@ pub use ffi::ColorType;
 #[doc(hidden)]
 pub use ffi::ColorType::{LCT_GREY, LCT_RGB, LCT_PALETTE, LCT_GREY_ALPHA, LCT_RGBA};
 pub use ffi::CompressSettings;
+use ffi::DecompressSettings;
 pub use ffi::Time;
 pub use ffi::DecoderSettings;
 pub use ffi::FilterStrategy;
@@ -287,6 +289,29 @@ impl State {
     /// store all bytes from unknown chunks in the LodePNGInfo (off by default, useful for a png editor)
     pub fn remember_unknown_chunks(&mut self, true_or_false: bool) {
         self.data.decoder.remember_unknown_chunks = if true_or_false { 1 } else { 0 };
+    }
+
+    /// Decompress ICC profile from iCCP chunk
+    pub fn get_icc(&self) -> Result<CVec<u8>, Error> {
+        let iccp = self.info_png().get("iCCP");
+        if iccp.is_none() {
+            return Err(Error(89));
+        }
+        let iccp = iccp.as_ref().unwrap().data();
+        if iccp.get(0).cloned().unwrap_or(255) == 0 { // text min length is 1
+            return Err(Error(89));
+        }
+
+        let name_len = cmp::min(iccp.len(), 80); // skip name
+        for i in 0..name_len {
+            if iccp[i] == 0 { // string terminator
+                if iccp.get(i+1).cloned().unwrap_or(255) != 0 { // compression type
+                    return Err(Error(72));
+                }
+                return zlib_decompress(&iccp[i+2 ..], &self.data.decoder.zlibsettings);
+            }
+        }
+        return Err(Error(75));
     }
 
     /// Load PNG from buffer using State's settings
@@ -757,6 +782,16 @@ pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u
     }
 }
 
+fn zlib_decompress(input: &[u8], settings: &DecompressSettings) -> Result<CVec<u8>, Error> {
+    unsafe {
+        let mut out = mem::zeroed();
+        let mut outsize = 0;
+
+        try!(ffi::lodepng_zlib_decompress(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).into());
+        Ok(cvec_with_free(out, outsize as usize))
+    }
+}
+
 /// Compress a buffer with deflate. See RFC 1951.
 #[doc(hidden)]
 pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
@@ -844,6 +879,9 @@ mod test {
         f.unwrap();
         let icc = s.info_png().get("iCCP").unwrap();
         assert_eq!(275, icc.len());
-        assert_eq!("ICC ".as_bytes(), &icc.data()[0..4]);
+        assert_eq!("ICC Pro".as_bytes(), &icc.data()[0..7]);
+
+        let data = s.get_icc().unwrap();
+        assert_eq!("appl".as_bytes(), &data.as_ref()[4..8]);
     }
 }
