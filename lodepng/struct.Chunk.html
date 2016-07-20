@@ -24,9 +24,7 @@
     </div>
     <![endif]-->
 
-    <p style="position:absolute;top:0.5em;left:1em;right:0;z-index:999"><a href="https://github.com/pornel/lodepng-rust">GitHub project page</a></p>
-
-
+    
 
     <nav class="sidebar">
         
@@ -49,20 +47,20 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-639' class='srclink' href='../src/lodepng/src/lib.rs.html#361-363' title='goto source code'>[src]</a></span></h1>
+               </span><a id='src-713' class='srclink' href='../src/lodepng/src/lib.rs.html#451-453' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct Chunk {
     // some fields omitted
-}</pre><h2 id='methods'>Methods</h2><h3 class='impl'><span class='in-band'><code>impl <a class='struct' href='../lodepng/struct.Chunk.html' title='lodepng::Chunk'>Chunk</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-821' class='srclink' href='../src/lodepng/src/lib.rs.html#601-664' title='goto source code'>[src]</a></span></h3>
+}</pre><h2 id='methods'>Methods</h2><h3 class='impl'><span class='in-band'><code>impl <a class='struct' href='../lodepng/struct.Chunk.html' title='lodepng::Chunk'>Chunk</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-923' class='srclink' href='../src/lodepng/src/lib.rs.html#703-769' title='goto source code'>[src]</a></span></h3>
 <div class='impl-items'><h4 id='method.len' class='method'><code>fn <a href='#method.len' class='fnname'>len</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
-<h4 id='method.is_ancillary' class='method'><code>fn <a href='#method.is_ancillary' class='fnname'>is_ancillary</a>(&amp;self) -&gt; c_uchar</code></h4>
+<h4 id='method.name' class='method'><code>fn <a href='#method.name' class='fnname'>name</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 4]</a></code></h4>
+<h4 id='method.is_type' class='method'><code>fn <a href='#method.is_type' class='fnname'>is_type</a>&lt;C:&nbsp;<a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html' title='core::convert::AsRef'>AsRef</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>&gt;&gt;(&amp;self, name: C) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.is_ancillary' class='method'><code>fn <a href='#method.is_ancillary' class='fnname'>is_ancillary</a>(&amp;self) -&gt; <a class='type' href='../libc/type.c_uchar.html' title='libc::c_uchar'>c_uchar</a></code></h4>
 <h4 id='method.is_private' class='method'><code>fn <a href='#method.is_private' class='fnname'>is_private</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
-<h4 id='method.is_safetocopy' class='method'><code>fn <a href='#method.is_safetocopy' class='fnname'>is_safetocopy</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
-<h4 id='method.data' class='method'><code>fn <a href='#method.data' class='fnname'>data</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut </a>c_uchar</code></h4>
+<h4 id='method.is_safe_to_copy' class='method'><code>fn <a href='#method.is_safe_to_copy' class='fnname'>is_safe_to_copy</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.data' class='method'><code>fn <a href='#method.data' class='fnname'>data</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<h4 id='method.data_mut' class='method'><code>fn <a href='#method.data_mut' class='fnname'>data_mut</a>(&amp;mut self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;mut [</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
 <h4 id='method.check_crc' class='method'><code>fn <a href='#method.check_crc' class='fnname'>check_crc</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
 <h4 id='method.generate_crc' class='method'><code>fn <a href='#method.generate_crc' class='fnname'>generate_crc</a>(&amp;mut self)</code></h4>
-<h4 id='method.next' class='method'><code>fn <a href='#method.next' class='fnname'>next</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../lodepng/struct.Chunk.html' title='lodepng::Chunk'>Chunk</a>&gt;</code></h4>
-<h4 id='method.append' class='method'><code>fn <a href='#method.append' class='fnname'>append</a>(&amp;self, out: &amp;mut <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut </a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, outlength: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const </a>size_t) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>,&nbsp;<a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</code></h4>
-<h4 id='method.create' class='method'><code>fn <a href='#method.create' class='fnname'>create</a>(out: &amp;mut <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut </a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, outlength: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const </a>size_t, length: c_uint, chtype: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const </a>c_char, data: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const </a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>,&nbsp;<a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</code></h4>
 </div></section>
     <section id='search' class="content hidden"></section>
 

@@ -24,9 +24,7 @@
     </div>
     <![endif]-->
 
-    <p style="position:absolute;top:0.5em;left:1em;right:0;z-index:999"><a href="https://github.com/pornel/lodepng-rust">GitHub project page</a></p>
-
-
+    
 
     <nav class="sidebar">
         
@@ -49,15 +47,15 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-431' class='srclink' href='../src/lodepng/src/lib.rs.html#39-41' title='goto source code'>[src]</a></span></h1>
+               </span><a id='src-443' class='srclink' href='../src/lodepng/src/lib.rs.html#44-46' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct ColorMode {
     // some fields omitted
-}</pre><h2 id='methods'>Methods</h2><h3 class='impl'><span class='in-band'><code>impl <a class='struct' href='../lodepng/struct.ColorMode.html' title='lodepng::ColorMode'>ColorMode</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-433' class='srclink' href='../src/lodepng/src/lib.rs.html#43-134' title='goto source code'>[src]</a></span></h3>
+}</pre><h2 id='methods'>Methods</h2><h3 class='impl'><span class='in-band'><code>impl <a class='struct' href='../lodepng/struct.ColorMode.html' title='lodepng::ColorMode'>ColorMode</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-445' class='srclink' href='../src/lodepng/src/lib.rs.html#48-139' title='goto source code'>[src]</a></span></h3>
 <div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../lodepng/struct.ColorMode.html' title='lodepng::ColorMode'>ColorMode</a></code></h4>
 <h4 id='method.colortype' class='method'><code>fn <a href='#method.colortype' class='fnname'>colortype</a>(&amp;self) -&gt; <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a></code></h4>
 <h4 id='method.bitdepth' class='method'><code>fn <a href='#method.bitdepth' class='fnname'>bitdepth</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a></code></h4>
 <h4 id='method.palette_clear' class='method'><code>fn <a href='#method.palette_clear' class='fnname'>palette_clear</a>(&amp;mut self)</code></h4>
-<h4 id='method.palette_add' class='method'><code>fn <a href='#method.palette_add' class='fnname'>palette_add</a>(&amp;mut self, r: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, g: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, b: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, a: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</code></h4>
+<h4 id='method.palette_add' class='method'><code>fn <a href='#method.palette_add' class='fnname'>palette_add</a>(&amp;mut self, r: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, g: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, b: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>, a: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>,&nbsp;<a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</code></h4>
 <div class='docblock'><p>add 1 color to the palette</p>
 </div><h4 id='method.bpp' class='method'><code>fn <a href='#method.bpp' class='fnname'>bpp</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a></code></h4>
 <div class='docblock'><p>get the total amount of bits per pixel, based on colortype and bitdepth in the struct</p>
@@ -79,12 +77,12 @@ Returns true if the image can have translucent or invisible pixels (it still be 
 Returns false if the image can only have opaque pixels.
 In detail, it returns true only if it&#39;s a color type with alpha, or has a palette with non-opaque values,
 or if &quot;key_defined&quot; is true.</p>
-</div><h4 id='method.raw_size' class='method'><code>fn <a href='#method.raw_size' class='fnname'>raw_size</a>(&amp;self, w: c_uint, h: c_uint) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+</div><h4 id='method.raw_size' class='method'><code>fn <a href='#method.raw_size' class='fnname'>raw_size</a>(&amp;self, w: <a class='type' href='../libc/type.c_uint.html' title='libc::c_uint'>c_uint</a>, h: <a class='type' href='../libc/type.c_uint.html' title='libc::c_uint'>c_uint</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
 <div class='docblock'><p>Returns the byte size of a raw image buffer with given width, height and color mode</p>
-</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Drop.html' title='core::ops::Drop'>Drop</a> for <a class='struct' href='../lodepng/struct.ColorMode.html' title='lodepng::ColorMode'>ColorMode</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-466' class='srclink' href='../src/lodepng/src/lib.rs.html#136-142' title='goto source code'>[src]</a></span></h3>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Drop.html' title='core::ops::Drop'>Drop</a> for <a class='struct' href='../lodepng/struct.ColorMode.html' title='lodepng::ColorMode'>ColorMode</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-478' class='srclink' href='../src/lodepng/src/lib.rs.html#141-147' title='goto source code'>[src]</a></span></h3>
 <div class='impl-items'><h4 id='method.drop' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/ops/trait.Drop.html#tymethod.drop' class='fnname'>drop</a>(&amp;mut self)</code></h4>
 <div class='docblock'><p>A method called when the value goes out of scope. <a href="https://doc.rust-lang.org/nightly/core/ops/trait.Drop.html#tymethod.drop">Read more</a></p>
-</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='struct' href='../lodepng/struct.ColorMode.html' title='lodepng::ColorMode'>ColorMode</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-469' class='srclink' href='../src/lodepng/src/lib.rs.html#144-152' title='goto source code'>[src]</a></span></h3>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='struct' href='../lodepng/struct.ColorMode.html' title='lodepng::ColorMode'>ColorMode</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-481' class='srclink' href='../src/lodepng/src/lib.rs.html#149-157' title='goto source code'>[src]</a></span></h3>
 <div class='impl-items'><h4 id='method.clone' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class='struct' href='../lodepng/struct.ColorMode.html' title='lodepng::ColorMode'>ColorMode</a></code></h4>
 <div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
 </div><h4 id='method.clone_from' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div></h4>

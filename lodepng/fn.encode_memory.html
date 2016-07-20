@@ -24,9 +24,7 @@
     </div>
     <![endif]-->
 
-    <p style="position:absolute;top:0.5em;left:1em;right:0;z-index:999"><a href="https://github.com/pornel/lodepng-rust">GitHub project page</a></p>
-
-
+    
 
     <nav class="sidebar">
         
@@ -49,8 +47,8 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-752' class='srclink' href='../src/lodepng/src/lib.rs.html#533-543' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn encode_memory&lt;PixelType&gt;(image: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>PixelType<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, w: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, h: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, colortype: <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a>, bitdepth: c_uint) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;,&nbsp;<a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</pre><div class='docblock'><p>Converts raw pixel data into a PNG image in memory. The colortype and bitdepth
+               </span><a id='src-854' class='srclink' href='../src/lodepng/src/lib.rs.html#635-645' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn encode_memory&lt;PixelType:&nbsp;<a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>&gt;(image: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>PixelType<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, w: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, h: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, colortype: <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a>, bitdepth: <a class='type' href='../libc/type.c_uint.html' title='libc::c_uint'>c_uint</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;,&nbsp;<a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</pre><div class='docblock'><p>Converts raw pixel data into a PNG image in memory. The colortype and bitdepth
 of the output PNG image cannot be chosen, they are automatically determined
 by the colortype, bitdepth and content of the input pixel data.</p>
 

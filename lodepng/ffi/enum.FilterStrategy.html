@@ -24,9 +24,7 @@
     </div>
     <![endif]-->
 
-    <p style="position:absolute;top:0.5em;left:1em;right:0;z-index:999"><a href="https://github.com/pornel/lodepng-rust">GitHub project page</a></p>
-
-
+    
 
     <nav class="sidebar">
         
@@ -49,7 +47,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-186' class='srclink' href='../../src/lodepng/src/ffi.rs.html#273-286' title='goto source code'>[src]</a></span></h1>
+               </span><a id='src-185' class='srclink' href='../../src/lodepng/src/ffi.rs.html#261-274' title='goto source code'>[src]</a></span></h1>
 <pre class='rust enum'>pub enum FilterStrategy {
     LFS_ZERO,
     LFS_MINSUM,
@@ -65,15 +63,15 @@ on the image, this is better or worse than minsum.</p>
 </div><span id='variant.LFS_BRUTE_FORCE' class='variant'><code>LFS_BRUTE_FORCE</code></span><div class='docblock'><p>Brute-force-search PNG filters by compressing each filter for each scanline.
 Experimental, very slow, and only rarely gives better compression than MINSUM.</p>
 </div><span id='variant.LFS_PREDEFINED' class='variant'><code>LFS_PREDEFINED</code></span><div class='docblock'><p>use predefined_filters buffer: you specify the filter type for each scanline</p>
-</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-173' class='srclink' href='../../src/lodepng/src/ffi.rs.html#272' title='goto source code'>[src]</a></span></h3>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-172' class='srclink' href='../../src/lodepng/src/ffi.rs.html#260' title='goto source code'>[src]</a></span></h3>
 <div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
 <div class='docblock'><p>Formats the value using the given formatter.</p>
-</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-182' class='srclink' href='../../src/lodepng/src/ffi.rs.html#272' title='goto source code'>[src]</a></span></h3>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-181' class='srclink' href='../../src/lodepng/src/ffi.rs.html#260' title='goto source code'>[src]</a></span></h3>
 <div class='impl-items'><h4 id='method.clone' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></h4>
 <div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
 </div><h4 id='method.clone_from' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div></h4>
 <div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
-</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a> for <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-185' class='srclink' href='../../src/lodepng/src/ffi.rs.html#272' title='goto source code'>[src]</a></span></h3>
+</div></div><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a> for <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-184' class='srclink' href='../../src/lodepng/src/ffi.rs.html#260' title='goto source code'>[src]</a></span></h3>
 <div class='impl-items'></div></section>
     <section id='search' class="content hidden"></section>
 

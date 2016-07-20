@@ -24,9 +24,7 @@
     </div>
     <![endif]-->
 
-    <p style="position:absolute;top:0.5em;left:1em;right:0;z-index:999"><a href="https://github.com/pornel/lodepng-rust">GitHub project page</a></p>
-
-
+    
 
     <nav class="sidebar">
         
@@ -49,8 +47,8 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-770' class='srclink' href='../src/lodepng/src/lib.rs.html#551-553' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn encode24&lt;PixelType&gt;(image: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>PixelType<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, w: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, h: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;,&nbsp;<a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</pre><div class='docblock'><p>Same as <code>encode_memory</code>, but always encodes from 24-bit RGB raw image</p>
+               </span><a id='src-872' class='srclink' href='../src/lodepng/src/lib.rs.html#653-655' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn encode24&lt;PixelType:&nbsp;<a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>&gt;(image: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a>PixelType<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, w: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>, h: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../lodepng/ffi/struct.CVec.html' title='lodepng::ffi::CVec'>CVec</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u8.html'>u8</a>&gt;,&nbsp;<a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>&gt;</pre><div class='docblock'><p>Same as <code>encode_memory</code>, but always encodes from 24-bit RGB raw image</p>
 </div></section>
     <section id='search' class="content hidden"></section>
 
