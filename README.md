@@ -42,12 +42,14 @@ lodepng::encode32_file("out.png", buffer.as_slice(), width, height)
 
 ```rust
 let mut state = lodepng::State::new();
+state.remember_unknown_chunks(true);
 
 match state.decode("in.png") {
     Ok(lodepng::Image::RGB(image)) => {…}
     Ok(lodepng::Image::RGBA(image)) => {…}
     Ok(lodepng::Image::RGBA16(image)) => {…}
     Ok(lodepng::Image::Gray(image)) => {…}
+    Ok(_) => {…}
     Err(err) => {…}
 }
 
