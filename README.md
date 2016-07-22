@@ -1,24 +1,16 @@
 #[LodePNG](http://lodev.org/lodepng/) bindings for [Rust](http://www.rust-lang.org/)
 
-LodePNG is a stand-alone PNG image decoder and encoder (does *not* require zlib or libpng).
+LodePNG is a stand-alone PNG image decoder and encoder (does *not* require zlib nor libpng).
 
 This package allows easy reading and writing of PNG files without any system dependencies.
 
-The easiest way to use LodePNG is to simply include the lodepng crate.
-To do so, add this to your Cargo.toml:
+The easiest way to use LodePNG is to simply include the [lodepng crate](https://crates.io/crates/lodepng).
+To do so, add this to your `Cargo.toml`:
 
 ```toml
-[dependencies.lodepng]
-git = "https://github.com/pornel/lodepng-rust.git"
+[dependencies]
+lodepng = "0.11"
 ```
-
-To build the `lodepng` crate:
-
-```sh
-cargo build
-```
-
-It will produce `liblodepng-….rlib` that you can import with `extern crate lodepng`.
 
 ## API
 
@@ -30,12 +22,14 @@ To load RGBA PNG file:
 lodepng::decode32_file("in.png")
 ```
 
-returns `lodepng::Bitmap<lodepng::RGBA<u8>>` with `.width`, `.height`, and `.buffer`.
+returns `lodepng::Bitmap<lodepng::RGBA<u8>>` with `.width`, `.height`, and `.buffer`. 
 
-To save RGBA PNG file:
+The RGB/RGBA pixel types are from the [RGB create](https://crates.io/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting.
+
+To save an RGBA PNG file:
 
 ```rust
-lodepng::encode32_file("out.png", buffer.as_slice(), width, height)
+lodepng::encode32_file("out.png", &buffer, width, height)
 ```
 
 ### Advanced
@@ -56,4 +50,7 @@ match state.decode("in.png") {
 for chunk in state.info_png().unknown_chunks() {
     println!("{:?} = {:?}", chunk.name(), chunk.data());
 }
+
+// Color profile
+let icc_data = state.info_png().get_icc();
 ```
