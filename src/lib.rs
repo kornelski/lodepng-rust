@@ -822,6 +822,8 @@ mod test {
     #[test]
     fn test_pal() {
         let mut state = State::new();
+        state.info_raw_mut().colortype = LCT_PALETTE;
+        assert_eq!(state.info_raw().colortype(), LCT_PALETTE);
         state.info_raw_mut().palette_add(RGBA::new(1,2,3,4)).unwrap();
         state.info_raw_mut().palette_add(RGBA::new(5,6,7,255)).unwrap();
         assert_eq!(&[RGBA{r:1u8,g:2,b:3,a:4},RGBA{r:5u8,g:6,b:7,a:255}], state.info_raw().palette());

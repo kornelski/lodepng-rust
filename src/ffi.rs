@@ -19,7 +19,7 @@ impl Error {
 
 /// Type for `decode`, `encode`, etc. Same as standard PNG color types.
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ColorType {
     /// greyscale: 1, 2, 4, 8, 16 bit
     LCT_GREY = 0,
@@ -255,7 +255,7 @@ impl DecoderSettings {
 
 /// automatically use color type with less bits per pixel if losslessly possible. Default: AUTO
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum FilterStrategy {
     /// every filter at zero
     LFS_ZERO = 0,
@@ -273,7 +273,7 @@ pub enum FilterStrategy {
 
 /// automatically use color type with less bits per pixel if losslessly possible. Default: LAC_AUTO
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum AutoConvert {
     /// use color type user requested
     LAC_NO = 0,
