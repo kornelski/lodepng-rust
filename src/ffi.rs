@@ -75,14 +75,12 @@ pub struct ColorMode {
 
 impl ColorType {
     /// Create color mode with given type and bitdepth
-    pub fn to_color_mode(&self, bitdepth: c_uint) -> super::ColorMode {
+    pub fn to_color_mode(&self, bitdepth: c_uint) -> ColorMode {
         unsafe {
-            super::ColorMode {
-                data: ColorMode {
-                    colortype: *self,
-                    bitdepth: bitdepth,
-                    ..mem::zeroed()
-                },
+            ColorMode {
+                colortype: *self,
+                bitdepth: bitdepth,
+                ..mem::zeroed()
             }
         }
     }

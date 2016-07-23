@@ -40,45 +40,34 @@ pub use ffi::EncoderSettings;
 pub use ffi::Error;
 
 pub use ffi::Info;
-
-pub struct ColorMode {
-    data: ffi::ColorMode,
-}
+pub use ffi::ColorMode;
 
 impl ColorMode {
-    pub fn new() -> ColorMode {
-        unsafe {
-            let mut mode = mem::zeroed();
-            ffi::lodepng_color_mode_init(&mut mode);
-            return ColorMode { data: mode };
-        }
-    }
-
     pub fn colortype(&self) -> ColorType {
-        self.data.colortype
+        self.colortype
     }
 
     pub fn bitdepth(&self) -> u32 {
-        self.data.bitdepth
+        self.bitdepth
     }
 
     pub fn palette_clear(&mut self) {
         unsafe {
-            ffi::lodepng_palette_clear(&mut self.data)
+            ffi::lodepng_palette_clear(self)
         }
     }
 
     /// add 1 color to the palette
-    pub fn palette_add(&mut self, r: u8, g: u8, b: u8, a: u8) -> Result<(), Error> {
+    pub fn palette_add(&mut self, rgba: RGBA<u8>) -> Result<(), Error> {
         unsafe {
-            ffi::lodepng_palette_add(&mut self.data, r, g, b, a).into()
+            ffi::lodepng_palette_add(self, rgba.r, rgba.g, rgba.b, rgba.a).into()
         }
     }
 
     /// get the total amount of bits per pixel, based on colortype and bitdepth in the struct
     pub fn bpp(&self) -> u32 {
         unsafe {
-            ffi::lodepng_get_bpp(&self.data) as u32
+            ffi::lodepng_get_bpp(self) as u32
         }
     }
 
@@ -86,28 +75,28 @@ impl ColorMode {
     /// If a palette is used, it counts as 1 channel.
     pub fn channels(&self) -> u32 {
         unsafe {
-            ffi::lodepng_get_channels(&self.data) as u32
+            ffi::lodepng_get_channels(self) as u32
         }
     }
 
     /// is it a greyscale type? (only colortype 0 or 4)
     pub fn is_greyscale_type(&self) -> bool {
         unsafe {
-            ffi::lodepng_is_greyscale_type(&self.data) != 0
+            ffi::lodepng_is_greyscale_type(self) != 0
         }
     }
 
     /// has it got an alpha channel? (only colortype 2 or 6)
     pub fn is_alpha_type(&self) -> bool {
         unsafe {
-            ffi::lodepng_is_alpha_type(&self.data) != 0
+            ffi::lodepng_is_alpha_type(self) != 0
         }
     }
 
     /// has it got a palette? (only colortype 3)
     pub fn is_palette_type(&self) -> bool {
         unsafe {
-            ffi::lodepng_is_palette_type(&self.data) != 0
+            ffi::lodepng_is_palette_type(self) != 0
         }
     }
 
@@ -115,7 +104,7 @@ impl ColorMode {
     /// Loops through the palette to check this.
     pub fn has_palette_alpha(&self) -> bool {
         unsafe {
-            ffi::lodepng_has_palette_alpha(&self.data) != 0
+            ffi::lodepng_has_palette_alpha(self) != 0
         }
     }
 
@@ -126,32 +115,14 @@ impl ColorMode {
     /// or if "key_defined" is true.
     pub fn can_have_alpha(&self) -> bool {
         unsafe {
-            ffi::lodepng_can_have_alpha(&self.data) != 0
+            ffi::lodepng_can_have_alpha(self) != 0
         }
     }
 
     /// Returns the byte size of a raw image buffer with given width, height and color mode
     pub fn raw_size(&self, w: c_uint, h: c_uint) -> usize {
         unsafe {
-            ffi::lodepng_get_raw_size(w, h, &self.data) as usize
-        }
-    }
-}
-
-impl Drop for ColorMode {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::lodepng_color_mode_cleanup(&mut self.data)
-        }
-    }
-}
-
-impl Clone for ColorMode {
-    fn clone(&self) -> ColorMode {
-        unsafe {
-            let mut dest = ColorMode { data: mem::zeroed() };
-            ffi::lodepng_color_mode_copy(&mut dest.data, &self.data).to_result().unwrap();
-            return dest;
+            ffi::lodepng_get_raw_size(w, h, self) as usize
         }
     }
 }
@@ -264,7 +235,11 @@ impl State {
         }
     }
 
-    pub fn info_raw(&mut self) -> &mut ffi::ColorMode {
+    pub fn info_raw(&self) -> &ColorMode {
+        return &self.data.info_raw;
+    }
+
+    pub fn info_raw_mut(&mut self) -> &mut ColorMode {
         return &mut self.data.info_raw;
     }
 
@@ -320,7 +295,7 @@ impl State {
     ///  # use lodepng::*; let mut state = State::new();
     ///  # let slice = [0u8]; #[allow(unused_variables)] fn do_stuff<T>(buf: T) {}
     ///
-    ///  state.info_raw().colortype = LCT_RGBA;
+    ///  state.info_raw_mut().colortype = LCT_RGBA;
     ///  match state.decode(&slice) {
     ///      Ok(Image::RGBA(with_alpha)) => do_stuff(with_alpha),
     ///      _ => panic!("¯\\_(ツ)_/¯")
@@ -679,7 +654,7 @@ pub fn convert<PixelType: Copy>(input: &[PixelType], mode_out: &mut ColorMode, m
     unsafe {
         let out = mem::zeroed();
         try!(with_buffer_for_type(input, w, h, mode_in.colortype(), mode_in.bitdepth(), |ptr| {
-            ffi::lodepng_convert(out, ptr, &mut mode_out.data, &mode_in.data, w as c_uint, h as c_uint, fix_png as c_uint)
+            ffi::lodepng_convert(out, ptr, mode_out, mode_in, w as c_uint, h as c_uint, fix_png as c_uint)
         }).into());
         Ok(new_bitmap(out, w, h, mode_out.colortype(), mode_out.bitdepth()))
     }
@@ -696,7 +671,7 @@ pub fn convert<PixelType: Copy>(input: &[PixelType], mode_out: &mut ColorMode, m
 #[doc(hidden)]
 pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h: usize, mode_in: &ColorMode, auto_convert: AutoConvert) -> Result<(), Error> {
     unsafe {
-        ffi::lodepng_auto_choose_color(&mut mode_out.data, image, w as c_uint, h as c_uint, &mode_in.data, auto_convert).into()
+        ffi::lodepng_auto_choose_color(mode_out, image, w as c_uint, h as c_uint, mode_in, auto_convert).into()
     }
 }
 
@@ -826,10 +801,10 @@ mod test {
 
     #[test]
     fn create_and_dstroy2() {
-        ColorMode::new().clone();
         State::new().info_png();
         State::new().info_png_mut();
         State::new().clone().info_raw();
+        State::new().clone().info_raw_mut();
     }
 
     #[test]
