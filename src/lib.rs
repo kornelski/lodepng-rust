@@ -64,6 +64,18 @@ impl ColorMode {
         }
     }
 
+    pub fn palette(&self) -> &[RGBA<u8>] {
+        unsafe {
+            std::slice::from_raw_parts(self.palette, self.palettesize)
+        }
+    }
+
+    pub fn palette_mut(&mut self) -> &mut [RGBA<u8>] {
+        unsafe {
+            std::slice::from_raw_parts_mut(self.palette as *mut _, self.palettesize)
+        }
+    }
+
     /// get the total amount of bits per pixel, based on colortype and bitdepth in the struct
     pub fn bpp(&self) -> u32 {
         unsafe {
@@ -805,6 +817,16 @@ mod test {
         State::new().info_png_mut();
         State::new().clone().info_raw();
         State::new().clone().info_raw_mut();
+    }
+
+    #[test]
+    fn test_pal() {
+        let mut state = State::new();
+        state.info_raw_mut().palette_add(RGBA::new(1,2,3,4)).unwrap();
+        state.info_raw_mut().palette_add(RGBA::new(5,6,7,255)).unwrap();
+        assert_eq!(&[RGBA{r:1u8,g:2,b:3,a:4},RGBA{r:5u8,g:6,b:7,a:255}], state.info_raw().palette());
+        state.info_raw_mut().palette_clear();
+        assert_eq!(0, state.info_raw().palette().len());
     }
 
     #[test]

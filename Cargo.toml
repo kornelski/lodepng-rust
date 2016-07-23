@@ -10,7 +10,7 @@ include = ["src/**/*", "vendor/**/*", "examples/**/*", "tests/**/*", "build.rs",
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/pornel/lodepng-rust.git"
-version = "0.11.0"
+version = "0.12.0"
 
 [dependencies]
 c_vec = "= 1.0.12"
