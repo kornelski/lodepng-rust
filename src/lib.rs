@@ -379,11 +379,11 @@ impl Clone for State {
 
 /// Opaque greyscale pixel (acces with `px.0`)
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct Grey<ComponentType>(ComponentType);
+pub struct Grey<ComponentType>(pub ComponentType);
 
 /// Greyscale pixel with alpha (`px.1` is alpha)
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct GreyAlpha<ComponentType>(ComponentType, ComponentType);
+pub struct GreyAlpha<ComponentType>(pub ComponentType, pub ComponentType);
 
 /// Bitmap types. Also contains valid values for `<PixelType>`
 ///
