@@ -24,7 +24,7 @@ lodepng::decode32_file("in.png")
 
 returns `lodepng::Bitmap<lodepng::RGBA<u8>>` with `.width`, `.height`, and `.buffer`. 
 
-The RGB/RGBA pixel types are from the [RGB create](https://crates.io/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting.
+The RGB/RGBA pixel types are from the [RGB crate](https://crates.io/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting.
 
 To save an RGBA PNG file:
 
