@@ -1,4 +1,4 @@
-#[LodePNG](http://lodev.org/lodepng/) bindings for [Rust](http://www.rust-lang.org/)
+#[LodePNG](http://lodev.org/lodepng) bindings for [Rust](https://www.rust-lang.org)
 
 LodePNG is a stand-alone PNG image decoder and encoder (does *not* require zlib nor libpng).
 
@@ -14,7 +14,7 @@ lodepng = "0.11"
 
 ## API
 
-See [API documentation](http://pornel.github.io/lodepng-rust/lodepng/) for details. The API mimics lodepng, so if something is unclear, [see the original lodepng.h](http://lpi.googlecode.com/svn/trunk/lodepng.h).
+See [API documentation](https://pornel.github.io/lodepng-rust/lodepng/) for details. The API mimics lodepng, so if something is unclear, [see the original lodepng.h](https://raw.githubusercontent.com/lvandeve/lodepng/master/lodepng.h).
 
 To load RGBA PNG file:
 
@@ -22,7 +22,7 @@ To load RGBA PNG file:
 lodepng::decode32_file("in.png")
 ```
 
-returns `lodepng::Bitmap<lodepng::RGBA<u8>>` with `.width`, `.height`, and `.buffer`. 
+returns `lodepng::Bitmap<lodepng::RGBA<u8>>` with `.width`, `.height`, and `.buffer`.
 
 The RGB/RGBA pixel types are from the [RGB crate](https://crates.io/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting.
 
