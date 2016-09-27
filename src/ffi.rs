@@ -376,7 +376,7 @@ extern "C" {
     pub fn lodepng_add_text(info: &mut Info, key: *const c_char, str: *const c_char) -> Error;
     pub fn lodepng_clear_itext(info: &mut Info);
     pub fn lodepng_add_itext(info: &mut Info, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error;
-    pub fn lodepng_convert(out: *mut u8, input: *const u8, mode_out: &mut ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint, fix_png: c_uint) -> Error;
+    pub fn lodepng_convert(out: *mut u8, input: *const u8, mode_out: &mut ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint) -> Error;
     pub fn lodepng_decoder_settings_init(settings: &mut DecoderSettings);
     pub fn lodepng_auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: c_uint, h: c_uint, mode_in: &ColorMode, auto_convert: AutoConvert) -> Error;
     pub fn lodepng_encoder_settings_init(settings: &mut EncoderSettings);
