@@ -54,3 +54,8 @@ for chunk in state.info_png().unknown_chunks() {
 // Color profile
 let icc_data = state.info_png().get_icc();
 ```
+
+### Requirements
+
+* At build time: a C compiler and `make`
+* At run time: libc
