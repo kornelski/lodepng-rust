@@ -662,11 +662,11 @@ pub fn encode24_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[Pixe
 
 /// Converts from any color type to 24-bit or 32-bit (only)
 #[doc(hidden)]
-pub fn convert<PixelType: Copy>(input: &[PixelType], mode_out: &mut ColorMode, mode_in: &ColorMode, w: usize, h: usize, fix_png: bool) -> Result<Image, Error> {
+pub fn convert<PixelType: Copy>(input: &[PixelType], mode_out: &mut ColorMode, mode_in: &ColorMode, w: usize, h: usize) -> Result<Image, Error> {
     unsafe {
         let out = mem::zeroed();
         try!(with_buffer_for_type(input, w, h, mode_in.colortype(), mode_in.bitdepth(), |ptr| {
-            ffi::lodepng_convert(out, ptr, mode_out, mode_in, w as c_uint, h as c_uint, fix_png as c_uint)
+            ffi::lodepng_convert(out, ptr, mode_out, mode_in, w as c_uint, h as c_uint)
         }).into());
         Ok(new_bitmap(out, w, h, mode_out.colortype(), mode_out.bitdepth()))
     }
