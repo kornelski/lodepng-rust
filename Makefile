@@ -23,5 +23,8 @@ $(HEADER):
 doc: src/lib.rs
 	rustdoc --html-before-content doc/_header.html -L target/debug/deps/ $^
 
-.PHONY: doc
+clean:
+	-rm -f -- $(SRC) $(HEADER) $(OBJ) $(LIB)
+
+.PHONY: doc clean
 
