@@ -15,6 +15,7 @@ use libc::{c_char, c_uchar, c_uint, size_t, c_void, free};
 use std::fmt;
 use std::mem;
 use std::cmp;
+use std::error;
 use std::io;
 use std::fs::File;
 use std::io::Write;
@@ -413,6 +414,12 @@ impl fmt::Debug for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.as_str())
+    }
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        self.as_str()
     }
 }
 
