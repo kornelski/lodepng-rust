@@ -13,9 +13,9 @@ repository = "https://github.com/pornel/lodepng-rust.git"
 version = "0.13.1"
 
 [dependencies]
-c_vec = "= 1.0.12"
+c_vec = "1.0.12"
 libc = "0.2.0"
-rgb = ">= 0.5.2"
+rgb = "0.5.4"
 
 [[example]]
 name = "read"
