@@ -11,7 +11,7 @@ name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/pornel/lodepng-rust.git"
 version = "0.13.2"
-categories = [ "multimedia::encoding", "multimedia::images" ]
+categories = [ "multimedia::encoding", "multimedia::images", "external-ffi-bindings" ]
 
 [dependencies]
 c_vec = "1.0.12"
