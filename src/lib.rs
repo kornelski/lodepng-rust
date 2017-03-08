@@ -11,7 +11,7 @@ pub mod ffi;
 pub use rgb::RGB;
 pub use rgb::RGBA;
 
-use libc::{c_char, c_uchar, c_uint, size_t, c_void, free};
+use std::os::raw::{c_char, c_uchar, c_uint};
 use std::fmt;
 use std::mem;
 use std::cmp;
@@ -321,7 +321,7 @@ impl State {
             let mut w = 0;
             let mut h = 0;
 
-            try!(ffi::lodepng_decode(&mut out, &mut w, &mut h, &mut self.data, input.as_ptr(), input.len() as size_t).into());
+            try!(ffi::lodepng_decode(&mut out, &mut w, &mut h, &mut self.data, input.as_ptr(), input.len() as usize).into());
             Ok(::new_bitmap(out, w as usize, h as usize, self.data.info_raw.colortype, self.data.info_raw.bitdepth))
         }
     }
@@ -335,7 +335,7 @@ impl State {
         unsafe {
             let mut w = 0;
             let mut h = 0;
-            match ffi::lodepng_inspect(&mut w, &mut h, &mut self.data, input.as_ptr(), input.len() as size_t) {
+            match ffi::lodepng_inspect(&mut w, &mut h, &mut self.data, input.as_ptr(), input.len() as usize) {
                 Error(0) => Ok((w as usize, h as usize)),
                 err => Err(err),
             }
@@ -485,7 +485,7 @@ unsafe fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<T>
     where T: Send
 {
     CVec::new_with_dtor(ptr, elts, |base: *mut T| {
-        free(base as *mut c_void);
+        self::libc::free(base as *mut libc::c_void);
     })
 }
 
@@ -538,7 +538,7 @@ pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bit
         let mut h = 0;
         assert!(bitdepth > 0 && bitdepth <= 16);
 
-        try!(ffi::lodepng_decode_memory(&mut out, &mut w, &mut h, input.as_ptr(), input.len() as size_t, colortype, bitdepth).into());
+        try!(ffi::lodepng_decode_memory(&mut out, &mut w, &mut h, input.as_ptr(), input.len() as usize, colortype, bitdepth).into());
         Ok(new_bitmap(out, w as usize, h as usize, colortype, bitdepth))
     }
 }
@@ -771,7 +771,7 @@ pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
-        try!(ffi::lodepng_zlib_compress(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).into());
+        try!(ffi::lodepng_zlib_compress(&mut out, &mut outsize, input.as_ptr(), input.len() as usize, settings).into());
         Ok(cvec_with_free(out, outsize as usize))
     }
 }
@@ -781,7 +781,7 @@ fn zlib_decompress(input: &[u8], settings: &DecompressSettings) -> Result<CVec<u
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
-        try!(ffi::lodepng_zlib_decompress(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).into());
+        try!(ffi::lodepng_zlib_decompress(&mut out, &mut outsize, input.as_ptr(), input.len() as usize, settings).into());
         Ok(cvec_with_free(out, outsize as usize))
     }
 }
@@ -793,7 +793,7 @@ pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Er
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
-        try!(ffi::lodepng_deflate(&mut out, &mut outsize, input.as_ptr(), input.len() as size_t, settings).into());
+        try!(ffi::lodepng_deflate(&mut out, &mut outsize, input.as_ptr(), input.len() as usize, settings).into());
         Ok(cvec_with_free(out, outsize as usize))
     }
 }

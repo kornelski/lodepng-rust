@@ -1,5 +1,5 @@
 
-use libc::{c_char, c_uchar, c_uint, c_void, size_t};
+use std::os::raw::{c_char, c_uchar, c_uint, c_void};
 use std::mem;
 pub use c_vec::CVec;
 
@@ -56,7 +56,7 @@ pub struct ColorMode {
     /// The palette is only supported for color type 3.
     pub palette: *const ::RGBA<u8>,
     /// palette size in number of colors (amount of bytes is 4 * `palettesize`)
-    pub palettesize: size_t,
+    pub palettesize: usize,
 
     /// transparent color key (`tRNS`)
     ///
@@ -91,16 +91,16 @@ pub struct DecompressSettings {
 pub ignore_adler32: c_uint,
     pub custom_zlib: ::std::option::Option<extern "C" fn
                                                (arg1: *mut *mut c_uchar,
-                                                arg2: *mut size_t,
+                                                arg2: *mut usize,
                                                 arg3: *const c_uchar,
-                                                arg4: size_t,
+                                                arg4: usize,
                                                 arg5: *const DecompressSettings)
                                                -> c_uint>,
     pub custom_inflate: ::std::option::Option<extern "C" fn
                                                   (arg1: *mut *mut c_uchar,
-                                                   arg2: *mut size_t,
+                                                   arg2: *mut usize,
                                                    arg3: *const c_uchar,
-                                                   arg4: size_t,
+                                                   arg4: usize,
                                                    arg5: *const DecompressSettings)
                                                   -> c_uint>,
     pub custom_context: *const c_void,
@@ -125,9 +125,9 @@ pub struct CompressSettings {
     /// use custom zlib encoder instead of built in one (default: None)
     pub custom_zlib: ::std::option::Option<extern "C" fn
                                                (arg1: *mut *mut c_uchar,
-                                                arg2: *mut size_t,
+                                                arg2: *mut usize,
                                                 arg3: *const c_uchar,
-                                                arg4: size_t,
+                                                arg4: usize,
                                                 arg5: *const CompressSettings)
                                                -> c_uint>,
     /// use custom deflate encoder instead of built in one (default: null)
@@ -135,9 +135,9 @@ pub struct CompressSettings {
     /// zlib function will call custom_deflate
     pub custom_deflate: ::std::option::Option<extern "C" fn
                                                   (arg1: *mut *mut c_uchar,
-                                                   arg2: *mut size_t,
+                                                   arg2: *mut usize,
                                                    arg3: *const c_uchar,
-                                                   arg4: size_t,
+                                                   arg4: usize,
                                                    arg5: *const CompressSettings)
                                                   -> c_uint>,
     /// optional custom settings for custom functions
@@ -193,21 +193,22 @@ pub struct Info {
     ///
     ///  A keyword is minimum 1 character and maximum 79 characters long. It's
     ///  discouraged to use a single line length longer than 79 characters for texts.
-    text_num: size_t,
+    text_num: usize,
     text_keys: *const *const c_char,
     text_strings: *const *const c_char,
 
     ///  international text chunks (iTXt)
     ///  Similar to the non-international text chunks, but with additional strings
     ///  "langtags" and "transkeys".
-    itext_num: size_t,
+    itext_num: usize,
     itext_keys: *const *const c_char,
     itext_langtags: *const *const c_char,
     itext_transkeys: *const *const c_char,
     itext_strings: *const *const c_char,
 
+    /// set to 1 to make the encoder generate a tIME chunk
+    pub time_defined: c_uint,
     /// time chunk (tIME)
-    pub time_defined: c_uint, /// set to 1 to make the encoder generate a tIME chunk
     pub time: Time,
 
     /// if 0, there is no pHYs chunk and the values below are undefined, if 1 else there is one
@@ -227,7 +228,7 @@ pub struct Info {
     /// Do not allocate or traverse this data yourself. Use the chunk traversing functions declared
     /// later, such as lodepng_chunk_next and lodepng_chunk_append, to read/write this struct.
     pub unknown_chunks_data: [*mut c_uchar; 3],
-    pub unknown_chunks_size: [size_t; 3],
+    pub unknown_chunks_size: [usize; 3],
 }
 
 /// Settings for the decoder. This contains settings for the PNG and the Zlib decoder, but not the Info settings from the Info structs.
@@ -352,8 +353,8 @@ pub struct State {
 
 #[link(name="lodepng", kind="static")]
 extern "C" {
-    pub fn lodepng_decode_memory(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, input: *const u8, insize: size_t, colortype: ColorType, bitdepth: c_uint) -> Error;
-    pub fn lodepng_encode_memory(out: &mut *mut u8, outsize: &mut size_t, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
+    pub fn lodepng_decode_memory(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, input: *const u8, insize: usize, colortype: ColorType, bitdepth: c_uint) -> Error;
+    pub fn lodepng_encode_memory(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
     fn lodepng_error_text(code: c_uint) -> *const i8;
     pub fn lodepng_compress_settings_init(settings: &mut CompressSettings);
     pub fn lodepng_color_mode_init(info: &mut ColorMode);
@@ -368,7 +369,7 @@ extern "C" {
     pub fn lodepng_is_palette_type(info: &ColorMode) -> c_uint;
     pub fn lodepng_has_palette_alpha(info: &ColorMode) -> c_uint;
     pub fn lodepng_can_have_alpha(info: &ColorMode) -> c_uint;
-    pub fn lodepng_get_raw_size(w: c_uint, h: c_uint, color: &ColorMode) -> size_t;
+    pub fn lodepng_get_raw_size(w: c_uint, h: c_uint, color: &ColorMode) -> usize;
     pub fn lodepng_info_init(info: &mut Info);
     pub fn lodepng_info_cleanup(info: &mut Info);
     pub fn lodepng_info_copy(dest: &mut Info, source: &Info) -> Error;
@@ -383,9 +384,9 @@ extern "C" {
     pub fn lodepng_state_init(state: &mut State);
     pub fn lodepng_state_cleanup(state: &mut State);
     pub fn lodepng_state_copy(dest: &mut State, source: &State);
-    pub fn lodepng_decode(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, state: &mut State, input: *const u8, insize: size_t) -> Error;
-    pub fn lodepng_inspect(w: &mut c_uint, h: &mut c_uint, state: &mut State, input: *const u8, insize: size_t) -> Error;
-    pub fn lodepng_encode(out: &mut *mut u8, outsize: &mut size_t, image: *const u8, w: c_uint, h: c_uint, state: &mut State) -> Error;
+    pub fn lodepng_decode(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, state: &mut State, input: *const u8, insize: usize) -> Error;
+    pub fn lodepng_inspect(w: &mut c_uint, h: &mut c_uint, state: &mut State, input: *const u8, insize: usize) -> Error;
+    pub fn lodepng_encode(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint, state: &mut State) -> Error;
     pub fn lodepng_chunk_length(chunk: *const c_uchar) -> c_uint;
     pub fn lodepng_chunk_type(chtype: &mut [u8; 5], chunk: *const c_uchar);
     pub fn lodepng_chunk_type_equals(chunk: *const c_uchar, chtype: *const u8) -> c_uchar;
@@ -396,12 +397,12 @@ extern "C" {
     pub fn lodepng_chunk_check_crc(chunk: *const c_uchar) -> c_uint;
     pub fn lodepng_chunk_generate_crc(chunk: *mut c_uchar);
     pub fn lodepng_chunk_next(chunk: *mut c_uchar) -> *mut c_uchar;
-    pub fn lodepng_chunk_append(out: &mut *mut u8, outlength: &mut size_t, chunk: *const c_uchar) -> Error;
-    pub fn lodepng_chunk_create(out: &mut *mut u8, outlength: &mut size_t, length: c_uint, chtype: *const c_char, data: *const u8) -> Error;
-    pub fn lodepng_crc32(buf: *const u8, len: size_t) -> c_uint;
-    pub fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut size_t, input: *const u8, insize: size_t, settings: &CompressSettings) -> Error;
-    pub fn lodepng_zlib_decompress(out: &mut *mut u8, outsize: &mut size_t, input: *const u8, insize: size_t, settings: &DecompressSettings) -> Error;
-    pub fn lodepng_deflate(out: &mut *mut u8, outsize: &mut size_t, input: *const u8, insize: size_t, settings: &CompressSettings) -> Error;
+    pub fn lodepng_chunk_append(out: &mut *mut u8, outlength: &mut usize, chunk: *const c_uchar) -> Error;
+    pub fn lodepng_chunk_create(out: &mut *mut u8, outlength: &mut usize, length: c_uint, chtype: *const c_char, data: *const u8) -> Error;
+    pub fn lodepng_crc32(buf: *const u8, len: usize) -> c_uint;
+    pub fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut usize, input: *const u8, insize: usize, settings: &CompressSettings) -> Error;
+    pub fn lodepng_zlib_decompress(out: &mut *mut u8, outsize: &mut usize, input: *const u8, insize: usize, settings: &DecompressSettings) -> Error;
+    pub fn lodepng_deflate(out: &mut *mut u8, outsize: &mut usize, input: *const u8, insize: usize, settings: &CompressSettings) -> Error;
 }
 
 impl From<Error> for Result<(), Error> {
