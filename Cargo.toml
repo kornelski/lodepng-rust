@@ -1,7 +1,7 @@
 [package]
 authors = ["Kornel <pornel@pornel.net>"]
 build = "build.rs"
-description = "Reading and writing PNG files without external dependencies. Wrapper for lodepng."
+description = "Reading and writing PNG files without system dependencies. Wrapper for lodepng."
 documentation = "https://pornel.github.io/lodepng-rust/lodepng/"
 homepage = "https://github.com/pornel/lodepng-rust#readme"
 keywords = ["PNG","lodepng","encoder","decoder"]
@@ -10,13 +10,16 @@ include = ["src/**/*", "vendor/**/*", "examples/**/*", "tests/**/*", "build.rs",
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/pornel/lodepng-rust.git"
-version = "0.13.2"
 categories = [ "multimedia::encoding", "multimedia::images", "external-ffi-bindings" ]
+version = "1.0.0"
+
+[build-dependencies]
+gcc = "0.3.43"
 
 [dependencies]
 c_vec = "1.0.12"
 libc = "0.2.0"
-rgb = "0.5.4"
+rgb = "0.5.5"
 
 [[example]]
 name = "read"

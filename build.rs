@@ -1,7 +1,5 @@
+extern crate gcc;
+
 fn main() {
-    if !std::process::Command::new("make")
-        .status().unwrap().success() {
-        panic!("Script failed");
-    }
-    println!("cargo:rustc-flags=-L {}", std::env::var("OUT_DIR").unwrap());
+    gcc::compile_library("liblodepng.a", &["vendor/lodepng.c"]);
 }
