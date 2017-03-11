@@ -380,11 +380,23 @@ impl Clone for State {
 
 /// Opaque greyscale pixel (acces with `px.0`)
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct Grey<ComponentType>(pub ComponentType);
+pub struct Grey<ComponentType: Copy>(pub ComponentType);
 
 /// Greyscale pixel with alpha (`px.1` is alpha)
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct GreyAlpha<ComponentType>(pub ComponentType, pub ComponentType);
+pub struct GreyAlpha<ComponentType: Copy>(pub ComponentType, pub ComponentType);
+
+impl<T: Default + Copy> Default for Grey<T> {
+    fn default() -> Self {
+        Grey(Default::default())
+    }
+}
+
+impl<T: Default + Copy> Default for GreyAlpha<T> {
+    fn default() -> Self {
+        GreyAlpha(Default::default(), Default::default())
+    }
+}
 
 /// Bitmap types. Also contains valid values for `<PixelType>`
 ///
