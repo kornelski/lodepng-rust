@@ -1,4 +1,4 @@
-#[LodePNG](http://lodev.org/lodepng) bindings for [Rust](https://www.rust-lang.org)
+# [LodePNG](http://lodev.org/lodepng) bindings for [Rust](https://www.rust-lang.org)
 
 LodePNG is a stand-alone PNG image decoder and encoder (does *not* require zlib nor libpng).
 
