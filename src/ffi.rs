@@ -89,14 +89,14 @@ impl ColorType {
 #[repr(C)]
 pub struct DecompressSettings {
 pub ignore_adler32: c_uint,
-    pub custom_zlib: ::std::option::Option<extern "C" fn
+    pub custom_zlib: Option<extern "C" fn
                                                (arg1: *mut *mut c_uchar,
                                                 arg2: *mut usize,
                                                 arg3: *const c_uchar,
                                                 arg4: usize,
                                                 arg5: *const DecompressSettings)
                                                -> c_uint>,
-    pub custom_inflate: ::std::option::Option<extern "C" fn
+    pub custom_inflate: Option<extern "C" fn
                                                   (arg1: *mut *mut c_uchar,
                                                    arg2: *mut usize,
                                                    arg3: *const c_uchar,
@@ -123,27 +123,30 @@ pub struct CompressSettings {
     /// use lazy matching: better compression but a bit slower. Default: true
     pub lazymatching: c_uint,
     /// use custom zlib encoder instead of built in one (default: None)
-    pub custom_zlib: ::std::option::Option<extern "C" fn
-                                               (arg1: *mut *mut c_uchar,
-                                                arg2: *mut usize,
-                                                arg3: *const c_uchar,
-                                                arg4: usize,
-                                                arg5: *const CompressSettings)
-                                               -> c_uint>,
+    pub custom_zlib: custom_zlib_callback,
     /// use custom deflate encoder instead of built in one (default: null)
     /// if custom_zlib is used, custom_deflate is ignored since only the built in
     /// zlib function will call custom_deflate
-    pub custom_deflate: ::std::option::Option<extern "C" fn
-                                                  (arg1: *mut *mut c_uchar,
-                                                   arg2: *mut usize,
-                                                   arg3: *const c_uchar,
-                                                   arg4: usize,
-                                                   arg5: *const CompressSettings)
-                                                  -> c_uint>,
+    pub custom_deflate: custom_deflate_callback,
     /// optional custom settings for custom functions
     pub custom_context: *const c_void,
 }
 
+pub type custom_zlib_callback = Option<unsafe extern "C" fn
+                                               (arg1: &mut *mut c_uchar,
+                                                arg2: &mut usize,
+                                                arg3: *const c_uchar,
+                                                arg4: usize,
+                                                arg5: *const CompressSettings)
+                                               -> c_uint>;
+
+pub type custom_deflate_callback = Option<unsafe extern "C" fn
+                                                  (arg1: &mut *mut c_uchar,
+                                                   arg2: &mut usize,
+                                                   arg3: *const c_uchar,
+                                                   arg4: usize,
+                                                   arg5: *const CompressSettings)
+                                                  -> c_uint>;
 /// The information of a Time chunk in PNG
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]

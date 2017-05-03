@@ -23,6 +23,7 @@ use std::io::Read;
 use c_vec::CVec;
 use std::path::Path;
 use std::marker::PhantomData;
+use std::os::raw::c_void;
 
 pub use ffi::ColorType;
 #[doc(hidden)]
@@ -33,7 +34,7 @@ pub use ffi::Time;
 pub use ffi::DecoderSettings;
 pub use ffi::FilterStrategy;
 #[doc(hidden)]
-pub use ffi::FilterStrategy::{LFS_ZERO, LFS_MINSUM, LFS_ENTROPY, LFS_BRUTE_FORCE, LFS_PREDEFINED};
+pub use ffi::FilterStrategy::{LFS_ZERO, LFS_MINSUM, LFS_ENTROPY, LFS_BRUTE_FORCE};
 pub use ffi::AutoConvert;
 #[doc(hidden)]
 pub use ffi::AutoConvert::{LAC_NO, LAC_ALPHA, LAC_AUTO, LAC_AUTO_NO_NIBBLES, LAC_AUTO_NO_PALETTE, LAC_AUTO_NO_NIBBLES_NO_PALETTE};
@@ -246,6 +247,25 @@ impl State {
             ffi::lodepng_state_init(&mut state.data);
             return state;
         }
+    }
+
+    pub fn set_auto_convert(&mut self, mode: AutoConvert) {
+        self.data.encoder.auto_convert = mode;
+    }
+
+    pub fn set_filter_strategy(&mut self, mode: FilterStrategy, palette_filter_zero: bool) {
+        self.data.encoder.filter_strategy = mode;
+        self.data.encoder.filter_palette_zero = if palette_filter_zero {1} else {0};
+    }
+
+    pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_zlib_callback, context: *const c_void) {
+        self.data.encoder.zlibsettings.custom_zlib = callback;
+        self.data.encoder.zlibsettings.custom_context = context;
+    }
+
+    pub unsafe fn set_custom_deflate(&mut self, callback: ffi::custom_deflate_callback, context: *const c_void) {
+        self.data.encoder.zlibsettings.custom_deflate = callback;
+        self.data.encoder.zlibsettings.custom_context = context;
     }
 
     pub fn info_raw(&self) -> &ColorMode {
