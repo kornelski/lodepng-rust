@@ -9,24 +9,31 @@ To do so, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-lodepng = "1.0.0"
+lodepng = "1.1.1"
 ```
 
 ## API
 
 See [API documentation](https://pornel.github.io/lodepng-rust/lodepng/) for details. The API mimics lodepng, so if something is unclear, [see the original lodepng.h](https://raw.githubusercontent.com/lvandeve/lodepng/master/lodepng.h).
 
-To load RGBA PNG file:
+### Loading image example
 
 ```rust
-lodepng::decode32_file("in.png")
+let image = lodepng::decode32_file("in.png")?;
 ```
 
-returns `lodepng::Bitmap<lodepng::RGBA<u8>>` with `.width`, `.height`, and `.buffer`.
+returns image of type `lodepng::Bitmap<lodepng::RGBA<u8>>` with fields `.width`, `.height`, and `.buffer`. The buffer is a `CVec`. To get a regular slice (`&[RGBA]`), use `image.buffer.as_ref()`.
 
-The RGB/RGBA pixel types are from the [RGB crate](https://crates.io/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting (and the buffer has `.as_bytes()` method if you need a plain `[u8]`).
+The RGB/RGBA pixel types are from the [RGB crate](https://crates.io/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting. But if you want to read the image buffer as bunch of raw bytes, ignoring the RGB(A) types, run `cargo add rgb` and use:
 
-To save an RGBA PNG file:
+```rust
+extern crate rgb;
+use rgb::*;
+…
+let bytes: &[u8] = image.buffer.as_ref().as_bytes();
+```
+
+### Saving image example
 
 ```rust
 lodepng::encode32_file("out.png", &buffer, width, height)
@@ -57,5 +64,5 @@ let icc_data = state.info_png().get_icc();
 
 ### Requirements
 
-* At build time: a C compiler and `make`
+* At build time: a C compiler
 * At run time: libc
