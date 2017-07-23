@@ -9,7 +9,7 @@ To do so, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-lodepng = "1.1.1"
+lodepng = "1.1.3"
 ```
 
 ## API

@@ -376,7 +376,7 @@ impl State {
 
     pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = try!(self.encode(image, w, h));
-        ::save_file(filepath, buf.as_cslice().as_ref())
+        ::save_file(filepath, buf.as_ref())
     }
 }
 
@@ -686,7 +686,7 @@ pub fn encode24<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Res
 /// NOTE: This overwrites existing files without warning!
 pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = try!(encode_memory(image, w, h, colortype, bitdepth));
-    save_file(filepath, encoded.as_cslice().as_ref())
+    save_file(filepath, encoded.as_ref())
 }
 
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
