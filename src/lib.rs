@@ -11,7 +11,7 @@ pub mod ffi;
 pub use rgb::RGB;
 pub use rgb::RGBA;
 
-use std::os::raw::{c_char, c_uchar, c_uint};
+use std::os::raw::c_uint;
 use std::fmt;
 use std::mem;
 use std::ptr;
@@ -179,7 +179,7 @@ impl Info {
     }
 
     /// push back both texts at once
-    pub fn add_text(&mut self, key: *const c_char, str: *const c_char) -> Error {
+    pub fn add_text(&mut self, key: *const i8, str: *const i8) -> Error {
         unsafe {
             ffi::lodepng_add_text(self, key, str)
         }
@@ -193,7 +193,7 @@ impl Info {
     }
 
     /// push back the 4 texts of 1 chunk at once
-    pub fn add_itext(&mut self, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error {
+    pub fn add_itext(&mut self, key: *const i8, langtag: *const i8, transkey: *const i8, str: *const i8) -> Error {
         unsafe {
             ffi::lodepng_add_itext(self, key, langtag, transkey, str)
         }
@@ -213,7 +213,7 @@ impl Info {
         }
         unsafe {
             ffi::lodepng_chunk_create(&mut self.unknown_chunks_data[position as usize], &mut self.unknown_chunks_size[position as usize],
-                data.len() as c_uint, chtype.as_ptr() as *const c_char, data.as_ptr()).to_result()
+                data.len() as c_uint, chtype.as_ptr() as *const _, data.as_ptr()).to_result()
         }
     }
 
@@ -525,7 +525,7 @@ pub enum ChunkPosition {
 
 /// Reference to a chunk
 pub struct Chunk<'a> {
-    data: *mut c_uchar,
+    data: *mut u8,
     _ref: PhantomData<&'a [u8]>,
 }
 
@@ -802,9 +802,9 @@ impl<'a> Chunk<'a> {
         name.as_ref() == &tmp[0..4]
     }
 
-    pub fn is_ancillary(&self) -> c_uchar {
+    pub fn is_ancillary(&self) -> bool {
         unsafe {
-            ffi::lodepng_chunk_ancillary(self.data)
+            ffi::lodepng_chunk_ancillary(self.data) != 0
         }
     }
 

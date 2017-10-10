@@ -45,7 +45,7 @@ pub struct ColorMode {
     /// fills the palette colors in the pixels of the raw RGBA output.
     ///
     /// The palette is only supported for color type 3.
-    pub palette: *const ::RGBA<u8>,
+    pub palette: *mut ::RGBA<u8>,
     /// palette size in number of colors (amount of bytes is 4 * `palettesize`)
     pub palettesize: usize,
 
@@ -203,17 +203,17 @@ pub struct Info {
     ///  A keyword is minimum 1 character and maximum 79 characters long. It's
     ///  discouraged to use a single line length longer than 79 characters for texts.
     text_num: usize,
-    text_keys: *const *const c_char,
-    text_strings: *const *const c_char,
+    text_keys: *mut *mut c_char,
+    text_strings: *mut *mut c_char,
 
     ///  international text chunks (iTXt)
     ///  Similar to the non-international text chunks, but with additional strings
     ///  "langtags" and "transkeys".
     itext_num: usize,
-    itext_keys: *const *const c_char,
-    itext_langtags: *const *const c_char,
-    itext_transkeys: *const *const c_char,
-    itext_strings: *const *const c_char,
+    itext_keys: *mut *mut c_char,
+    itext_langtags: *mut *mut c_char,
+    itext_transkeys: *mut *mut c_char,
+    itext_strings: *mut *mut c_char,
 
     /// set to 1 to make the encoder generate a tIME chunk
     pub time_defined: c_uint,
@@ -304,14 +304,13 @@ pub struct EncoderSettings {
 #[repr(C)]
 pub struct State {
     pub decoder: DecoderSettings,
-
     pub encoder: EncoderSettings,
 
     /// specifies the format in which you would like to get the raw pixel buffer
     pub info_raw: ColorMode,
     /// info of the PNG image obtained after decoding
     pub info_png: Info,
-    error: c_uint,
+    error: Error,
 }
 
 /// Gives characteristics about the colors of the image, which helps decide which color model to use for encoding.
