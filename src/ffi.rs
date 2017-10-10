@@ -13,15 +13,15 @@ pub struct Error(pub c_uint);
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ColorType {
     /// greyscale: 1, 2, 4, 8, 16 bit
-    LCT_GREY = 0,
+    GREY = 0,
     /// RGB: 8, 16 bit
-    LCT_RGB = 2,
+    RGB = 2,
     /// palette: 1, 2, 4, 8 bit
-    LCT_PALETTE = 3,
+    PALETTE = 3,
     /// greyscale with alpha: 8, 16 bit
-    LCT_GREY_ALPHA = 4,
+    GREY_ALPHA = 4,
     /// RGB with alpha: 8, 16 bit
-    LCT_RGBA = 6,
+    RGBA = 6,
 }
 
 /// Color mode of an image. Contains all information required to decode the pixel
@@ -257,17 +257,17 @@ pub struct DecoderSettings {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum FilterStrategy {
     /// every filter at zero
-    LFS_ZERO = 0,
+    ZERO = 0,
     /// Use filter that gives minumum sum, as described in the official PNG filter heuristic.
-    LFS_MINSUM,
+    MINSUM,
     /// Use the filter type that gives smallest Shannon entropy for this scanline. Depending
     /// on the image, this is better or worse than minsum.
-    LFS_ENTROPY,
+    ENTROPY,
     /// Brute-force-search PNG filters by compressing each filter for each scanline.
     /// Experimental, very slow, and only rarely gives better compression than MINSUM.
-    LFS_BRUTE_FORCE,
+    BRUTE_FORCE,
     /// use predefined_filters buffer: you specify the filter type for each scanline
-    LFS_PREDEFINED,
+    PREDEFINED,
 }
 
 #[repr(C)]
@@ -279,13 +279,13 @@ pub struct EncoderSettings {
     /// If true, follows the official PNG heuristic: if the PNG uses a palette or lower than
     /// 8 bit depth, set all filters to zero. Otherwise use the filter_strategy. Note that to
     /// completely follow the official PNG heuristic, filter_palette_zero must be true and
-    /// filter_strategy must be LFS_MINSUM
+    /// filter_strategy must be FilterStrategy::MINSUM
     pub filter_palette_zero: c_uint,
     /// Which filter strategy to use when not using zeroes due to filter_palette_zero.
-    /// Set filter_palette_zero to 0 to ensure always using your chosen strategy. Default: LFS_MINSUM
+    /// Set filter_palette_zero to 0 to ensure always using your chosen strategy. Default: FilterStrategy::MINSUM
     pub filter_strategy: FilterStrategy,
 
-    /// used if filter_strategy is LFS_PREDEFINED. In that case, this must point to a buffer with
+    /// used if filter_strategy is FilterStrategy::PREDEFINED. In that case, this must point to a buffer with
     /// the same length as the amount of scanlines in the image, and each value must <= 5. You
     /// have to cleanup this buffer, LodePNG will never free it. Don't forget that filter_palette_zero
     /// must be set to 0 to ensure this is also used on palette or low bitdepth images

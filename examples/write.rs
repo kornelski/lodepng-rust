@@ -9,7 +9,7 @@ fn main() {
 
     // encode_file takes the path to the image, a u8 array,
     // the width, the height, the color mode, and the bit depth
-    if let Err(e) = lodepng::encode_file(path, &image, 2, 2, lodepng::LCT_RGB, 8) {
+    if let Err(e) = lodepng::encode_file(path, &image, 2, 2, lodepng::ColorType::RGB, 8) {
         panic!("failed to write png: {:?}", e);
     }
 

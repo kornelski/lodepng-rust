@@ -27,16 +27,11 @@ use std::marker::PhantomData;
 use std::os::raw::c_void;
 
 pub use ffi::ColorType;
-#[doc(hidden)]
-pub use ffi::ColorType::{LCT_GREY, LCT_RGB, LCT_PALETTE, LCT_GREY_ALPHA, LCT_RGBA};
 pub use ffi::CompressSettings;
 use ffi::DecompressSettings;
 pub use ffi::Time;
 pub use ffi::DecoderSettings;
 pub use ffi::FilterStrategy;
-#[doc(hidden)]
-pub use ffi::FilterStrategy::{LFS_ZERO, LFS_MINSUM, LFS_ENTROPY, LFS_BRUTE_FORCE};
-#[doc(hidden)]
 pub use ffi::EncoderSettings;
 pub use ffi::Error;
 
@@ -142,9 +137,9 @@ impl ColorMode {
     }
 
     /// Returns the byte size of a raw image buffer with given width, height and color mode
-    pub fn raw_size(&self, w: c_uint, h: c_uint) -> usize {
+    pub fn raw_size(&self, w: u32, h: u32) -> usize {
         unsafe {
-            ffi::lodepng_get_raw_size(w, h, self) as usize
+            ffi::lodepng_get_raw_size(w.into(), h.into(), self) as usize
         }
     }
 }
@@ -350,7 +345,7 @@ impl State {
     ///  # use lodepng::*; let mut state = State::new();
     ///  # let slice = [0u8]; #[allow(unused_variables)] fn do_stuff<T>(buf: T) {}
     ///
-    ///  state.info_raw_mut().colortype = LCT_RGBA;
+    ///  state.info_raw_mut().colortype = ColorType::RGBA;
     ///  match state.decode(&slice) {
     ///      Ok(Image::RGBA(with_alpha)) => do_stuff(with_alpha),
     ///      _ => panic!("¯\\_(ツ)_/¯")
@@ -569,14 +564,14 @@ unsafe fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<T>
 
 unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Image {
     match (colortype, bitdepth) {
-        (LCT_RGBA, 8) => Image::RGBA(Bitmap::from_buffer(out, w, h)),
-        (LCT_RGB, 8) => Image::RGB(Bitmap::from_buffer(out, w, h)),
-        (LCT_RGBA, 16) => Image::RGBA16(Bitmap::from_buffer(out, w, h)),
-        (LCT_RGB, 16) => Image::RGB16(Bitmap::from_buffer(out, w, h)),
-        (LCT_GREY, 8) => Image::Grey(Bitmap::from_buffer(out, w, h)),
-        (LCT_GREY, 16) => Image::Grey16(Bitmap::from_buffer(out, w, h)),
-        (LCT_GREY_ALPHA, 8) => Image::GreyAlpha(Bitmap::from_buffer(out, w, h)),
-        (LCT_GREY_ALPHA, 16) => Image::GreyAlpha16(Bitmap::from_buffer(out, w, h)),
+        (ColorType::RGBA, 8) => Image::RGBA(Bitmap::from_buffer(out, w, h)),
+        (ColorType::RGB, 8) => Image::RGB(Bitmap::from_buffer(out, w, h)),
+        (ColorType::RGBA, 16) => Image::RGBA16(Bitmap::from_buffer(out, w, h)),
+        (ColorType::RGB, 16) => Image::RGB16(Bitmap::from_buffer(out, w, h)),
+        (ColorType::GREY, 8) => Image::Grey(Bitmap::from_buffer(out, w, h)),
+        (ColorType::GREY, 16) => Image::Grey16(Bitmap::from_buffer(out, w, h)),
+        (ColorType::GREY_ALPHA, 8) => Image::GreyAlpha(Bitmap::from_buffer(out, w, h)),
+        (ColorType::GREY_ALPHA, 16) => Image::GreyAlpha16(Bitmap::from_buffer(out, w, h)),
         (_, 0) => panic!("Invalid depth"),
         (c,b) => Image::RawData(Bitmap {
             buffer: cvec_with_free(out, required_size(w, h, c, b)),
@@ -623,7 +618,7 @@ pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bit
 
 /// Same as `decode_memory`, but always decodes to 32-bit RGBA raw image
 pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA<u8>>, Error> {
-    match try!(decode_memory(input, LCT_RGBA, 8)) {
+    match try!(decode_memory(input, ColorType::RGBA, 8)) {
         Image::RGBA(img) => Ok(img),
         _ => Err(Error(56)), // given output image colortype or bitdepth not supported for color conversion
     }
@@ -631,7 +626,7 @@ pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA<u8>>, Er
 
 /// Same as `decode_memory`, but always decodes to 24-bit RGB raw image
 pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Error> {
-    match try!(decode_memory(input, LCT_RGB, 8)) {
+    match try!(decode_memory(input, ColorType::RGB, 8)) {
         Image::RGB(img) => Ok(img),
         _ => Err(Error(56)),
     }
@@ -648,7 +643,7 @@ pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Err
 ///  # use lodepng::*; let filepath = std::path::Path::new("");
 ///  # fn do_stuff<T>(buf: T) {}
 ///
-///  match decode_file(filepath, LCT_RGBA, 8) {
+///  match decode_file(filepath, ColorType::RGBA, 8) {
 ///      Ok(Image::RGBA(with_alpha)) => do_stuff(with_alpha),
 ///      Ok(Image::RGB(without_alpha)) => do_stuff(without_alpha),
 ///      _ => panic!("¯\\_(ツ)_/¯")
@@ -660,7 +655,7 @@ pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: 
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
 pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA<u8>>, Error> {
-    match try!(decode_file(filepath, LCT_RGBA, 8)) {
+    match try!(decode_file(filepath, ColorType::RGBA, 8)) {
         Image::RGBA(img) => Ok(img),
         _ => Err(Error(56)),
     }
@@ -668,7 +663,7 @@ pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA<u8>>, Er
 
 /// Same as `decode_file`, but always decodes to 24-bit RGB raw image
 pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Error> {
-    match try!(decode_file(filepath, LCT_RGB, 8)) {
+    match try!(decode_file(filepath, ColorType::RGB, 8)) {
         Image::RGB(img) => Ok(img),
         _ => Err(Error(56)),
     }
@@ -718,12 +713,12 @@ pub fn encode_memory<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, c
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
 pub fn encode32<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
-    encode_memory(image, w, h, LCT_RGBA, 8)
+    encode_memory(image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
 pub fn encode24<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
-    encode_memory(image, w, h, LCT_RGB, 8)
+    encode_memory(image, w, h, ColorType::RGB, 8)
 }
 
 /// Converts raw pixel data into a PNG file on disk.
@@ -737,12 +732,12 @@ pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelT
 
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
 pub fn encode32_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
-    encode_file(filepath, image, w, h, LCT_RGBA, 8)
+    encode_file(filepath, image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
 pub fn encode24_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
-    encode_file(filepath, image, w, h, LCT_RGB, 8)
+    encode_file(filepath, image, w, h, ColorType::RGB, 8)
 }
 
 /// Converts from any color type to 24-bit or 32-bit (only)
@@ -959,8 +954,8 @@ mod test {
     #[test]
     fn test_pal() {
         let mut state = State::new();
-        state.info_raw_mut().colortype = LCT_PALETTE;
-        assert_eq!(state.info_raw().colortype(), LCT_PALETTE);
+        state.info_raw_mut().colortype = ColorType::PALETTE;
+        assert_eq!(state.info_raw().colortype(), ColorType::PALETTE);
         state.info_raw_mut().palette_add(RGBA::new(1,2,3,4)).unwrap();
         state.info_raw_mut().palette_add(RGBA::new(5,6,7,255)).unwrap();
         assert_eq!(&[RGBA{r:1u8,g:2,b:3,a:4},RGBA{r:5u8,g:6,b:7,a:255}], state.info_raw().palette());

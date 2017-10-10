@@ -15,7 +15,7 @@ fn main() {
     let buffer = bitmap.buffer.as_ref();
 
     // Now we reencode it, using LCT_RGB since we used decode24_file
-    if let Err(e) = lodepng::encode_file(to_path, buffer, bitmap.width, bitmap.height, lodepng::LCT_RGB, 8) {
+    if let Err(e) = lodepng::encode_file(to_path, buffer, bitmap.width, bitmap.height, lodepng::ColorType::RGB, 8) {
         panic!("failed to write png: {}", e);
     }
 
