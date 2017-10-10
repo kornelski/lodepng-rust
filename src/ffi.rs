@@ -270,36 +270,12 @@ pub enum FilterStrategy {
     LFS_PREDEFINED,
 }
 
-/// automatically use color type with less bits per pixel if losslessly possible. Default: LAC_AUTO
-#[repr(C)]
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum AutoConvert {
-    /// use color type user requested
-    LAC_NO = 0,
-    /// use color type user requested, but if only opaque pixels and RGBA or grey+alpha, use RGB or grey
-    LAC_ALPHA,
-    /// use PNG color type that can losslessly represent the uncompressed image the smallest possible
-    LAC_AUTO,
-
-    /// like AUTO, but do not choose 1, 2 or 4 bit per pixel types.
-    /// sometimes a PNG image compresses worse if less than 8 bits per pixels.
-    LAC_AUTO_NO_NIBBLES,
-
-    /// like AUTO, but never choose palette color type. For small images, encoding
-    /// the palette may take more bytes than what is gained. Note that AUTO also
-    /// already prevents encoding the palette for extremely small images, but that may
-    /// not be sufficient because due to the compression it cannot predict when to
-    /// switch.
-    LAC_AUTO_NO_PALETTE,
-    LAC_AUTO_NO_NIBBLES_NO_PALETTE,
-}
-
 #[repr(C)]
 pub struct EncoderSettings {
     /// settings for the zlib encoder, such as window size, ...
     pub zlibsettings: CompressSettings,
     /// how to automatically choose output PNG color type, if at all
-    pub auto_convert: AutoConvert,
+    pub auto_convert: c_uint,
     /// If true, follows the official PNG heuristic: if the PNG uses a palette or lower than
     /// 8 bit depth, set all filters to zero. Otherwise use the filter_strategy. Note that to
     /// completely follow the official PNG heuristic, filter_palette_zero must be true and
