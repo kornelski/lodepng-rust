@@ -327,8 +327,8 @@ extern "C" {
     pub fn lodepng_decode_memory(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, input: *const u8, insize: usize, colortype: ColorType, bitdepth: c_uint) -> Error;
     pub fn lodepng_encode_memory(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
     pub fn lodepng_error_text(code: c_uint) -> *const i8;
-    pub fn lodepng_compress_settings_init(settings: &mut CompressSettings);
-    pub fn lodepng_color_mode_init(info: &mut ColorMode);
+    pub fn lodepng_compress_settings_init(settings: *mut CompressSettings);
+    pub fn lodepng_color_mode_init(info: *mut ColorMode);
     pub fn lodepng_color_mode_cleanup(info: &mut ColorMode);
     pub fn lodepng_color_mode_copy(dest: &mut ColorMode, source: &ColorMode) -> Error;
     pub fn lodepng_palette_clear(info: &mut ColorMode);
@@ -341,7 +341,7 @@ extern "C" {
     pub fn lodepng_has_palette_alpha(info: &ColorMode) -> c_uint;
     pub fn lodepng_can_have_alpha(info: &ColorMode) -> c_uint;
     pub fn lodepng_get_raw_size(w: c_uint, h: c_uint, color: &ColorMode) -> usize;
-    pub fn lodepng_info_init(info: &mut Info);
+    pub fn lodepng_info_init(info: *mut Info);
     pub fn lodepng_info_cleanup(info: &mut Info);
     pub fn lodepng_info_copy(dest: &mut Info, source: &Info) -> Error;
     pub fn lodepng_clear_text(info: &mut Info);
@@ -349,10 +349,10 @@ extern "C" {
     pub fn lodepng_clear_itext(info: &mut Info);
     pub fn lodepng_add_itext(info: &mut Info, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error;
     pub fn lodepng_convert(out: *mut u8, input: *const u8, mode_out: &mut ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint) -> Error;
-    pub fn lodepng_decoder_settings_init(settings: &mut DecoderSettings);
+    pub fn lodepng_decoder_settings_init(settings: *mut DecoderSettings);
     pub fn lodepng_auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: c_uint, h: c_uint, mode_in: &ColorMode, auto_convert: AutoConvert) -> Error;
-    pub fn lodepng_encoder_settings_init(settings: &mut EncoderSettings);
-    pub fn lodepng_state_init(state: &mut State);
+    pub fn lodepng_encoder_settings_init(settings: *mut EncoderSettings);
+    pub fn lodepng_state_init(state: *mut State);
     pub fn lodepng_state_cleanup(state: &mut State);
     pub fn lodepng_state_copy(dest: &mut State, source: &State);
     pub fn lodepng_decode(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, state: &mut State, input: *const u8, insize: usize) -> Error;
