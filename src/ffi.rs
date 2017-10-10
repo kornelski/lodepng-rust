@@ -322,6 +322,28 @@ pub struct State {
     error: c_uint,
 }
 
+/// Gives characteristics about the colors of the image, which helps decide which color model to use for encoding.
+/// Used internally by default if "auto_convert" is enabled. Public because it's useful for custom algorithms.
+#[repr(C)]
+pub struct ColorProfile {
+    /// not greyscale
+    pub colored: c_uint,
+    /// image is not opaque and color key is possible instead of full alpha
+    pub key: c_uint,
+    /// key values, always as 16-bit, in 8-bit case the byte is duplicated, e.g. 65535 means 255
+    pub key_r: u16,
+    pub key_g: u16,
+    pub key_b: u16,
+    /// image is not opaque and alpha channel or alpha palette required
+    pub alpha: c_uint,
+    /// amount of colors, up to 257. Not valid if bits == 16.
+    pub numcolors: c_uint,
+    /// Remembers up to the first 256 RGBA colors, in no particular order
+    pub palette: [::RGBA<u8>; 256],
+    /// bits per channel (not for palette). 1,2 or 4 for greyscale only. 16 if 16-bit per channel required.
+    pub bits: c_uint,
+}
+
 #[link(name="lodepng", kind="static")]
 extern "C" {
     pub fn lodepng_decode_memory(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, input: *const u8, insize: usize, colortype: ColorType, bitdepth: c_uint) -> Error;
@@ -350,7 +372,9 @@ extern "C" {
     pub fn lodepng_add_itext(info: &mut Info, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error;
     pub fn lodepng_convert(out: *mut u8, input: *const u8, mode_out: &mut ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint) -> Error;
     pub fn lodepng_decoder_settings_init(settings: *mut DecoderSettings);
-    pub fn lodepng_auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: c_uint, h: c_uint, mode_in: &ColorMode, auto_convert: AutoConvert) -> Error;
+    pub fn lodepng_color_profile_init(profile: *mut ColorProfile);
+    pub fn lodepng_get_color_profile(profile: &mut ColorProfile, image: *const u8, w: c_uint, h: c_uint, mode_in: &ColorMode) -> Error;
+    pub fn lodepng_auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: c_uint, h: c_uint, mode_in: &ColorMode) -> Error;
     pub fn lodepng_encoder_settings_init(settings: *mut EncoderSettings);
     pub fn lodepng_state_init(state: *mut State);
     pub fn lodepng_state_cleanup(state: &mut State);

@@ -745,14 +745,14 @@ pub fn convert<PixelType: Copy>(input: &[PixelType], mode_out: &mut ColorMode, m
 /// output image, e.g. grey if there are only greyscale pixels, palette if there
 /// are less than 256 colors, ...
 ///
-/// The auto_convert parameter allows limiting it to not use palette.
+/// The auto_convert parameter is not supported any more.
 ///
 /// updates values of mode with a potentially smaller color model. mode_out should
 /// contain the user chosen color model, but will be overwritten with the new chosen one.
 #[doc(hidden)]
-pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h: usize, mode_in: &ColorMode, auto_convert: AutoConvert) -> Result<(), Error> {
+pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h: usize, mode_in: &ColorMode, _auto_convert: AutoConvert) -> Result<(), Error> {
     unsafe {
-        ffi::lodepng_auto_choose_color(mode_out, image, w as c_uint, h as c_uint, mode_in, auto_convert).into()
+        ffi::lodepng_auto_choose_color(mode_out, image, w as c_uint, h as c_uint, mode_in).into()
     }
 }
 
