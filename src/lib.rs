@@ -14,6 +14,7 @@ pub use rgb::RGBA;
 use std::os::raw::{c_char, c_uchar, c_uint};
 use std::fmt;
 use std::mem;
+use std::ptr;
 use std::cmp;
 use std::error;
 use std::io;
@@ -51,6 +52,11 @@ impl ColorMode {
 
     pub fn bitdepth(&self) -> u32 {
         self.bitdepth
+    }
+
+    pub fn set_bitdepth(&mut self, d: u32) {
+        assert!(d >= 1 && d <= 16);
+        self.bitdepth = d;
     }
 
     pub fn palette_clear(&mut self) {
@@ -861,6 +867,23 @@ impl CompressSettings {
             let mut settings = mem::zeroed();
             ffi::lodepng_compress_settings_init(&mut settings);
             return settings;
+        }
+    }
+}
+
+impl DecompressSettings {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for DecompressSettings {
+    fn default() -> Self {
+        Self {
+            ignore_adler32: 0,
+            custom_zlib: None,
+            custom_inflate: None,
+            custom_context: ptr::null_mut(),
         }
     }
 }
