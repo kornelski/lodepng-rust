@@ -2,7 +2,6 @@
 use std::os::raw::{c_char, c_uchar, c_uint, c_void};
 use std::mem;
 use std::ptr;
-pub use c_vec::CVec;
 
 #[repr(C)]
 #[derive(Copy, Clone)]

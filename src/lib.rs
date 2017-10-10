@@ -3,7 +3,6 @@
 
 extern crate libc;
 extern crate rgb;
-extern crate c_vec;
 
 #[allow(non_camel_case_types)]
 pub mod ffi;
@@ -21,7 +20,6 @@ use std::io;
 use std::fs::File;
 use std::io::Write;
 use std::io::Read;
-use c_vec::CVec;
 use std::path::Path;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
@@ -327,7 +325,7 @@ impl State {
     }
 
     /// Decompress ICC profile from iCCP chunk
-    pub fn get_icc(&self) -> Result<CVec<u8>, Error> {
+    pub fn get_icc(&self) -> Result<Vec<u8>, Error> {
         let iccp = self.info_png().get("iCCP");
         if iccp.is_none() {
             return Err(Error(89));
@@ -389,7 +387,7 @@ impl State {
         }
     }
 
-    pub fn encode<PixelType: Copy>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
+    pub fn encode<PixelType: Copy>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         unsafe {
             let mut out = mem::zeroed();
             let mut outsize = 0;
@@ -397,7 +395,7 @@ impl State {
             try!(::with_buffer_for_type(image, w, h, self.data.info_raw.colortype, self.data.info_raw.bitdepth, |ptr| {
                 ffi::lodepng_encode(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, &mut self.data)
             }).into());
-            Ok(::cvec_with_free(out, outsize as usize))
+            Ok(::vec_from_malloced(out, outsize as usize))
         }
     }
 
@@ -530,31 +528,29 @@ pub struct Chunk<'a> {
 }
 
 /// Low-level representation of an image
-pub struct Bitmap<PixelType> {
+pub struct Bitmap<PixelType: Copy> {
     /// Raw bitmap memory. Layout depends on color mode and bitdepth used to create it.
     ///
     /// * For RGB/RGBA images one element is one pixel.
     /// * For <8bpp images pixels are packed, so raw bytes are exposed and you need to do bit-twiddling youself
-    pub buffer: CVec<PixelType>,
+    pub buffer: Vec<PixelType>,
     /// Width in pixels
     pub width: usize,
     /// Height in pixels
     pub height: usize,
 }
 
-impl<T: Send> Bitmap<T> {
-    unsafe fn from_buffer(out: *mut u8, w: usize, h: usize) -> Bitmap<T>
-        where T: Send
-    {
-        Bitmap::<T> {
-            buffer: cvec_with_free(mem::transmute(out), w * h),
+impl<T: Copy> Bitmap<T> {
+    unsafe fn from_buffer(out: *mut u8, w: usize, h: usize) -> Self {
+        Self {
+            buffer: vec_from_malloced(out as *mut _, w * h),
             width: w,
             height: h,
         }
     }
 }
 
-impl<PixelType> fmt::Debug for Bitmap<PixelType> {
+impl<PixelType: Copy> fmt::Debug for Bitmap<PixelType> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{{} × {} Bitmap}}", self.width, self.height)
     }
@@ -564,12 +560,10 @@ fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> usi
     colortype.to_color_mode(bitdepth).raw_size(w as c_uint, h as c_uint)
 }
 
-unsafe fn cvec_with_free<T>(ptr: *mut T, elts: usize) -> CVec<T>
-    where T: Send
-{
-    CVec::new_with_dtor(ptr, elts, |base: *mut T| {
-        self::libc::free(base as *mut libc::c_void);
-    })
+unsafe fn vec_from_malloced<T>(ptr: *mut T, elts: usize) -> Vec<T> where T: Copy {
+    let v = Vec::from(std::slice::from_raw_parts(ptr, elts));
+    self::libc::free(ptr as *mut _);
+    v
 }
 
 unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Image {
@@ -584,7 +578,7 @@ unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bit
         (ColorType::GREY_ALPHA, 16) => Image::GreyAlpha16(Bitmap::from_buffer(out, w, h)),
         (_, 0) => panic!("Invalid depth"),
         (c,b) => Image::RawData(Bitmap {
-            buffer: cvec_with_free(out, required_size(w, h, c, b)),
+            buffer: vec_from_malloced(out, required_size(w, h, c, b)),
             width: w,
             height: h,
         }),
@@ -695,7 +689,7 @@ fn with_buffer_for_type<PixelType: Copy, F>(image: &[PixelType], w: usize, h: us
         return Error(84);
     }
 
-    f(unsafe {mem::transmute(image.as_ptr())})
+    f(image.as_ptr() as *const _)
 }
 
 /// Converts raw pixel data into a PNG image in memory. The colortype and bitdepth
@@ -709,7 +703,7 @@ fn with_buffer_for_type<PixelType: Copy, F>(image: &[PixelType], w: usize, h: us
 /// * `h`: height of the raw pixel data in pixels.
 /// * `colortype`: the color type of the raw input image. See `ColorType`.
 /// * `bitdepth`: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.
-pub fn encode_memory<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<CVec<u8>, Error> {
+pub fn encode_memory<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut outsize = 0;
@@ -717,17 +711,17 @@ pub fn encode_memory<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, c
         try!(with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| {
             ffi::lodepng_encode_memory(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, colortype, bitdepth)
         }).into());
-        Ok(cvec_with_free(out, outsize as usize))
+        Ok(vec_from_malloced(out, outsize as usize))
     }
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
-pub fn encode32<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
+pub fn encode32<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
-pub fn encode24<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<CVec<u8>, Error> {
+pub fn encode24<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGB, 8)
 }
 
@@ -851,35 +845,35 @@ impl<'a> Chunk<'a> {
 /// Zlib adds a small header and trailer around the deflate data.
 /// The data is output in the format of the zlib specification.
 #[doc(hidden)]
-pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
+pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
         try!(ffi::lodepng_zlib_compress(&mut out, &mut outsize, input.as_ptr(), input.len() as usize, settings).into());
-        Ok(cvec_with_free(out, outsize as usize))
+        Ok(vec_from_malloced(out, outsize as usize))
     }
 }
 
-fn zlib_decompress(input: &[u8], settings: &DecompressSettings) -> Result<CVec<u8>, Error> {
+fn zlib_decompress(input: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
         try!(ffi::lodepng_zlib_decompress(&mut out, &mut outsize, input.as_ptr(), input.len() as usize, settings).into());
-        Ok(cvec_with_free(out, outsize as usize))
+        Ok(vec_from_malloced(out, outsize as usize))
     }
 }
 
 /// Compress a buffer with deflate. See RFC 1951.
 #[doc(hidden)]
-pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Error> {
+pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
     unsafe {
         let mut out = mem::zeroed();
         let mut outsize = 0;
 
         try!(ffi::lodepng_deflate(&mut out, &mut outsize, input.as_ptr(), input.len() as usize, settings).into());
-        Ok(cvec_with_free(out, outsize as usize))
+        Ok(vec_from_malloced(out, outsize as usize))
     }
 }
 
@@ -1023,6 +1017,6 @@ mod test {
         assert_eq!("ICC Pro".as_bytes(), &icc.data()[0..7]);
 
         let data = s.get_icc().unwrap();
-        assert_eq!("appl".as_bytes(), &data.as_ref()[4..8]);
+        assert_eq!("appl".as_bytes(), &data[4..8]);
     }
 }

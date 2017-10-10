@@ -22,9 +22,9 @@ See [API documentation](https://docs.rs/lodepng/) for details. The API mimics lo
 let image = lodepng::decode32_file("in.png")?;
 ```
 
-returns image of type `lodepng::Bitmap<lodepng::RGBA<u8>>` with fields `.width`, `.height`, and `.buffer`. The buffer is a `CVec`. To get a regular slice (`&[RGBA]`), use `image.buffer.as_ref()`.
+returns image of type `lodepng::Bitmap<lodepng::RGBA<u8>>` with fields `.width`, `.height`, and `.buffer` (the buffer is a `Vec`).
 
-The RGB/RGBA pixel types are from the [RGB crate](https://crates.io/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting. But if you want to read the image buffer as bunch of raw bytes, ignoring the RGB(A) types, use:
+The RGB/RGBA pixel types are from the [RGB crate](https://crates.io/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting. But if you want to read the image buffer as bunch of raw bytes, ignoring the RGB(A) pixel structure, use:
 
 ```rust
 [dependencies]
@@ -35,7 +35,7 @@ rgb = "0.7"
 extern crate rgb;
 use rgb::*;
 …
-let bytes: &[u8] = image.buffer.as_ref().as_bytes();
+let bytes: &[u8] = image.buffer.as_bytes();
 ```
 
 ### Saving image example
