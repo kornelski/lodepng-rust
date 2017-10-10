@@ -36,9 +36,7 @@ pub use ffi::DecoderSettings;
 pub use ffi::FilterStrategy;
 #[doc(hidden)]
 pub use ffi::FilterStrategy::{LFS_ZERO, LFS_MINSUM, LFS_ENTROPY, LFS_BRUTE_FORCE};
-pub use ffi::AutoConvert;
 #[doc(hidden)]
-pub use ffi::AutoConvert::{LAC_NO, LAC_ALPHA, LAC_AUTO, LAC_AUTO_NO_NIBBLES, LAC_AUTO_NO_PALETTE, LAC_AUTO_NO_NIBBLES_NO_PALETTE};
 pub use ffi::EncoderSettings;
 pub use ffi::Error;
 
@@ -273,8 +271,8 @@ impl State {
         }
     }
 
-    pub fn set_auto_convert(&mut self, mode: AutoConvert) {
-        self.data.encoder.auto_convert = mode;
+    pub fn set_auto_convert(&mut self, mode: bool) {
+        self.data.encoder.auto_convert = mode as c_uint;
     }
 
     pub fn set_filter_strategy(&mut self, mode: FilterStrategy, palette_filter_zero: bool) {
@@ -768,7 +766,7 @@ pub fn convert<PixelType: Copy>(input: &[PixelType], mode_out: &mut ColorMode, m
 /// updates values of mode with a potentially smaller color model. mode_out should
 /// contain the user chosen color model, but will be overwritten with the new chosen one.
 #[doc(hidden)]
-pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h: usize, mode_in: &ColorMode, _auto_convert: AutoConvert) -> Result<(), Error> {
+pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h: usize, mode_in: &ColorMode) -> Result<(), Error> {
     unsafe {
         ffi::lodepng_auto_choose_color(mode_out, image, w as c_uint, h as c_uint, mode_in).into()
     }
