@@ -167,6 +167,19 @@ impl Default for ColorMode {
     }
 }
 
+impl ColorType {
+    /// Create color mode with given type and bitdepth
+    pub fn to_color_mode(&self, bitdepth: c_uint) -> ColorMode {
+        unsafe {
+            ColorMode {
+                colortype: *self,
+                bitdepth: bitdepth,
+                ..mem::zeroed()
+            }
+        }
+    }
+}
+
 impl Info {
 
     /// use this to clear the texts again after you filled them in
@@ -283,12 +296,12 @@ impl State {
         self.data.encoder.filter_palette_zero = if palette_filter_zero {1} else {0};
     }
 
-    pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_zlib_callback, context: *const c_void) {
+    pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.data.encoder.zlibsettings.custom_zlib = callback;
         self.data.encoder.zlibsettings.custom_context = context;
     }
 
-    pub unsafe fn set_custom_deflate(&mut self, callback: ffi::custom_deflate_callback, context: *const c_void) {
+    pub unsafe fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.data.encoder.zlibsettings.custom_deflate = callback;
         self.data.encoder.zlibsettings.custom_context = context;
     }

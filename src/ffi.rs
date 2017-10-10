@@ -1,10 +1,9 @@
 
 use std::os::raw::{c_char, c_uchar, c_uint, c_void};
-use std::mem;
 use std::ptr;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Error(pub c_uint);
 
 /// Type for `decode`, `encode`, etc. Same as standard PNG color types.
@@ -32,11 +31,11 @@ pub struct ColorMode {
     /// color type, see PNG standard
     pub colortype: ColorType,
     /// bits per sample, see PNG standard
-    pub bitdepth: c_uint,
+    pub(crate) bitdepth: c_uint,
 
     /// palette (`PLTE` and `tRNS`)
     /// Dynamically allocated with the colors of the palette, including alpha.
-    /// When encoding a PNG, to store your colors in the palette of the LodePNGColorMode, first use
+    /// When encoding a PNG, to store your colors in the palette of the ColorMode, first use
     /// lodepng_palette_clear, then for each color use lodepng_palette_add.
     /// If you encode an image without alpha with palette, don't forget to put value 255 in each A byte of the palette.
     ///
@@ -44,9 +43,9 @@ pub struct ColorMode {
     /// fills the palette colors in the pixels of the raw RGBA output.
     ///
     /// The palette is only supported for color type 3.
-    pub palette: *mut ::RGBA<u8>,
+    pub(crate) palette: *mut ::RGBA<u8>,
     /// palette size in number of colors (amount of bytes is 4 * `palettesize`)
-    pub palettesize: usize,
+    pub(crate) palettesize: usize,
 
     /// transparent color key (`tRNS`)
     ///
@@ -57,63 +56,26 @@ pub struct ColorMode {
     /// pixels with this key to transparent already in the raw RGBA output.
     ///
     /// The color key is only supported for color types 0 and 2.
-    key_defined: c_uint,
-    key_r: c_uint,
-    key_g: c_uint,
-    key_b: c_uint,
+    pub(crate) key_defined: c_uint,
+    pub(crate) key_r: c_uint,
+    pub(crate) key_g: c_uint,
+    pub(crate) key_b: c_uint,
 }
 
-impl Default for ColorMode {
-    fn default() -> Self {
-        Self {
-            key_defined: 0,
-            key_r: 0,
-            key_g: 0,
-            key_b: 0,
-            colortype: ColorType::LCT_RGBA,
-            bitdepth: 8,
-            palette: ptr::null_mut(),
-            palettesize: 0,
-        }
-    }
-}
-
-impl ColorType {
-    /// Create color mode with given type and bitdepth
-    pub fn to_color_mode(&self, bitdepth: c_uint) -> ColorMode {
-        unsafe {
-            ColorMode {
-                colortype: *self,
-                bitdepth: bitdepth,
-                ..mem::zeroed()
-            }
-        }
-    }
-}
+pub type custom_compress_callback = Option<unsafe extern "C" fn(arg1: &mut *mut c_uchar, arg2: &mut usize, arg3: *const c_uchar, arg4: usize, arg5: *const CompressSettings) -> c_uint>;
+pub type custom_decompress_callback = Option<unsafe extern "C" fn(arg1: *mut *mut c_uchar, arg2: *mut usize, arg3: *const c_uchar, arg4: usize, arg5: *const DecompressSettings) -> c_uint>;
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct DecompressSettings {
-    pub ignore_adler32: c_uint,
-    pub custom_zlib: Option<extern "C" fn
-                                               (arg1: *mut *mut c_uchar,
-                                                arg2: *mut usize,
-                                                arg3: *const c_uchar,
-                                                arg4: usize,
-                                                arg5: *const DecompressSettings)
-                                               -> c_uint>,
-    pub custom_inflate: Option<extern "C" fn
-                                                  (arg1: *mut *mut c_uchar,
-                                                   arg2: *mut usize,
-                                                   arg3: *const c_uchar,
-                                                   arg4: usize,
-                                                   arg5: *const DecompressSettings)
-                                                  -> c_uint>,
-    pub custom_context: *const c_void,
+    pub(crate) ignore_adler32: c_uint,
+    pub(crate) custom_zlib: custom_decompress_callback,
+    pub(crate) custom_inflate: custom_decompress_callback,
+    pub(crate) custom_context: *const c_void,
 }
 
 /// Settings for zlib compression. Tweaking these settings tweaks the balance between speed and compression ratio.
 #[repr(C)]
-#[allow(missing_copy_implementations)]
 pub struct CompressSettings {
     /// the block type for LZ (0, 1, 2 or 3, see zlib standard). Should be 2 for proper compression.
     pub btype: c_uint,
@@ -128,33 +90,18 @@ pub struct CompressSettings {
     /// use lazy matching: better compression but a bit slower. Default: true
     pub lazymatching: c_uint,
     /// use custom zlib encoder instead of built in one (default: None)
-    pub custom_zlib: custom_zlib_callback,
+    pub custom_zlib: custom_compress_callback,
     /// use custom deflate encoder instead of built in one (default: null)
     /// if custom_zlib is used, custom_deflate is ignored since only the built in
     /// zlib function will call custom_deflate
-    pub custom_deflate: custom_deflate_callback,
+    pub custom_deflate: custom_compress_callback,
     /// optional custom settings for custom functions
     pub custom_context: *const c_void,
 }
 
-pub type custom_zlib_callback = Option<unsafe extern "C" fn
-                                               (arg1: &mut *mut c_uchar,
-                                                arg2: &mut usize,
-                                                arg3: *const c_uchar,
-                                                arg4: usize,
-                                                arg5: *const CompressSettings)
-                                               -> c_uint>;
-
-pub type custom_deflate_callback = Option<unsafe extern "C" fn
-                                                  (arg1: &mut *mut c_uchar,
-                                                   arg2: &mut usize,
-                                                   arg3: *const c_uchar,
-                                                   arg4: usize,
-                                                   arg5: *const CompressSettings)
-                                                  -> c_uint>;
-/// The information of a Time chunk in PNG
+/// The information of a `Time` chunk in PNG
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Time {
     pub year: c_uint,
     pub month: c_uint,
@@ -201,18 +148,18 @@ pub struct Info {
     ///
     ///  A keyword is minimum 1 character and maximum 79 characters long. It's
     ///  discouraged to use a single line length longer than 79 characters for texts.
-    text_num: usize,
-    text_keys: *mut *mut c_char,
-    text_strings: *mut *mut c_char,
+    pub(crate) text_num: usize,
+    pub(crate) text_keys: *mut *mut c_char,
+    pub(crate) text_strings: *mut *mut c_char,
 
     ///  international text chunks (iTXt)
     ///  Similar to the non-international text chunks, but with additional strings
     ///  "langtags" and "transkeys".
-    itext_num: usize,
-    itext_keys: *mut *mut c_char,
-    itext_langtags: *mut *mut c_char,
-    itext_transkeys: *mut *mut c_char,
-    itext_strings: *mut *mut c_char,
+    pub(crate) itext_num: usize,
+    pub(crate) itext_keys: *mut *mut c_char,
+    pub(crate) itext_langtags: *mut *mut c_char,
+    pub(crate) itext_transkeys: *mut *mut c_char,
+    pub(crate) itext_strings: *mut *mut c_char,
 
     /// set to 1 to make the encoder generate a tIME chunk
     pub time_defined: c_uint,
@@ -239,8 +186,9 @@ pub struct Info {
     pub unknown_chunks_size: [usize; 3],
 }
 
-/// Settings for the decoder. This contains settings for the PNG and the Zlib decoder, but not the Info settings from the Info structs.
+/// Settings for the decoder. This contains settings for the PNG and the Zlib decoder, but not the `Info` settings from the `Info` structs.
 #[repr(C)]
+#[derive(Clone)]
 pub struct DecoderSettings {
     /// in here is the setting to ignore Adler32 checksums
     pub zlibsettings: DecompressSettings,
@@ -251,7 +199,7 @@ pub struct DecoderSettings {
     pub remember_unknown_chunks: c_uint,
 }
 
-/// automatically use color type with less bits per pixel if losslessly possible. Default: AUTO
+/// automatically use color type with less bits per pixel if losslessly possible. Default: `AUTO`
 #[repr(C)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum FilterStrategy {
@@ -288,15 +236,15 @@ pub struct EncoderSettings {
     /// the same length as the amount of scanlines in the image, and each value must <= 5. You
     /// have to cleanup this buffer, LodePNG will never free it. Don't forget that filter_palette_zero
     /// must be set to 0 to ensure this is also used on palette or low bitdepth images
-    predefined_filters: *const u8,
+    pub(crate) predefined_filters: *const u8,
 
     /// force creating a `PLTE` chunk if colortype is 2 or 6 (= a suggested palette).
     /// If colortype is 3, `PLTE` is _always_ created
     pub force_palette: c_uint,
     /// add LodePNG identifier and version as a text chunk, for debugging
-    add_id: c_uint,
+    pub add_id: c_uint,
     /// encode text chunks as zTXt chunks instead of tEXt chunks, and use compression in iTXt chunks
-    text_compression: c_uint,
+    pub text_compression: c_uint,
 }
 
 /// The settings, state and information for extended encoding and decoding
@@ -309,7 +257,7 @@ pub struct State {
     pub info_raw: ColorMode,
     /// info of the PNG image obtained after decoding
     pub info_png: Info,
-    error: Error,
+    pub error: Error,
 }
 
 /// Gives characteristics about the colors of the image, which helps decide which color model to use for encoding.
