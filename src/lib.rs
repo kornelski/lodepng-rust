@@ -437,6 +437,30 @@ pub enum Image {
     RGB16(Bitmap<RGB<u16>>),
 }
 
+impl Error {
+    /// Returns an English description of the numerical error code.
+    pub fn as_str(&self) -> &'static str {
+        unsafe {
+            let cstr = std::ffi::CStr::from_ptr(ffi::lodepng_error_text(self.0) as *const _);
+            std::str::from_utf8(cstr.to_bytes()).unwrap()
+        }
+    }
+
+    /// Helper function for the library
+    pub fn to_result(self) -> Result<(), Error> {
+        match self {
+            Error(0) => Ok(()),
+            err => Err(err),
+        }
+    }
+}
+
+impl From<Error> for Result<(), Error> {
+    fn from(err: Error) -> Self {
+        err.to_result()
+    }
+}
+
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} ({})", self.as_str(), self.0)
@@ -827,6 +851,39 @@ pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<CVec<u8>, Er
 
         try!(ffi::lodepng_deflate(&mut out, &mut outsize, input.as_ptr(), input.len() as usize, settings).into());
         Ok(cvec_with_free(out, outsize as usize))
+    }
+}
+
+impl CompressSettings {
+    /// Default compression settings
+    pub fn new() -> CompressSettings {
+        unsafe {
+            let mut settings = mem::zeroed();
+            ffi::lodepng_compress_settings_init(&mut settings);
+            return settings;
+        }
+    }
+}
+
+impl EncoderSettings {
+    /// Creates encoder settings initialized to defaults
+    pub fn new() -> EncoderSettings {
+        unsafe {
+            let mut settings = mem::zeroed();
+            ffi::lodepng_encoder_settings_init(&mut settings);
+            settings
+        }
+    }
+}
+
+impl DecoderSettings {
+    /// Creates decoder settings initialized to defaults
+    pub fn new() -> DecoderSettings {
+        unsafe {
+            let mut settings = mem::zeroed();
+            ffi::lodepng_decoder_settings_init(&mut settings);
+            settings
+        }
     }
 }
 

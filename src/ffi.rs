@@ -7,16 +7,6 @@ pub use c_vec::CVec;
 #[derive(Copy, Clone)]
 pub struct Error(pub c_uint);
 
-impl Error {
-    /// Returns an English description of the numerical error code.
-    pub fn as_str(&self) -> &'static str {
-        unsafe {
-            let cstr = ::std::ffi::CStr::from_ptr(lodepng_error_text(self.0) as *const _);
-            ::std::str::from_utf8(cstr.to_bytes()).unwrap()
-        }
-    }
-}
-
 /// Type for `decode`, `encode`, etc. Same as standard PNG color types.
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -88,7 +78,7 @@ impl ColorType {
 
 #[repr(C)]
 pub struct DecompressSettings {
-pub ignore_adler32: c_uint,
+    pub ignore_adler32: c_uint,
     pub custom_zlib: Option<extern "C" fn
                                                (arg1: *mut *mut c_uchar,
                                                 arg2: *mut usize,
@@ -246,17 +236,6 @@ pub struct DecoderSettings {
     pub remember_unknown_chunks: c_uint,
 }
 
-impl DecoderSettings {
-    /// Creates decoder settings initialized to defaults
-    pub fn new() -> DecoderSettings {
-        unsafe {
-            let mut settings = ::std::mem::zeroed();
-            lodepng_decoder_settings_init(&mut settings);
-            settings
-        }
-    }
-}
-
 /// automatically use color type with less bits per pixel if losslessly possible. Default: AUTO
 #[repr(C)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -329,17 +308,6 @@ pub struct EncoderSettings {
     text_compression: c_uint,
 }
 
-impl EncoderSettings {
-    /// Creates encoder settings initialized to defaults
-    pub fn new() -> EncoderSettings {
-        unsafe {
-            let mut settings = ::std::mem::zeroed();
-            lodepng_encoder_settings_init(&mut settings);
-            settings
-        }
-    }
-}
-
 /// The settings, state and information for extended encoding and decoding
 #[repr(C)]
 pub struct State {
@@ -358,7 +326,7 @@ pub struct State {
 extern "C" {
     pub fn lodepng_decode_memory(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, input: *const u8, insize: usize, colortype: ColorType, bitdepth: c_uint) -> Error;
     pub fn lodepng_encode_memory(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error;
-    fn lodepng_error_text(code: c_uint) -> *const i8;
+    pub fn lodepng_error_text(code: c_uint) -> *const i8;
     pub fn lodepng_compress_settings_init(settings: &mut CompressSettings);
     pub fn lodepng_color_mode_init(info: &mut ColorMode);
     pub fn lodepng_color_mode_cleanup(info: &mut ColorMode);
@@ -408,29 +376,3 @@ extern "C" {
     pub fn lodepng_deflate(out: &mut *mut u8, outsize: &mut usize, input: *const u8, insize: usize, settings: &CompressSettings) -> Error;
 }
 
-impl From<Error> for Result<(), Error> {
-    fn from(err: Error) -> Self {
-        err.to_result()
-    }
-}
-
-impl Error {
-    /// Helper function for the library
-    pub fn to_result(self) -> Result<(), Error> {
-        match self {
-            Error(0) => Ok(()),
-            err => Err(err),
-        }
-    }
-}
-
-impl CompressSettings {
-    /// Default compression settings
-    pub fn new() -> CompressSettings {
-        unsafe {
-            let mut settings = mem::zeroed();
-            lodepng_compress_settings_init(&mut settings);
-            return settings;
-        }
-    }
-}
