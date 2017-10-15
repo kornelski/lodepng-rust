@@ -424,14 +424,13 @@ impl<T: Default + Copy> Default for GreyAlpha<T> {
     }
 }
 
-/// Bitmap types. Also contains valid values for `<PixelType>`
+/// Bitmap types.
 ///
-/// Images with <8bpp are represented as a bunch of bytes.
-///
-/// To safely convert RGB/RGBA see `Vec::map_in_place`,
-/// or use `transmute()`
+/// Images with >=8bpp are stored with pixel per vec element.
+/// Images with <8bpp are represented as a bunch of bytes, with multiple pixels per byte.
 #[derive(Debug)]
 pub enum Image {
+    /// Bytes of the image. See bpp how many pixels per element there are
     RawData(Bitmap<u8>),
     Grey(Bitmap<Grey<u8>>),
     Grey16(Bitmap<Grey<u16>>),

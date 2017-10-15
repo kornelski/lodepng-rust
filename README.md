@@ -9,12 +9,12 @@ To do so, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-lodepng = "1.1.3"
+lodepng = "1.2.0"
 ```
 
 ## API
 
-See [API documentation](https://pornel.github.io/lodepng-rust/lodepng/) for details. The API mimics lodepng, so if something is unclear, [see the original lodepng.h](https://raw.githubusercontent.com/lvandeve/lodepng/master/lodepng.h).
+See [API documentation](https://docs.rs/lodepng/) for details. The API mimics lodepng, so if something is unclear, [see the original lodepng.h](https://raw.githubusercontent.com/lvandeve/lodepng/master/lodepng.h).
 
 ### Loading image example
 
@@ -24,7 +24,12 @@ let image = lodepng::decode32_file("in.png")?;
 
 returns image of type `lodepng::Bitmap<lodepng::RGBA<u8>>` with fields `.width`, `.height`, and `.buffer`. The buffer is a `CVec`. To get a regular slice (`&[RGBA]`), use `image.buffer.as_ref()`.
 
-The RGB/RGBA pixel types are from the [RGB crate](https://crates.io/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting. But if you want to read the image buffer as bunch of raw bytes, ignoring the RGB(A) types, run `cargo add rgb` and use:
+The RGB/RGBA pixel types are from the [RGB crate](https://crates.io/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting. But if you want to read the image buffer as bunch of raw bytes, ignoring the RGB(A) types, use:
+
+```rust
+[dependencies]
+rgb = "0.7"
+```
 
 ```rust
 extern crate rgb;
@@ -38,6 +43,8 @@ let bytes: &[u8] = image.buffer.as_ref().as_bytes();
 ```rust
 lodepng::encode32_file("out.png", &buffer, width, height)
 ```
+
+The buffer can be a slice of any type as long as it has 4 bytes per element (e.g. `struct RGBA` or `(u8,u8,u8,u8)`).
 
 ### Advanced
 
@@ -62,7 +69,7 @@ for chunk in state.info_png().unknown_chunks() {
 let icc_data = state.info_png().get_icc();
 ```
 
-### Requirements
+## Requirements
 
 * At build time: a C compiler
 * At run time: libc
