@@ -46,6 +46,10 @@ pub use ffi::Info;
 pub use ffi::ColorMode;
 
 impl ColorMode {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn colortype(&self) -> ColorType {
         self.colortype
     }

@@ -1,6 +1,7 @@
 
 use std::os::raw::{c_char, c_uchar, c_uint, c_void};
 use std::mem;
+use std::ptr;
 pub use c_vec::CVec;
 
 #[repr(C)]
@@ -61,6 +62,21 @@ pub struct ColorMode {
     key_r: c_uint,
     key_g: c_uint,
     key_b: c_uint,
+}
+
+impl Default for ColorMode {
+    fn default() -> Self {
+        Self {
+            key_defined: 0,
+            key_r: 0,
+            key_g: 0,
+            key_b: 0,
+            colortype: ColorType::LCT_RGBA,
+            bitdepth: 8,
+            palette: ptr::null_mut(),
+            palettesize: 0,
+        }
+    }
 }
 
 impl ColorType {
