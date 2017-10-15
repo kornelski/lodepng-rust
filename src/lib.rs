@@ -201,11 +201,10 @@ impl Info {
 
     pub fn get<Name: AsRef<[u8]>>(&self, index: Name) -> Option<Chunk> {
         let index = index.as_ref();
-        return self.unknown_chunks(ChunkPosition::IHDR)
+        self.unknown_chunks(ChunkPosition::IHDR)
             .chain(self.unknown_chunks(ChunkPosition::PLTE))
             .chain(self.unknown_chunks(ChunkPosition::IDAT))
-            .filter(|c| c.is_type(index))
-            .next();
+            .find(|c| c.is_type(index))
     }
 
     pub fn unknown_chunks(&self, position: ChunkPosition) -> Chunks {
