@@ -38,6 +38,16 @@ pub use ffi::Error;
 pub use ffi::Info;
 pub use ffi::ColorMode;
 
+#[doc(hidden)] #[deprecated(note="use `ColorType::GREY` instead")] pub const LCT_GREY: ColorType = ColorType::GREY;
+#[doc(hidden)] #[deprecated(note="use `ColorType::RGB` instead")] pub const LCT_RGB: ColorType = ColorType::RGB;
+#[doc(hidden)] #[deprecated(note="use `ColorType::PALETTE` instead")] pub const LCT_PALETTE: ColorType = ColorType::PALETTE;
+#[doc(hidden)] #[deprecated(note="use `ColorType::GREY_ALPHA` instead")] pub const LCT_GREY_ALPHA: ColorType = ColorType::GREY_ALPHA;
+#[doc(hidden)] #[deprecated(note="use `ColorType::RGBA` instead")] pub const LCT_RGBA: ColorType = ColorType::RGBA;
+#[doc(hidden)] #[deprecated(note="use `FilterStrategy::ZERO` instead")] pub const LFS_ZERO: FilterStrategy = FilterStrategy::ZERO;
+#[doc(hidden)] #[deprecated(note="use `FilterStrategy::MINSUM` instead")] pub const LFS_MINSUM: FilterStrategy = FilterStrategy::MINSUM;
+#[doc(hidden)] #[deprecated(note="use `FilterStrategy::ENTROPY` instead")] pub const LFS_ENTROPY: FilterStrategy = FilterStrategy::ENTROPY;
+#[doc(hidden)] #[deprecated(note="use `FilterStrategy::BRUTE_FORCE` instead")] pub const LFS_BRUTE_FORCE: FilterStrategy = FilterStrategy::BRUTE_FORCE;
+
 impl ColorMode {
     pub fn new() -> Self {
         Self::default()
