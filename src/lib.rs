@@ -809,6 +809,7 @@ impl<'a> Chunk<'a> {
         }
     }
 
+    #[deprecated(note = "unsound")]
     pub fn data_mut(&mut self) -> &mut [u8] {
         unsafe {
             std::slice::from_raw_parts_mut(ffi::lodepng_chunk_data(self.data), self.len())
@@ -821,6 +822,7 @@ impl<'a> Chunk<'a> {
         }
     }
 
+    #[deprecated(note = "unsound")]
     pub fn generate_crc(&mut self) {
         unsafe {
             ffi::lodepng_chunk_generate_crc(self.data)
