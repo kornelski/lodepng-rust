@@ -224,14 +224,14 @@ pub struct Chunks<'a> {
 }
 
 impl<'a> Iterator for Chunks<'a> {
-    type Item = Chunk;
-    fn next(&mut self) -> Option<Chunk> {
+    type Item = Chunk<'a>;
+    fn next(&mut self) -> Option<Self::Item> {
         let chunk_header_len = 12;
         if self.data.is_null() || self.len < chunk_header_len {
             return None;
         }
 
-        let c = Chunk { data: self.data };
+        let c = Chunk { data: self.data, _ref: PhantomData };
         let l = chunk_header_len + c.len();
         if self.len < l {
             return None;
@@ -506,9 +506,10 @@ pub enum ChunkPosition {
     IDAT = 2,
 }
 
-#[allow(missing_copy_implementations)]
-pub struct Chunk {
+/// Reference to a chunk
+pub struct Chunk<'a> {
     data: *mut c_uchar,
+    _ref: PhantomData<&'a [u8]>,
 }
 
 /// Low-level representation of an image
@@ -759,7 +760,7 @@ pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h
     }
 }
 
-impl Chunk {
+impl<'a> Chunk<'a> {
     pub fn len(&self) -> usize {
         unsafe {
             ffi::lodepng_chunk_length(self.data) as usize
