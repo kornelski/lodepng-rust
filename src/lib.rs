@@ -151,6 +151,21 @@ impl ColorMode {
     }
 }
 
+impl Default for ColorMode {
+    fn default() -> Self {
+        Self {
+            key_defined: 0,
+            key_r: 0,
+            key_g: 0,
+            key_b: 0,
+            colortype: ColorType::RGBA,
+            bitdepth: 8,
+            palette: ptr::null_mut(),
+            palettesize: 0,
+        }
+    }
+}
+
 impl Info {
 
     /// use this to clear the texts again after you filled them in
