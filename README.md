@@ -1,4 +1,4 @@
-# [LodePNG](http://lodev.org/lodepng) bindings for [Rust](https://www.rust-lang.org)
+# [Rust](https://www.rust-lang.org) version of [LodePNG](http://lodev.org/lodepng)
 
 This is a pure Rust PNG image decoder and encoder. Allows easy reading and writing of PNG files without any system dependencies.
 
@@ -70,4 +70,6 @@ let icc_data = state.info_png().get_icc();
 * `CVec` has been replaced with a regular `Vec`. Delete extra `.as_ref()` that the compiler may complain about.
 * `LCT_*` constants have been changed to `ColorType::*`.
 * `Chunk`/`Chunks` renamed to `ChunkRef`/`ChunksIter`
+* `auto_convert` is a boolean
+* `bitdepth` has a getter/setter
 * There is no C any more!

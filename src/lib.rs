@@ -489,7 +489,7 @@ impl State {
         self.decoder.read_text_chunks = if true_or_false { 1 } else { 0 };
     }
 
-    /// store all bytes from unknown chunks in the LodePNGInfo (off by default, useful for a png editor)
+    /// store all bytes from unknown chunks in the `Info` (off by default, useful for a png editor)
     pub fn remember_unknown_chunks(&mut self, true_or_false: bool) {
         self.decoder.remember_unknown_chunks = if true_or_false { 1 } else { 0 };
     }
