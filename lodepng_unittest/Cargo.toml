@@ -1,0 +1,9 @@
+[package]
+authors = ["Kornel <kornel@geekhood.net>", "Lode Vandevenne <lvandeve@gmail.com>"]
+build = "build.rs"
+license = "BSD-3-Clause"
+name = "lodepng_unittest"
+version = "0.1.0"
+
+[build-dependencies]
+cc = "1.0.0"

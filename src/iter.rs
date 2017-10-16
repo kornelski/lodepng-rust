@@ -2,7 +2,7 @@ use std;
 use std::ffi::CStr;
 use std::marker::PhantomData;
 use super::ChunkRef;
-use ffi;
+use rustimpl;
 
 pub struct TextKeysCStrIter<'a> {
     pub(crate) k: *mut *mut i8,
@@ -75,30 +75,23 @@ fn cstr_to_str(s: &CStr) -> &str {
 }
 
 pub struct ChunksIter<'a> {
-    pub(crate) data: *mut u8,
-    pub(crate) len: usize,
-    pub(crate) _ref: PhantomData<&'a u8>,
+    pub(crate) data: &'a [u8],
 }
 
 impl<'a> Iterator for ChunksIter<'a> {
     type Item = ChunkRef<'a>;
     fn next(&mut self) -> Option<Self::Item> {
-        let chunk_header_len = 12;
-        if self.data.is_null() || self.len < chunk_header_len {
+        let header_len = 12;
+        if self.data.len() < header_len {
             return None;
         }
 
-        let c = ChunkRef { data: self.data, _ref: PhantomData };
-        let l = chunk_header_len + c.len();
-        if self.len < l {
+        let len = rustimpl::lodepng_chunk_length(self.data);
+        if self.data.len() < len + header_len {
             return None;
         }
-
-        self.len -= l;
-        unsafe {
-            self.data = ffi::lodepng_chunk_next(self.data);
-        }
-
+        let c = ChunkRef::new(&self.data[0..len + header_len]);
+        self.data = rustimpl::lodepng_chunk_next(self.data);
         return Some(c);
     }
 }

@@ -1,14 +1,21 @@
-#![crate_name = "lodepng"]
-#![crate_type = "lib"]
+#![cfg_attr(feature = "c_statics", feature(const_ptr_null_mut))]
 
 extern crate libc;
 extern crate rgb;
 
+use rustimpl::lodepng_free;
+use rustimpl::lodepng_malloc;
+
 #[allow(non_camel_case_types)]
 pub mod ffi;
 
+mod rustimpl;
+use rustimpl::*;
+
 mod error;
 pub use error::*;
+mod ucvec;
+mod huffman;
 mod iter;
 use iter::*;
 
@@ -19,6 +26,7 @@ use std::os::raw::c_uint;
 use std::fmt;
 use std::mem;
 use std::ptr;
+use std::slice;
 use std::cmp;
 use std::fs::File;
 use std::io::Write;
@@ -27,6 +35,7 @@ use std::path::Path;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
 
+pub use ffi::State;
 pub use ffi::ColorType;
 pub use ffi::CompressSettings;
 pub use ffi::DecompressSettings;
@@ -70,15 +79,32 @@ impl ColorMode {
 
     pub fn palette_clear(&mut self) {
         unsafe {
-            ffi::lodepng_palette_clear(self)
+            lodepng_free(self.palette as *mut _);
         }
+        self.palette = ptr::null_mut();
+        self.palettesize = 0;
     }
 
     /// add 1 color to the palette
-    pub fn palette_add(&mut self, rgba: RGBA) -> Result<(), Error> {
+    pub fn palette_add(&mut self, p: RGBA) -> Result<(), Error> {
         unsafe {
-            ffi::lodepng_palette_add(self, rgba.r, rgba.g, rgba.b, rgba.a).into()
+            /*the same resize technique as C++ std::vectors is used, and here it's made so that for a palette with
+              the max of 256 colors, it'll have the exact alloc size*/
+            if self.palette.is_null() {
+                /*allocate palette if empty*/
+                /*room for 256 colors with 4 bytes each*/
+                self.palette = lodepng_malloc(1024) as *mut _;
+                if self.palette.is_null() {
+                    return Err(Error(83));
+                }
+            }
+            if self.palettesize >= 256 {
+                return Err(Error(38));
+            }
+            *self.palette.offset(self.palettesize as isize) = p;
+            self.palettesize += 1;
         }
+        Ok(())
     }
 
     pub fn palette(&self) -> &[RGBA] {
@@ -95,46 +121,53 @@ impl ColorMode {
 
     /// get the total amount of bits per pixel, based on colortype and bitdepth in the struct
     pub fn bpp(&self) -> u32 {
-        unsafe {
-            ffi::lodepng_get_bpp(self) as u32
+        lodepng_get_bpp_lct(self.colortype, self.bitdepth()) /*4 or 6*/
+    }
+
+    pub(crate) fn clear_key(&mut self) {
+        self.key_defined = 0;
+    }
+
+    pub(crate) fn set_key(&mut self, r: u16, g: u16, b: u16) {
+        self.key_defined = 1;
+        self.key_r = r as c_uint;
+        self.key_g = g as c_uint;
+        self.key_b = b as c_uint;
+    }
+
+    pub(crate) fn key(&self) -> Option<(u16, u16, u16)> {
+        if self.key_defined != 0 {
+            Some((self.key_r as u16, self.key_g as u16, self.key_b as u16))
+        } else {
+            None
         }
     }
 
     /// get the amount of color channels used, based on colortype in the struct.
     /// If a palette is used, it counts as 1 channel.
-    pub fn channels(&self) -> u32 {
-        unsafe {
-            ffi::lodepng_get_channels(self) as u32
-        }
+    pub fn channels(&self) -> u8 {
+        self.colortype.channels()
     }
 
     /// is it a greyscale type? (only colortype 0 or 4)
     pub fn is_greyscale_type(&self) -> bool {
-        unsafe {
-            ffi::lodepng_is_greyscale_type(self) != 0
-        }
+        self.colortype == ColorType::GREY || self.colortype == ColorType::GREY_ALPHA
     }
 
     /// has it got an alpha channel? (only colortype 2 or 6)
     pub fn is_alpha_type(&self) -> bool {
-        unsafe {
-            ffi::lodepng_is_alpha_type(self) != 0
-        }
+        (self.colortype as u32 & 4) != 0
     }
 
     /// has it got a palette? (only colortype 3)
     pub fn is_palette_type(&self) -> bool {
-        unsafe {
-            ffi::lodepng_is_palette_type(self) != 0
-        }
+        self.colortype == ColorType::PALETTE
     }
 
     /// only returns true if there is a palette and there is a value in the palette with alpha < 255.
     /// Loops through the palette to check this.
     pub fn has_palette_alpha(&self) -> bool {
-        unsafe {
-            ffi::lodepng_has_palette_alpha(self) != 0
-        }
+        self.palette().iter().any(|p| p.a < 255)
     }
 
     /// Check if the given color info indicates the possibility of having non-opaque pixels in the PNG image.
@@ -143,16 +176,48 @@ impl ColorMode {
     /// In detail, it returns true only if it's a color type with alpha, or has a palette with non-opaque values,
     /// or if "key_defined" is true.
     pub fn can_have_alpha(&self) -> bool {
-        unsafe {
-            ffi::lodepng_can_have_alpha(self) != 0
-    }
+        self.key().is_some() || self.is_alpha_type() || self.has_palette_alpha()
     }
 
     /// Returns the byte size of a raw image buffer with given width, height and color mode
     pub fn raw_size(&self, w: u32, h: u32) -> usize {
-        unsafe {
-            ffi::lodepng_get_raw_size(w.into(), h.into(), self) as usize
+        /*will not overflow for any color type if roughly w * h < 268435455*/
+        let bpp = self.bpp() as usize;
+        let n = w as usize * h as usize;
+        ((n / 8) * bpp) + ((n & 7) * bpp + 7) / 8
+    }
+
+    /*in an idat chunk, each scanline is a multiple of 8 bits, unlike the lodepng output buffer*/
+    pub(crate) fn raw_size_idat(&self, w: usize, h: usize) -> usize {
+        /*will not overflow for any color type if roughly w * h < 268435455*/
+        let bpp = self.bpp() as usize;
+        let line = ((w / 8) * bpp) + ((w & 7) * bpp + 7) / 8;
+        h * line
+    }
+}
+
+impl Drop for ColorMode {
+    fn drop(&mut self) {
+        self.palette_clear()
+    }
+}
+
+impl Clone for ColorMode {
+    fn clone(&self) -> Self {
+        let mut c = Self {
+            colortype: self.colortype,
+            bitdepth: self.bitdepth,
+            palette: ptr::null_mut(),
+            palettesize: 0,
+            key_defined: self.key_defined,
+            key_r: self.key_r,
+            key_g: self.key_g,
+            key_b: self.key_b,
+        };
+        for &p in self.palette() {
+            c.palette_add(p).unwrap();
         }
+        c
     }
 }
 
@@ -200,6 +265,21 @@ impl Time {
 }
 
 impl Info {
+    pub fn new() -> Self {
+        Self {
+            color: ColorMode::new(),
+            interlace_method: 0, compression_method: 0, filter_method: 0,
+            background_defined: 0, background_r: 0, background_g: 0, background_b: 0,
+            time_defined: 0, time: Time::new(),
+            unknown_chunks_data: [ptr::null_mut(), ptr::null_mut(), ptr::null_mut()],
+            unknown_chunks_size: [0, 0, 0],
+            text_num: 0, text_keys: ptr::null_mut(), text_strings: ptr::null_mut(),
+            itext_num: 0, itext_keys: ptr::null_mut(), itext_langtags: ptr::null_mut(),
+            itext_transkeys: ptr::null_mut(), itext_strings: ptr::null_mut(),
+            phys_defined: 0, phys_x: 0, phys_y: 0, phys_unit: 0,
+        }
+    }
+
     pub fn text_keys_cstr(&self) -> TextKeysCStrIter {
         TextKeysCStrIter {
             k: self.text_keys,
@@ -223,36 +303,63 @@ impl Info {
     /// use this to clear the texts again after you filled them in
     pub fn clear_text(&mut self) {
         unsafe {
-            ffi::lodepng_clear_text(self)
+            for i in 0..self.text_num as isize {
+                string_cleanup(&mut *self.text_keys.offset(i));
+                string_cleanup(&mut *self.text_strings.offset(i));
+            }
+            lodepng_free(self.text_keys as *mut _);
+            lodepng_free(self.text_strings as *mut _);
+            self.text_num = 0;
+            self.itext_num = 0;
         }
     }
 
     /// push back both texts at once
-    pub fn add_text(&mut self, key: *const i8, str: *const i8) -> Error {
-        unsafe {
-            ffi::lodepng_add_text(self, key, str)
-        }
+    pub fn add_text(&mut self, key: &str, str: &str) -> Result<(), Error> {
+        self.push_text(string_copy_slice(key.as_bytes()), string_copy_slice(str.as_bytes()))
     }
 
     /// use this to clear the itexts again after you filled them in
     pub fn clear_itext(&mut self) {
         unsafe {
-            ffi::lodepng_clear_itext(self)
+            for i in 0..self.itext_num as isize {
+                string_cleanup(&mut *self.itext_keys.offset(i));
+                string_cleanup(&mut *self.itext_langtags.offset(i));
+                string_cleanup(&mut *self.itext_transkeys.offset(i));
+                string_cleanup(&mut *self.itext_strings.offset(i));
+            }
+            lodepng_free(self.itext_keys as *mut _);
+            lodepng_free(self.itext_langtags as *mut _);
+            lodepng_free(self.itext_transkeys as *mut _);
+            lodepng_free(self.itext_strings as *mut _);
         }
+        self.itext_keys = ptr::null_mut();
+        self.itext_langtags = ptr::null_mut();
+        self.itext_transkeys = ptr::null_mut();
+        self.itext_strings = ptr::null_mut();
+        self.itext_num = 0;
     }
 
     /// push back the 4 texts of 1 chunk at once
-    pub fn add_itext(&mut self, key: *const i8, langtag: *const i8, transkey: *const i8, str: *const i8) -> Error {
-        unsafe {
-            ffi::lodepng_add_itext(self, key, langtag, transkey, str)
-        }
+    pub fn add_itext(&mut self, key: &str, langtag: &str, transkey: &str, text: &str) -> Result<(), Error> {
+        self.push_itext(
+            string_copy_slice(key.as_bytes()),
+            string_copy_slice(langtag.as_bytes()),
+            string_copy_slice(transkey.as_bytes()),
+            string_copy_slice(text.as_bytes()),
+        )
     }
 
     pub fn append_chunk(&mut self, position: ChunkPosition, chunk: ChunkRef) -> Result<(), Error> {
+        let set = position as usize;
         unsafe {
-            ffi::lodepng_chunk_append(&mut self.unknown_chunks_data[position as usize], &mut self.unknown_chunks_size[position as usize],
-                chunk.data).to_result()
+            let mut tmp = ucvector::from_raw(&mut self.unknown_chunks_data[set], self.unknown_chunks_size[set]);
+            chunk_append(&mut tmp, chunk.data)?;
+            let (data, size) = tmp.into_raw();
+            self.unknown_chunks_data[set] = data;
+            self.unknown_chunks_size[set] = size;
         }
+        Ok(())
     }
 
     pub fn create_chunk<C: AsRef<[u8]>>(&mut self, position: ChunkPosition, chtype: C, data: &[u8]) -> Result<(), Error> {
@@ -261,8 +368,13 @@ impl Info {
             return Err(Error(67));
         }
         unsafe {
-            ffi::lodepng_chunk_create(&mut self.unknown_chunks_data[position as usize], &mut self.unknown_chunks_size[position as usize],
-                data.len() as c_uint, chtype.as_ptr() as *const _, data.as_ptr()).to_result()
+            ffi::lodepng_chunk_create(
+                &mut self.unknown_chunks_data[position as usize],
+                &mut self.unknown_chunks_size[position as usize],
+                data.len() as c_uint,
+                chtype.as_ptr() as *const _,
+                data.as_ptr(),
+            ).to_result()
         }
     }
 
@@ -276,74 +388,110 @@ impl Info {
 
     pub fn unknown_chunks(&self, position: ChunkPosition) -> ChunksIter {
         ChunksIter {
-            data: self.unknown_chunks_data[position as usize],
-            len: self.unknown_chunks_size[position as usize],
-            _ref: PhantomData,
+            data: unsafe {
+                slice::from_raw_parts(
+                    self.unknown_chunks_data[position as usize],
+                    self.unknown_chunks_size[position as usize])
+            }
         }
     }
 }
 
-pub struct State {
-    data: ffi::State,
+impl Clone for Info {
+    fn clone(&self) -> Self {
+        let mut dest = Self {
+            compression_method: self.compression_method,
+            filter_method: self.filter_method,
+            interlace_method: self.interlace_method,
+            color: self.color.clone(),
+            background_defined: self.background_defined,
+            background_r: self.background_r,
+            background_g: self.background_g,
+            background_b: self.background_b,
+            text_num: 0,
+            text_keys: ptr::null_mut(),
+            text_strings: ptr::null_mut(),
+            itext_num: 0,
+            itext_keys: ptr::null_mut(),
+            itext_langtags: ptr::null_mut(),
+            itext_transkeys: ptr::null_mut(),
+            itext_strings: ptr::null_mut(),
+            time_defined: self.time_defined,
+            time: self.time,
+            phys_defined: self.phys_defined,
+            phys_x: self.phys_x,
+            phys_y: self.phys_y,
+            phys_unit: self.phys_unit,
+            unknown_chunks_data: [ptr::null_mut(), ptr::null_mut(), ptr::null_mut()],
+            unknown_chunks_size: [0, 0, 0],
+        };
+        rustimpl::Text_copy(&mut dest, self).unwrap();
+        rustimpl::LodePNGIText_copy(&mut dest, self).unwrap();
+        rustimpl::UnknownChunks_copy(&mut dest, self).unwrap();
+        dest
+    }
 }
 
 impl State {
-    pub fn new() -> State {
-        unsafe {
-            let mut state = State { data: mem::zeroed() };
-            ffi::lodepng_state_init(&mut state.data);
-            return state;
+    pub fn new() -> Self {
+        Self {
+            decoder: DecoderSettings::new(),
+            encoder: EncoderSettings::new(),
+            info_raw: ColorMode::new(),
+            info_png: Info::new(),
+            error: Error(1),
         }
     }
 
+
     pub fn set_auto_convert(&mut self, mode: bool) {
-        self.data.encoder.auto_convert = mode as c_uint;
+        self.encoder.auto_convert = mode as c_uint;
     }
 
     pub fn set_filter_strategy(&mut self, mode: FilterStrategy, palette_filter_zero: bool) {
-        self.data.encoder.filter_strategy = mode;
-        self.data.encoder.filter_palette_zero = if palette_filter_zero {1} else {0};
+        self.encoder.filter_strategy = mode;
+        self.encoder.filter_palette_zero = if palette_filter_zero {1} else {0};
     }
 
     pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
-        self.data.encoder.zlibsettings.custom_zlib = callback;
-        self.data.encoder.zlibsettings.custom_context = context;
+        self.encoder.zlibsettings.custom_zlib = callback;
+        self.encoder.zlibsettings.custom_context = context;
     }
 
     pub unsafe fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
-        self.data.encoder.zlibsettings.custom_deflate = callback;
-        self.data.encoder.zlibsettings.custom_context = context;
+        self.encoder.zlibsettings.custom_deflate = callback;
+        self.encoder.zlibsettings.custom_context = context;
     }
 
     pub fn info_raw(&self) -> &ColorMode {
-        return &self.data.info_raw;
+        return &self.info_raw;
     }
 
     pub fn info_raw_mut(&mut self) -> &mut ColorMode {
-        return &mut self.data.info_raw;
+        return &mut self.info_raw;
     }
 
     pub fn info_png(&self) -> &Info {
-        return &self.data.info_png;
+        return &self.info_png;
     }
 
     pub fn info_png_mut(&mut self) -> &mut Info {
-        return &mut self.data.info_png;
+        return &mut self.info_png;
     }
 
     /// whether to convert the PNG to the color type you want. Default: yes
     pub fn color_convert(&mut self, true_or_false: bool) {
-        self.data.decoder.color_convert = if true_or_false { 1 } else { 0 };
+        self.decoder.color_convert = if true_or_false { 1 } else { 0 };
     }
 
     /// if false but remember_unknown_chunks is true, they're stored in the unknown chunks.
     pub fn read_text_chunks(&mut self, true_or_false: bool) {
-        self.data.decoder.read_text_chunks = if true_or_false { 1 } else { 0 };
+        self.decoder.read_text_chunks = if true_or_false { 1 } else { 0 };
     }
 
     /// store all bytes from unknown chunks in the LodePNGInfo (off by default, useful for a png editor)
     pub fn remember_unknown_chunks(&mut self, true_or_false: bool) {
-        self.data.decoder.remember_unknown_chunks = if true_or_false { 1 } else { 0 };
+        self.decoder.remember_unknown_chunks = if true_or_false { 1 } else { 0 };
     }
 
     /// Decompress ICC profile from iCCP chunk
@@ -363,7 +511,7 @@ impl State {
                 if iccp.get(i+1).cloned().unwrap_or(255) != 0 { // compression type
                     return Err(Error(72));
                 }
-                return zlib_decompress(&iccp[i+2 ..], &self.data.decoder.zlibsettings);
+                return zlib_decompress(&iccp[i+2 ..], &self.decoder.zlibsettings);
             }
         }
         return Err(Error(75));
@@ -381,15 +529,12 @@ impl State {
     ///      _ => panic!("¯\\_(ツ)_/¯")
     ///  }
     ///  ```
-    pub fn decode<Bytes: AsRef<[u8]>>(&mut self, input: Bytes) -> Result<::Image, Error> {
+    pub fn decode<Bytes: AsRef<[u8]>>(&mut self, input: Bytes) -> Result<Image, Error> {
         let input = input.as_ref();
         unsafe {
-            let mut out = mem::zeroed();
-            let mut w = 0;
-            let mut h = 0;
-
-            try!(ffi::lodepng_decode(&mut out, &mut w, &mut h, &mut self.data, input.as_ptr(), input.len() as usize).into());
-            Ok(::new_bitmap(out, w as usize, h as usize, self.data.info_raw.colortype, self.data.info_raw.bitdepth))
+            let (v, w, h) = rustimpl::lodepng_decode(self, input)?;
+            let (data, _) = v.into_raw();
+            Ok(new_bitmap(data, w, h, self.info_raw.colortype, self.info_raw.bitdepth))
         }
     }
 
@@ -399,49 +544,19 @@ impl State {
 
     /// Returns (width, height)
     pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
-        unsafe {
-            let mut w = 0;
-            let mut h = 0;
-            match ffi::lodepng_inspect(&mut w, &mut h, &mut self.data, input.as_ptr(), input.len() as usize) {
-                Error(0) => Ok((w as usize, h as usize)),
-                err => Err(err),
-            }
-        }
+        let (info, w, h) = rustimpl::lodepng_inspect(&self.decoder, input)?;
+        self.info_png = info;
+        Ok((w, h))
     }
 
     pub fn encode<PixelType: Copy>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
-        unsafe {
-            let mut out = mem::zeroed();
-            let mut outsize = 0;
-
-            try!(::with_buffer_for_type(image, w, h, self.data.info_raw.colortype, self.data.info_raw.bitdepth, |ptr| {
-                ffi::lodepng_encode(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, &mut self.data)
-            }).into());
-            Ok(::vec_from_malloced(out, outsize as usize))
-        }
+        let image = buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth)?;
+        Ok(rustimpl::lodepng_encode(image, w as c_uint, h as c_uint, self)?.into_vec())
     }
 
     pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = self.encode(image, w, h)?;
         save_file(filepath, buf.as_ref())
-    }
-}
-
-impl Drop for State {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::lodepng_state_cleanup(&mut self.data)
-        }
-    }
-}
-
-impl Clone for State {
-    fn clone(&self) -> State {
-        unsafe {
-            let mut dest = State { data: mem::zeroed() };
-            ffi::lodepng_state_copy(&mut dest.data, &self.data);
-            return dest;
-        }
     }
 }
 
@@ -494,8 +609,7 @@ pub enum ChunkPosition {
 /// Reference to a chunk
 #[derive(Copy, Clone)]
 pub struct ChunkRef<'a> {
-    data: *mut u8,
-    _ref: PhantomData<&'a [u8]>,
+    data: &'a [u8],
 }
 
 /// Low-level representation of an image
@@ -548,7 +662,7 @@ unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bit
         (ColorType::GREY_ALPHA, 8) => Image::GreyAlpha(Bitmap::from_buffer(out, w, h)),
         (ColorType::GREY_ALPHA, 16) => Image::GreyAlpha16(Bitmap::from_buffer(out, w, h)),
         (_, 0) => panic!("Invalid depth"),
-        (c,b) => Image::RawData(Bitmap {
+        (c, b) => Image::RawData(Bitmap {
             buffer: vec_from_malloced(out, required_size(w, h, c, b)),
             width: w,
             height: h,
@@ -581,13 +695,10 @@ fn load_file<P: AsRef<Path>>(filepath: P) -> Result<Vec<u8>, Error> {
 pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
     let input = input.as_ref();
     unsafe {
-        let mut out = mem::zeroed();
-        let mut w = 0;
-        let mut h = 0;
         assert!(bitdepth > 0 && bitdepth <= 16);
-
-        try!(ffi::lodepng_decode_memory(&mut out, &mut w, &mut h, input.as_ptr(), input.len() as usize, colortype, bitdepth).into());
-        Ok(new_bitmap(out, w as usize, h as usize, colortype, bitdepth))
+        let (v, w, h) = rustimpl::lodepng_decode_memory(input, colortype, bitdepth)?;
+        let (data, _) = v.into_raw();
+        Ok(new_bitmap(data, w, h, colortype, bitdepth))
     }
 }
 
@@ -644,9 +755,7 @@ pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Err
     }
 }
 
-fn with_buffer_for_type<PixelType: Copy, F>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32, mut f: F) -> Error
-    where F: FnMut(*const u8) -> Error
-{
+fn buffer_for_type<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> Result<&[u8], Error> {
     let bytes_per_pixel = bitdepth as usize/8;
     assert!(mem::size_of::<PixelType>() <= 4*bytes_per_pixel, "Implausibly large {}-byte pixel data type", mem::size_of::<PixelType>());
 
@@ -657,10 +766,12 @@ fn with_buffer_for_type<PixelType: Copy, F>(image: &[PixelType], w: usize, h: us
     if image_bytes != required_bytes {
         debug_assert_eq!(image_bytes, required_bytes, "Image is {} bytes large ({}x{}x{}), but needs to be {} ({:?}, {})",
             image_bytes, w,h,px_bytes, required_bytes, colortype, bitdepth);
-        return Error(84);
+        return Err(Error(84));
     }
 
-    f(image.as_ptr() as *const _)
+    unsafe {
+        Ok(slice::from_raw_parts(image.as_ptr() as *const _, image_bytes))
+    }
 }
 
 /// Converts raw pixel data into a PNG image in memory. The colortype and bitdepth
@@ -675,15 +786,8 @@ fn with_buffer_for_type<PixelType: Copy, F>(image: &[PixelType], w: usize, h: us
 /// * `colortype`: the color type of the raw input image. See `ColorType`.
 /// * `bitdepth`: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.
 pub fn encode_memory<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
-    unsafe {
-        let mut out = mem::zeroed();
-        let mut outsize = 0;
-
-        try!(with_buffer_for_type(image, w, h, colortype, bitdepth, |ptr| {
-            ffi::lodepng_encode_memory(&mut out, &mut outsize, ptr, w as c_uint, h as c_uint, colortype, bitdepth)
-        }).into());
-        Ok(vec_from_malloced(out, outsize as usize))
-    }
+    let image = buffer_for_type(image, w, h, colortype, bitdepth)?;
+    Ok(rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)?.into_vec())
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
@@ -724,79 +828,66 @@ pub fn encode24_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[Pixe
 /// updates values of mode with a potentially smaller color model. mode_out should
 /// contain the user chosen color model, but will be overwritten with the new chosen one.
 #[doc(hidden)]
-pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h: usize, mode_in: &ColorMode) -> Result<(), Error> {
-    unsafe {
-        ffi::lodepng_auto_choose_color(mode_out, image, w as c_uint, h as c_uint, mode_in).into()
-    }
+pub fn auto_choose_color(mode_out: &mut ColorMode, image: &[u8], w: usize, h: usize, mode_in: &ColorMode) -> Result<(), Error> {
+    rustimpl::auto_choose_color(mode_out, image, w, h, mode_in)
 }
 
 impl<'a> ChunkRef<'a> {
-    pub fn len(&self) -> usize {
-        unsafe {
-            ffi::lodepng_chunk_length(self.data) as usize
+    pub(crate) fn new(data: &'a [u8]) -> Self {
+        Self {data}
     }
+
+    pub fn len(&self) -> usize {
+        rustimpl::lodepng_chunk_length(self.data)
     }
 
     pub fn name(&self) -> [u8; 4] {
         let mut tmp = [0; 5];
-        unsafe {
-            ffi::lodepng_chunk_type(&mut tmp,  self.data)
-        }
+
+        rustimpl::lodepng_chunk_type(&mut tmp, self.data);
+
         let mut tmp2 = [0; 4];
         tmp2.copy_from_slice(&tmp[0..4]);
         return tmp2;
     }
 
     pub fn is_type<C: AsRef<[u8]>>(&self, name: C) -> bool {
-        let mut tmp = [0; 5];
-        unsafe {
-            ffi::lodepng_chunk_type(&mut tmp,  self.data)
-        }
-        name.as_ref() == &tmp[0..4]
+        rustimpl::lodepng_chunk_type_equals(self.data, name.as_ref())
     }
 
     pub fn is_ancillary(&self) -> bool {
-        unsafe {
-            ffi::lodepng_chunk_ancillary(self.data) != 0
-        }
+        rustimpl::lodepng_chunk_ancillary(self.data)
     }
 
     pub fn is_private(&self) -> bool {
-        unsafe {
-            ffi::lodepng_chunk_private(self.data) != 0
-        }
+        rustimpl::lodepng_chunk_private(self.data)
     }
 
     pub fn is_safe_to_copy(&self) -> bool {
-        unsafe {
-            ffi::lodepng_chunk_safetocopy(self.data) != 0
-        }
+        rustimpl::lodepng_chunk_safetocopy(self.data)
     }
 
     pub fn data(&self) -> &[u8] {
-        unsafe {
-            std::slice::from_raw_parts(ffi::lodepng_chunk_data(self.data), self.len())
-        }
-    }
-
-    #[deprecated(note = "unsound")]
-    pub fn data_mut(&mut self) -> &mut [u8] {
-        unsafe {
-            std::slice::from_raw_parts_mut(ffi::lodepng_chunk_data(self.data), self.len())
-        }
+        rustimpl::lodepng_chunk_data(self.data).unwrap()
     }
 
     pub fn check_crc(&self) -> bool {
-        unsafe {
-            ffi::lodepng_chunk_check_crc(&*self.data) == 0
+        rustimpl::lodepng_chunk_check_crc(&*self.data)
     }
+}
+
+pub struct ChunkRefMut<'a> {
+    data: &'a mut [u8],
+}
+
+impl<'a> ChunkRefMut<'a> {
+    pub fn data_mut(&mut self) -> &mut [u8] {
+        rustimpl::lodepng_chunk_data_mut(self.data).unwrap()
     }
 
     #[deprecated(note = "unsound")]
     pub fn generate_crc(&mut self) {
-        unsafe {
-            ffi::lodepng_chunk_generate_crc(self.data)
-        }
+        rustimpl::lodepng_chunk_generate_crc(self.data)
     }
 }
 
@@ -805,44 +896,40 @@ impl<'a> ChunkRef<'a> {
 /// The data is output in the format of the zlib specification.
 #[doc(hidden)]
 pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    unsafe {
-        let mut out = mem::zeroed();
-        let mut outsize = 0;
-
-        try!(ffi::lodepng_zlib_compress(&mut out, &mut outsize, input.as_ptr(), input.len() as usize, settings).into());
-        Ok(vec_from_malloced(out, outsize as usize))
-    }
+    let mut v = ucvector::new();
+    rustimpl::lodepng_zlib_compress(&mut v, input, settings)?;
+    Ok(v.into_vec())
 }
 
 fn zlib_decompress(input: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
-    unsafe {
-        let mut out = mem::zeroed();
-        let mut outsize = 0;
-
-        try!(ffi::lodepng_zlib_decompress(&mut out, &mut outsize, input.as_ptr(), input.len() as usize, settings).into());
-        Ok(vec_from_malloced(out, outsize as usize))
-    }
+    Ok(rustimpl::lodepng_zlib_decompress(input, settings)?.into_vec())
 }
 
 /// Compress a buffer with deflate. See RFC 1951.
 #[doc(hidden)]
 pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    unsafe {
-        let mut out = mem::zeroed();
-        let mut outsize = 0;
-
-        try!(ffi::lodepng_deflate(&mut out, &mut outsize, input.as_ptr(), input.len() as usize, settings).into());
-        Ok(vec_from_malloced(out, outsize as usize))
-    }
+    Ok(rustimpl::lodepng_deflatev(input, settings)?.into_vec())
 }
 
 impl CompressSettings {
     /// Default compression settings
     pub fn new() -> CompressSettings {
-        unsafe {
-            let mut settings = mem::zeroed();
-            ffi::lodepng_compress_settings_init(&mut settings);
-            return settings;
+        Self::default()
+    }
+}
+
+impl Default for CompressSettings {
+    fn default() -> Self {
+        Self {
+            btype: 2,
+            use_lz77: 1,
+            windowsize: DEFAULT_WINDOWSIZE as u32,
+            minmatch: 3,
+            nicematch: 128,
+            lazymatching: 1,
+            custom_zlib: None,
+            custom_deflate: None,
+            custom_context: ptr::null_mut(),
         }
     }
 }
@@ -864,24 +951,41 @@ impl Default for DecompressSettings {
     }
 }
 
-impl EncoderSettings {
-    /// Creates encoder settings initialized to defaults
-    pub fn new() -> EncoderSettings {
-        unsafe {
-            let mut settings = mem::zeroed();
-            ffi::lodepng_encoder_settings_init(&mut settings);
-            settings
+impl DecoderSettings {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for DecoderSettings {
+    fn default() -> Self {
+        Self {
+            color_convert: 1,
+            read_text_chunks: 1,
+            remember_unknown_chunks: 0,
+            ignore_crc: 0,
+            zlibsettings: DecompressSettings::new(),
         }
     }
 }
 
-impl DecoderSettings {
-    /// Creates decoder settings initialized to defaults
-    pub fn new() -> DecoderSettings {
-        unsafe {
-            let mut settings = mem::zeroed();
-            ffi::lodepng_decoder_settings_init(&mut settings);
-            settings
+impl EncoderSettings {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for EncoderSettings {
+    fn default() -> Self {
+        Self {
+            zlibsettings: CompressSettings::new(),
+            filter_palette_zero: 1,
+            filter_strategy: FilterStrategy::MINSUM,
+            auto_convert: 1,
+            force_palette: 0,
+            predefined_filters: ptr::null_mut(),
+            add_id: 0,
+            text_compression: 1,
         }
     }
 }

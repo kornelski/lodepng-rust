@@ -1,24 +1,23 @@
 [package]
-authors = ["Kornel <pornel@pornel.net>"]
-build = "build.rs"
-description = "Reading and writing PNG files without system dependencies. Wrapper for lodepng."
+authors = ["Kornel <kornel@geekhood.net>", "Lode Vandevenne <lvandeve@gmail.com>"]
+categories = ["multimedia::encoding", "multimedia::images"]
+description = "Reading and writing PNG files without system dependencies. Pure Rust port of LodePNG."
 documentation = "https://pornel.github.io/lodepng-rust/lodepng/"
 homepage = "https://github.com/pornel/lodepng-rust#readme"
+include = ["src/**/*", "examples/**/*", "tests/**/*", "COPYRIGHT", "README.md", "Cargo.toml"]
 keywords = ["PNG","lodepng","encoder","decoder"]
-license = "BSD-2-Clause"
-include = ["src/**/*", "vendor/**/*", "examples/**/*", "tests/**/*", "build.rs", "Makefile", "COPYRIGHT", "README.md", "Cargo.toml"]
+license = "BSD-3-Clause"
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/pornel/lodepng-rust.git"
-categories = [ "multimedia::encoding", "multimedia::images", "external-ffi-bindings" ]
-version = "1.2.1"
-
-[build-dependencies]
-cc = "1.0.0"
+version = "2.0.0"
 
 [dependencies]
 libc = "0.2.30"
 rgb = "0.7.2"
+
+[dev-dependencies]
+lodepng_unittest = { path="lodepng_unittest" }
 
 [[example]]
 name = "read"
@@ -31,3 +30,12 @@ name = "passthrough"
 
 [[example]]
 name = "read_advanced"
+
+[profile.test]
+opt-level = 2
+
+[profile.dev]
+opt-level = 2
+
+[features]
+c_statics = []

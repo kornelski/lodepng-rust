@@ -1,20 +1,16 @@
 # [LodePNG](http://lodev.org/lodepng) bindings for [Rust](https://www.rust-lang.org)
 
-LodePNG is a stand-alone PNG image decoder and encoder (does *not* require zlib nor libpng) written in C.
-
-This package allows easy reading and writing of PNG files without any system dependencies.
+This is a pure Rust PNG image decoder and encoder. Allows easy reading and writing of PNG files without any system dependencies.
 
 The easiest way to use LodePNG is to include the [lodepng crate](https://crates.io/crates/lodepng).
 To do so, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-lodepng = "1.2.0"
+lodepng = "2.0.0"
 ```
 
-## API
-
-See [API documentation](https://docs.rs/lodepng/) for details. The API mimics lodepng, so if something is unclear, [see the original lodepng.h](https://raw.githubusercontent.com/lvandeve/lodepng/master/lodepng.h).
+See [API reference](https://docs.rs/lodepng/) for details.
 
 ### Loading image example
 
@@ -69,7 +65,9 @@ for chunk in state.info_png().unknown_chunks() {
 let icc_data = state.info_png().get_icc();
 ```
 
-## Requirements
+## Upgrading from 1.x
 
-* At build time: a C compiler
-* At run time: libc
+* `CVec` has been replaced with a regular `Vec`. Delete extra `.as_ref()` that the compiler may complain about.
+* `LCT_*` constants have been changed to `ColorType::*`.
+* `Chunk`/`Chunks` renamed to `ChunkRef`/`ChunksIter`
+* There is no C any more!
