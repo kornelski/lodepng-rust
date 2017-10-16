@@ -9,12 +9,15 @@
 
     <title>lodepng::ffi::Info - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
+    
 
     
     
 </head>
-<body class="rustdoc">
+<body class="rustdoc struct">
     <!--[if lte IE 8]>
     <div class="warning">
         This old browser is unsupported and will most likely display funky
@@ -22,60 +25,76 @@
     </div>
     <![endif]-->
 
-    <p style="position:absolute;top:0.5em;left:1em;right:0;z-index:999"><a href="https://github.com/pornel/lodepng-rust">GitHub project page</a></p>
+    
 
-
-
-    <section class="sidebar">
+    <nav class="sidebar">
         
-        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'Info', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+        <p class='location'>Struct Info</p><div class="block items"><ul><li><a href="#fields">Fields</a></li><li><a href="#methods">Methods</a></li><li><a href="#implementations">Trait Implementations</a></li></ul></div><p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'Info', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
     </nav>
 
-    <section id='main' class="content struct">
-<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>Info</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1360' class='srclink' href='../../src/lodepng/lib.rs.html#458-528' title='goto source code'>[src]</a></span></h1>
-<pre class='rust struct'>pub struct Info {
-    pub compression_method: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub filter_method: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub interlace_method: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub color: <a class='struct' href='../../lodepng/ffi/struct.ColorMode.html' title='lodepng::ffi::ColorMode'>ColorMode</a>,
-    pub background_defined: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub background_r: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub background_g: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub background_b: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub time_defined: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub time: <a class='struct' href='../../lodepng/ffi/struct.Time.html' title='lodepng::ffi::Time'>Time</a>,
-    pub phys_defined: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub phys_x: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub phys_y: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub phys_unit: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class="struct" href=''>Info</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lodepng/ffi.rs.html#163-234' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'><div class="docblock attributes">#[repr(C)]
+</div>pub struct Info {
+    pub compression_method: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub filter_method: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub interlace_method: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub color: <a class="struct" href="../../lodepng/ffi/struct.ColorMode.html" title="struct lodepng::ffi::ColorMode">ColorMode</a>,
+    pub background_defined: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub background_r: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub background_g: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub background_b: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub time_defined: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub time: <a class="struct" href="../../lodepng/ffi/struct.Time.html" title="struct lodepng::ffi::Time">Time</a>,
+    pub phys_defined: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub phys_x: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub phys_y: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub phys_unit: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub unknown_chunks_data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.pointer.html">*mut </a><a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uchar.html" title="type std::os::raw::c_uchar">c_uchar</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">; 3]</a>,
+    pub unknown_chunks_size: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">; 3]</a>,
     // some fields omitted
 }</pre><div class='docblock'><p>Information about the PNG image, except pixels, width and height</p>
-</div><h2 class='fields'>Fields</h2>
-<table><tr class='stab '>
-                                  <td id='structfield.compression_method'><code>compression_method</code></td><td><div class='docblock'><p>compression method of the original file. Always 0.</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.filter_method'><code>filter_method</code></td><td><div class='docblock'><p>filter method of the original file</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.interlace_method'><code>interlace_method</code></td><td><div class='docblock'><p>interlace method of the original file</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.color'><code>color</code></td><td><div class='docblock'><p>color type and bits, palette and transparency of the PNG file</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.background_defined'><code>background_defined</code></td><td><div class='docblock'><p>suggested background color chunk (bKGD)
+</div><h2 id='fields' class='fields small-section-header'>
+                       Fields<a href='#fields' class='anchor'></a></h2><span id="structfield.compression_method" class="structfield small-section-header">
+                           <a href="#structfield.compression_method" class="anchor field"></a>
+                           <span id="compression_method.v" class='invisible'>
+                           <code>compression_method: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>compression method of the original file. Always 0.</p>
+</div><span id="structfield.filter_method" class="structfield small-section-header">
+                           <a href="#structfield.filter_method" class="anchor field"></a>
+                           <span id="filter_method.v" class='invisible'>
+                           <code>filter_method: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>filter method of the original file</p>
+</div><span id="structfield.interlace_method" class="structfield small-section-header">
+                           <a href="#structfield.interlace_method" class="anchor field"></a>
+                           <span id="interlace_method.v" class='invisible'>
+                           <code>interlace_method: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>interlace method of the original file</p>
+</div><span id="structfield.color" class="structfield small-section-header">
+                           <a href="#structfield.color" class="anchor field"></a>
+                           <span id="color.v" class='invisible'>
+                           <code>color: <a class="struct" href="../../lodepng/ffi/struct.ColorMode.html" title="struct lodepng::ffi::ColorMode">ColorMode</a></code>
+                           </span></span><div class='docblock'><p>color type and bits, palette and transparency of the PNG file</p>
+</div><span id="structfield.background_defined" class="structfield small-section-header">
+                           <a href="#structfield.background_defined" class="anchor field"></a>
+                           <span id="background_defined.v" class='invisible'>
+                           <code>background_defined: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>suggested background color chunk (bKGD)
 This color uses the same color mode as the PNG (except alpha channel), which can be 1-bit to 16-bit.</p>
 
 <p>For greyscale PNGs, r, g and b will all 3 be set to the same. When encoding
@@ -84,74 +103,156 @@ will be stored, not a palette index. But when encoding, specify the index of
 the palette in background_r, the other two are then ignored.</p>
 
 <p>The decoder does not use this background color to edit the color of pixels.</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.background_r'><code>background_r</code></td><td><div class='docblock'><p>red component of suggested background color</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.background_g'><code>background_g</code></td><td><div class='docblock'><p>green component of suggested background color</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.background_b'><code>background_b</code></td><td><div class='docblock'><p>blue component of suggested background color</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.time_defined'><code>time_defined</code></td><td><div class='docblock'><p>time chunk (tIME)</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.time'><code>time</code></td><td><div class='docblock'><p>set to 1 to make the encoder generate a tIME chunk</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.phys_defined'><code>phys_defined</code></td><td><div class='docblock'><p>if 0, there is no pHYs chunk and the values below are undefined, if 1 else there is one</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.phys_x'><code>phys_x</code></td><td><div class='docblock'><p>pixels per unit in x direction</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.phys_y'><code>phys_y</code></td><td><div class='docblock'><p>pixels per unit in y direction</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.phys_unit'><code>phys_unit</code></td><td><div class='docblock'><p>may be 0 (unknown unit) or 1 (metre)</p>
-</div></td></tr></table></section>
+</div><span id="structfield.background_r" class="structfield small-section-header">
+                           <a href="#structfield.background_r" class="anchor field"></a>
+                           <span id="background_r.v" class='invisible'>
+                           <code>background_r: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>red component of suggested background color</p>
+</div><span id="structfield.background_g" class="structfield small-section-header">
+                           <a href="#structfield.background_g" class="anchor field"></a>
+                           <span id="background_g.v" class='invisible'>
+                           <code>background_g: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>green component of suggested background color</p>
+</div><span id="structfield.background_b" class="structfield small-section-header">
+                           <a href="#structfield.background_b" class="anchor field"></a>
+                           <span id="background_b.v" class='invisible'>
+                           <code>background_b: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>blue component of suggested background color</p>
+</div><span id="structfield.time_defined" class="structfield small-section-header">
+                           <a href="#structfield.time_defined" class="anchor field"></a>
+                           <span id="time_defined.v" class='invisible'>
+                           <code>time_defined: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>set to 1 to make the encoder generate a tIME chunk</p>
+</div><span id="structfield.time" class="structfield small-section-header">
+                           <a href="#structfield.time" class="anchor field"></a>
+                           <span id="time.v" class='invisible'>
+                           <code>time: <a class="struct" href="../../lodepng/ffi/struct.Time.html" title="struct lodepng::ffi::Time">Time</a></code>
+                           </span></span><div class='docblock'><p>time chunk (tIME)</p>
+</div><span id="structfield.phys_defined" class="structfield small-section-header">
+                           <a href="#structfield.phys_defined" class="anchor field"></a>
+                           <span id="phys_defined.v" class='invisible'>
+                           <code>phys_defined: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>if 0, there is no pHYs chunk and the values below are undefined, if 1 else there is one</p>
+</div><span id="structfield.phys_x" class="structfield small-section-header">
+                           <a href="#structfield.phys_x" class="anchor field"></a>
+                           <span id="phys_x.v" class='invisible'>
+                           <code>phys_x: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>pixels per unit in x direction</p>
+</div><span id="structfield.phys_y" class="structfield small-section-header">
+                           <a href="#structfield.phys_y" class="anchor field"></a>
+                           <span id="phys_y.v" class='invisible'>
+                           <code>phys_y: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>pixels per unit in y direction</p>
+</div><span id="structfield.phys_unit" class="structfield small-section-header">
+                           <a href="#structfield.phys_unit" class="anchor field"></a>
+                           <span id="phys_unit.v" class='invisible'>
+                           <code>phys_unit: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>may be 0 (unknown unit) or 1 (metre)</p>
+</div><span id="structfield.unknown_chunks_data" class="structfield small-section-header">
+                           <a href="#structfield.unknown_chunks_data" class="anchor field"></a>
+                           <span id="unknown_chunks_data.v" class='invisible'>
+                           <code>unknown_chunks_data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.pointer.html">*mut </a><a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uchar.html" title="type std::os::raw::c_uchar">c_uchar</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">; 3]</a></code>
+                           </span></span><div class='docblock'><p>unknown chunks
+There are 3 buffers, one for each position in the PNG where unknown chunks can appear
+each buffer contains all unknown chunks for that position consecutively
+The 3 buffers are the unknown chunks between certain critical chunks:
+0: IHDR-<code>PLTE</code>, 1: <code>PLTE</code>-IDAT, 2: IDAT-IEND
+Do not allocate or traverse this data yourself. Use the chunk traversing functions declared
+later, such as lodepng_chunk_next and lodepng_chunk_append, to read/write this struct.</p>
+</div><span id="structfield.unknown_chunks_size" class="structfield small-section-header">
+                           <a href="#structfield.unknown_chunks_size" class="anchor field"></a>
+                           <span id="unknown_chunks_size.v" class='invisible'>
+                           <code>unknown_chunks_size: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">; 3]</a></code>
+                           </span></span>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../lodepng/ffi/struct.Info.html" title="struct lodepng::ffi::Info">Info</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#267-398' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>() -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#268-281' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.text_keys_cstr' class="method"><span id='text_keys_cstr.v' class='invisible'><code>pub fn <a href='#method.text_keys_cstr' class='fnname'>text_keys_cstr</a>(&amp;self) -&gt; TextKeysCStrIter</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#283-290' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.itext_keys' class="method"><span id='itext_keys.v' class='invisible'><code>pub fn <a href='#method.itext_keys' class='fnname'>itext_keys</a>(&amp;self) -&gt; ITextKeysIter</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#292-301' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.clear_text' class="method"><span id='clear_text.v' class='invisible'><code>pub fn <a href='#method.clear_text' class='fnname'>clear_text</a>(&amp;mut self)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#304-315' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>use this to clear the texts again after you filled them in</p>
+</div><h4 id='method.add_text' class="method"><span id='add_text.v' class='invisible'><code>pub fn <a href='#method.add_text' class='fnname'>add_text</a>(&amp;mut self, key: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, str: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">()</a>, <a class="struct" href="../../lodepng/ffi/struct.Error.html" title="struct lodepng::ffi::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#318-320' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>push back both texts at once</p>
+</div><h4 id='method.clear_itext' class="method"><span id='clear_itext.v' class='invisible'><code>pub fn <a href='#method.clear_itext' class='fnname'>clear_itext</a>(&amp;mut self)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#323-341' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>use this to clear the itexts again after you filled them in</p>
+</div><h4 id='method.add_itext' class="method"><span id='add_itext.v' class='invisible'><code>pub fn <a href='#method.add_itext' class='fnname'>add_itext</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;mut self, <br>&nbsp;&nbsp;&nbsp;&nbsp;key: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;langtag: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;transkey: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;text: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">()</a>, <a class="struct" href="../../lodepng/ffi/struct.Error.html" title="struct lodepng::ffi::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#344-351' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>push back the 4 texts of 1 chunk at once</p>
+</div><h4 id='method.append_chunk' class="method"><span id='append_chunk.v' class='invisible'><code>pub fn <a href='#method.append_chunk' class='fnname'>append_chunk</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;mut self, <br>&nbsp;&nbsp;&nbsp;&nbsp;position: <a class="enum" href="../../lodepng/enum.ChunkPosition.html" title="enum lodepng::ChunkPosition">ChunkPosition</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;chunk: <a class="struct" href="../../lodepng/struct.ChunkRef.html" title="struct lodepng::ChunkRef">ChunkRef</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">()</a>, <a class="struct" href="../../lodepng/ffi/struct.Error.html" title="struct lodepng::ffi::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#353-363' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.create_chunk' class="method"><span id='create_chunk.v' class='invisible'><code>pub fn <a href='#method.create_chunk' class='fnname'>create_chunk</a>&lt;C:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html" title="trait core::convert::AsRef">AsRef</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>&gt;&gt;(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;mut self, <br>&nbsp;&nbsp;&nbsp;&nbsp;position: <a class="enum" href="../../lodepng/enum.ChunkPosition.html" title="enum lodepng::ChunkPosition">ChunkPosition</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;chtype: C, <br>&nbsp;&nbsp;&nbsp;&nbsp;data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">()</a>, <a class="struct" href="../../lodepng/ffi/struct.Error.html" title="struct lodepng::ffi::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#365-379' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.get' class="method"><span id='get.v' class='invisible'><code>pub fn <a href='#method.get' class='fnname'>get</a>&lt;Name:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html" title="trait core::convert::AsRef">AsRef</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>&gt;&gt;(&amp;self, index: Name) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="../../lodepng/struct.ChunkRef.html" title="struct lodepng::ChunkRef">ChunkRef</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#381-387' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.unknown_chunks' class="method"><span id='unknown_chunks.v' class='invisible'><code>pub fn <a href='#method.unknown_chunks' class='fnname'>unknown_chunks</a>(&amp;self, position: <a class="enum" href="../../lodepng/enum.ChunkPosition.html" title="enum lodepng::ChunkPosition">ChunkPosition</a>) -&gt; ChunksIter</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#389-397' title='goto source code'>[src]</a></span></h4>
+</div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Drop' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html" title="trait core::ops::drop::Drop">Drop</a> for <a class="struct" href="../../lodepng/ffi/struct.Info.html" title="struct lodepng::ffi::Info">Info</a></code><a href='#impl-Drop' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/rustimpl.rs.html#2658-2668' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.drop' class="method"><span id='drop.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html#tymethod.drop' class='fnname'>drop</a>(&amp;mut self)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/rustimpl.rs.html#2659-2667' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Executes the destructor for this type. <a href="https://doc.rust-lang.org/nightly/core/ops/drop/trait.Drop.html#tymethod.drop">Read more</a></p>
+</div></div><h3 id='impl-Clone' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="../../lodepng/ffi/struct.Info.html" title="struct lodepng::ffi::Info">Info</a></code><a href='#impl-Clone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#400-433' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class="method"><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#401-432' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class="method"><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/clone.rs.html#112-114' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
     <script>
         window.rootPath = "../../";
         window.currentCrate = "lodepng";
-        window.playgroundUrl = "";
     </script>
-    <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
-    
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>

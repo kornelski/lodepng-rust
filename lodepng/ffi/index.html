@@ -9,12 +9,15 @@
 
     <title>lodepng::ffi - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
+    
 
     
     
 </head>
-<body class="rustdoc">
+<body class="rustdoc mod">
     <!--[if lte IE 8]>
     <div class="warning">
         This old browser is unsupported and will most likely display funky
@@ -22,577 +25,753 @@
     </div>
     <![endif]-->
 
-    <p style="position:absolute;top:0.5em;left:1em;right:0;z-index:999"><a href="https://github.com/pornel/lodepng-rust">GitHub project page</a></p>
+    
 
-
-
-    <section class="sidebar">
+    <nav class="sidebar">
         
-        <p class='location'><a href='../index.html'>lodepng</a></p><script>window.sidebarCurrent = {name: 'ffi', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
-    </section>
+        <p class='location'>Module ffi</p><div class="block items"><ul><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#functions">Functions</a></li><li><a href="#types">Type Definitions</a></li></ul></div><p class='location'><a href='../index.html'>lodepng</a></p><script>window.sidebarCurrent = {name: 'ffi', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
     </nav>
 
-    <section id='main' class="content mod">
-<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>lodepng</a>::<wbr><a class='mod' href=''>ffi</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-879' class='srclink' href='../../src/lodepng/lib.rs.html#299-735' title='goto source code'>[src]</a></span></h1>
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>lodepng</a>::<wbr><a class="mod" href=''>ffi</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lodepng/ffi.rs.html#2-837' title='goto source code'>[src]</a></span></h1>
 <h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.CVec.html'
-                               title='lodepng::ffi::CVec'>CVec</a></td>
-                        <td class='docblock short'>
-                             <p>The type representing a foreign chunk of memory</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.ColorMode.html'
-                               title='lodepng::ffi::ColorMode'>ColorMode</a></td>
-                        <td class='docblock short'>
-                             <p>Color mode of an image. Contains all information required to decode the pixel
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.ColorMode.html"
+                                  title='struct lodepng::ffi::ColorMode'>ColorMode</a></td>
+                           <td class='docblock-short'>
+                                <p>Color mode of an image. Contains all information required to decode the pixel
 bits to RGBA colors. This information is the same as used in the PNG file
 format, and is used both for PNG and raw image data in LodePNG.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.CompressSettings.html'
-                               title='lodepng::ffi::CompressSettings'>CompressSettings</a></td>
-                        <td class='docblock short'>
-                             <p>Settings for zlib compression. Tweaking these settings tweaks the balance between speed and compression ratio.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.DecoderSettings.html'
-                               title='lodepng::ffi::DecoderSettings'>DecoderSettings</a></td>
-                        <td class='docblock short'>
-                             <p>Settings for the decoder. This contains settings for the PNG and the Zlib decoder, but not the Info settings from the Info structs.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.EncoderSettings.html'
-                               title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.Error.html'
-                               title='lodepng::ffi::Error'>Error</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.Info.html'
-                               title='lodepng::ffi::Info'>Info</a></td>
-                        <td class='docblock short'>
-                             <p>Information about the PNG image, except pixels, width and height</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.State.html'
-                               title='lodepng::ffi::State'>State</a></td>
-                        <td class='docblock short'>
-                             <p>The settings, state and information for extended encoding and decoding</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.Time.html'
-                               title='lodepng::ffi::Time'>Time</a></td>
-                        <td class='docblock short'>
-                             <p>The information of a Time chunk in PNG</p>
-
-                        </td>
-                    </tr>
-                </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.ColorProfile.html"
+                                  title='struct lodepng::ffi::ColorProfile'>ColorProfile</a></td>
+                           <td class='docblock-short'>
+                                <p>Gives characteristics about the colors of the image, which helps decide which color model to use for encoding.
+Used internally by default if &quot;auto_convert&quot; is enabled. Public because it&#39;s useful for custom algorithms.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.CompressSettings.html"
+                                  title='struct lodepng::ffi::CompressSettings'>CompressSettings</a></td>
+                           <td class='docblock-short'>
+                                <p>Settings for zlib compression. Tweaking these settings tweaks the balance between speed and compression ratio.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.DecoderSettings.html"
+                                  title='struct lodepng::ffi::DecoderSettings'>DecoderSettings</a></td>
+                           <td class='docblock-short'>
+                                <p>Settings for the decoder. This contains settings for the PNG and the Zlib decoder, but not the <code>Info</code> settings from the <code>Info</code> structs.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.DecompressSettings.html"
+                                  title='struct lodepng::ffi::DecompressSettings'>DecompressSettings</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.EncoderSettings.html"
+                                  title='struct lodepng::ffi::EncoderSettings'>EncoderSettings</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Error.html"
+                                  title='struct lodepng::ffi::Error'>Error</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Info.html"
+                                  title='struct lodepng::ffi::Info'>Info</a></td>
+                           <td class='docblock-short'>
+                                <p>Information about the PNG image, except pixels, width and height</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.State.html"
+                                  title='struct lodepng::ffi::State'>State</a></td>
+                           <td class='docblock-short'>
+                                <p>The settings, state and information for extended encoding and decoding</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Time.html"
+                                  title='struct lodepng::ffi::Time'>Time</a></td>
+                           <td class='docblock-short'>
+                                <p>The information of a <code>Time</code> chunk in PNG</p>
+                           </td>
+                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='enum' href='enum.AutoConvert.html'
-                               title='lodepng::ffi::AutoConvert'>AutoConvert</a></td>
-                        <td class='docblock short'>
-                             <p>automatically use color type with less bits per pixel if losslessly possible. Default: LAC_AUTO</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='enum' href='enum.ColorType.html'
-                               title='lodepng::ffi::ColorType'>ColorType</a></td>
-                        <td class='docblock short'>
-                             <p>Type for <code>decode</code>, <code>encode</code>, etc. Same as standard PNG color types.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='enum' href='enum.FilterStrategy.html'
-                               title='lodepng::ffi::FilterStrategy'>FilterStrategy</a></td>
-                        <td class='docblock short'>
-                             <p>automatically use color type with less bits per pixel if losslessly possible. Default: AUTO</p>
-
-                        </td>
-                    </tr>
-                </table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.ColorType.html"
+                                  title='enum lodepng::ffi::ColorType'>ColorType</a></td>
+                           <td class='docblock-short'>
+                                <p>Type for <code>decode</code>, <code>encode</code>, etc. Same as standard PNG color types.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.FilterStrategy.html"
+                                  title='enum lodepng::ffi::FilterStrategy'>FilterStrategy</a></td>
+                           <td class='docblock-short'>
+                                <p>automatically use color type with less bits per pixel if losslessly possible. Default: <code>AUTO</code></p>
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_add_itext.html'
-                               title='lodepng::ffi::lodepng_add_itext'>lodepng_add_itext</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_add_text.html'
-                               title='lodepng::ffi::lodepng_add_text'>lodepng_add_text</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_auto_choose_color.html'
-                               title='lodepng::ffi::lodepng_auto_choose_color'>lodepng_auto_choose_color</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_can_have_alpha.html'
-                               title='lodepng::ffi::lodepng_can_have_alpha'>lodepng_can_have_alpha</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_ancillary.html'
-                               title='lodepng::ffi::lodepng_chunk_ancillary'>lodepng_chunk_ancillary</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_append.html'
-                               title='lodepng::ffi::lodepng_chunk_append'>lodepng_chunk_append</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_check_crc.html'
-                               title='lodepng::ffi::lodepng_chunk_check_crc'>lodepng_chunk_check_crc</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_create.html'
-                               title='lodepng::ffi::lodepng_chunk_create'>lodepng_chunk_create</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_data.html'
-                               title='lodepng::ffi::lodepng_chunk_data'>lodepng_chunk_data</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_generate_crc.html'
-                               title='lodepng::ffi::lodepng_chunk_generate_crc'>lodepng_chunk_generate_crc</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_length.html'
-                               title='lodepng::ffi::lodepng_chunk_length'>lodepng_chunk_length</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_next.html'
-                               title='lodepng::ffi::lodepng_chunk_next'>lodepng_chunk_next</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_private.html'
-                               title='lodepng::ffi::lodepng_chunk_private'>lodepng_chunk_private</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_safetocopy.html'
-                               title='lodepng::ffi::lodepng_chunk_safetocopy'>lodepng_chunk_safetocopy</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_type.html'
-                               title='lodepng::ffi::lodepng_chunk_type'>lodepng_chunk_type</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_chunk_type_equals.html'
-                               title='lodepng::ffi::lodepng_chunk_type_equals'>lodepng_chunk_type_equals</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_clear_itext.html'
-                               title='lodepng::ffi::lodepng_clear_itext'>lodepng_clear_itext</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_clear_text.html'
-                               title='lodepng::ffi::lodepng_clear_text'>lodepng_clear_text</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_color_mode_cleanup.html'
-                               title='lodepng::ffi::lodepng_color_mode_cleanup'>lodepng_color_mode_cleanup</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_color_mode_copy.html'
-                               title='lodepng::ffi::lodepng_color_mode_copy'>lodepng_color_mode_copy</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_color_mode_init.html'
-                               title='lodepng::ffi::lodepng_color_mode_init'>lodepng_color_mode_init</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_compress_settings_init.html'
-                               title='lodepng::ffi::lodepng_compress_settings_init'>lodepng_compress_settings_init</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_convert.html'
-                               title='lodepng::ffi::lodepng_convert'>lodepng_convert</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_crc32.html'
-                               title='lodepng::ffi::lodepng_crc32'>lodepng_crc32</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_decode.html'
-                               title='lodepng::ffi::lodepng_decode'>lodepng_decode</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_decode_memory.html'
-                               title='lodepng::ffi::lodepng_decode_memory'>lodepng_decode_memory</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_decoder_settings_init.html'
-                               title='lodepng::ffi::lodepng_decoder_settings_init'>lodepng_decoder_settings_init</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_deflate.html'
-                               title='lodepng::ffi::lodepng_deflate'>lodepng_deflate</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_encode.html'
-                               title='lodepng::ffi::lodepng_encode'>lodepng_encode</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_encode_memory.html'
-                               title='lodepng::ffi::lodepng_encode_memory'>lodepng_encode_memory</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_encoder_settings_init.html'
-                               title='lodepng::ffi::lodepng_encoder_settings_init'>lodepng_encoder_settings_init</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_get_bpp.html'
-                               title='lodepng::ffi::lodepng_get_bpp'>lodepng_get_bpp</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_get_channels.html'
-                               title='lodepng::ffi::lodepng_get_channels'>lodepng_get_channels</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_get_raw_size.html'
-                               title='lodepng::ffi::lodepng_get_raw_size'>lodepng_get_raw_size</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_has_palette_alpha.html'
-                               title='lodepng::ffi::lodepng_has_palette_alpha'>lodepng_has_palette_alpha</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_info_cleanup.html'
-                               title='lodepng::ffi::lodepng_info_cleanup'>lodepng_info_cleanup</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_info_copy.html'
-                               title='lodepng::ffi::lodepng_info_copy'>lodepng_info_copy</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_info_init.html'
-                               title='lodepng::ffi::lodepng_info_init'>lodepng_info_init</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_inspect.html'
-                               title='lodepng::ffi::lodepng_inspect'>lodepng_inspect</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_is_alpha_type.html'
-                               title='lodepng::ffi::lodepng_is_alpha_type'>lodepng_is_alpha_type</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_is_greyscale_type.html'
-                               title='lodepng::ffi::lodepng_is_greyscale_type'>lodepng_is_greyscale_type</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_is_palette_type.html'
-                               title='lodepng::ffi::lodepng_is_palette_type'>lodepng_is_palette_type</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_palette_add.html'
-                               title='lodepng::ffi::lodepng_palette_add'>lodepng_palette_add</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_palette_clear.html'
-                               title='lodepng::ffi::lodepng_palette_clear'>lodepng_palette_clear</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_state_cleanup.html'
-                               title='lodepng::ffi::lodepng_state_cleanup'>lodepng_state_cleanup</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_state_copy.html'
-                               title='lodepng::ffi::lodepng_state_copy'>lodepng_state_copy</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_state_init.html'
-                               title='lodepng::ffi::lodepng_state_init'>lodepng_state_init</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.lodepng_zlib_compress.html'
-                               title='lodepng::ffi::lodepng_zlib_compress'>lodepng_zlib_compress</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                </table></section>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_add_itext.html"
+                                  title='fn lodepng::ffi::lodepng_add_itext'>lodepng_add_itext</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_add_text.html"
+                                  title='fn lodepng::ffi::lodepng_add_text'>lodepng_add_text</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_auto_choose_color.html"
+                                  title='fn lodepng::ffi::lodepng_auto_choose_color'>lodepng_auto_choose_color</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_buffer_file.html"
+                                  title='fn lodepng::ffi::lodepng_buffer_file'>lodepng_buffer_file</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_can_have_alpha.html"
+                                  title='fn lodepng::ffi::lodepng_can_have_alpha'>lodepng_can_have_alpha</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_ancillary.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_ancillary'>lodepng_chunk_ancillary</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_append.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_append'>lodepng_chunk_append</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_check_crc.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_check_crc'>lodepng_chunk_check_crc</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_create.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_create'>lodepng_chunk_create</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_data.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_data'>lodepng_chunk_data</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_data_const.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_data_const'>lodepng_chunk_data_const</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_generate_crc.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_generate_crc'>lodepng_chunk_generate_crc</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_length.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_length'>lodepng_chunk_length</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_next.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_next'>lodepng_chunk_next</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_next_const.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_next_const'>lodepng_chunk_next_const</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_private.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_private'>lodepng_chunk_private</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_safetocopy.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_safetocopy'>lodepng_chunk_safetocopy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_type.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_type'>lodepng_chunk_type</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_chunk_type_equals.html"
+                                  title='fn lodepng::ffi::lodepng_chunk_type_equals'>lodepng_chunk_type_equals</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_clear_itext.html"
+                                  title='fn lodepng::ffi::lodepng_clear_itext'>lodepng_clear_itext</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_clear_text.html"
+                                  title='fn lodepng::ffi::lodepng_clear_text'>lodepng_clear_text</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_color_mode_cleanup.html"
+                                  title='fn lodepng::ffi::lodepng_color_mode_cleanup'>lodepng_color_mode_cleanup</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_color_mode_copy.html"
+                                  title='fn lodepng::ffi::lodepng_color_mode_copy'>lodepng_color_mode_copy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_color_mode_equal.html"
+                                  title='fn lodepng::ffi::lodepng_color_mode_equal'>lodepng_color_mode_equal</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_color_mode_init.html"
+                                  title='fn lodepng::ffi::lodepng_color_mode_init'>lodepng_color_mode_init</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_color_profile_init.html"
+                                  title='fn lodepng::ffi::lodepng_color_profile_init'>lodepng_color_profile_init</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_compress_settings_init.html"
+                                  title='fn lodepng::ffi::lodepng_compress_settings_init'>lodepng_compress_settings_init</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_convert.html"
+                                  title='fn lodepng::ffi::lodepng_convert'>lodepng_convert</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_crc32.html"
+                                  title='fn lodepng::ffi::lodepng_crc32'>lodepng_crc32</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_decode.html"
+                                  title='fn lodepng::ffi::lodepng_decode'>lodepng_decode</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_decode24.html"
+                                  title='fn lodepng::ffi::lodepng_decode24'>lodepng_decode24</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_decode32.html"
+                                  title='fn lodepng::ffi::lodepng_decode32'>lodepng_decode32</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_decode24_file.html"
+                                  title='fn lodepng::ffi::lodepng_decode24_file'>lodepng_decode24_file</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_decode32_file.html"
+                                  title='fn lodepng::ffi::lodepng_decode32_file'>lodepng_decode32_file</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_decode_file.html"
+                                  title='fn lodepng::ffi::lodepng_decode_file'>lodepng_decode_file</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_decode_memory.html"
+                                  title='fn lodepng::ffi::lodepng_decode_memory'>lodepng_decode_memory</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_decoder_settings_init.html"
+                                  title='fn lodepng::ffi::lodepng_decoder_settings_init'>lodepng_decoder_settings_init</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_decompress_settings_init.html"
+                                  title='fn lodepng::ffi::lodepng_decompress_settings_init'>lodepng_decompress_settings_init</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_deflate.html"
+                                  title='fn lodepng::ffi::lodepng_deflate'>lodepng_deflate</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_encode.html"
+                                  title='fn lodepng::ffi::lodepng_encode'>lodepng_encode</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_encode24.html"
+                                  title='fn lodepng::ffi::lodepng_encode24'>lodepng_encode24</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_encode32.html"
+                                  title='fn lodepng::ffi::lodepng_encode32'>lodepng_encode32</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_encode24_file.html"
+                                  title='fn lodepng::ffi::lodepng_encode24_file'>lodepng_encode24_file</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_encode32_file.html"
+                                  title='fn lodepng::ffi::lodepng_encode32_file'>lodepng_encode32_file</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_encode_file.html"
+                                  title='fn lodepng::ffi::lodepng_encode_file'>lodepng_encode_file</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_encode_memory.html"
+                                  title='fn lodepng::ffi::lodepng_encode_memory'>lodepng_encode_memory</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_encoder_settings_init.html"
+                                  title='fn lodepng::ffi::lodepng_encoder_settings_init'>lodepng_encoder_settings_init</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_error_text.html"
+                                  title='fn lodepng::ffi::lodepng_error_text'>lodepng_error_text</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_filesize.html"
+                                  title='fn lodepng::ffi::lodepng_filesize'>lodepng_filesize</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_free.html"
+                                  title='fn lodepng::ffi::lodepng_free'>lodepng_free</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_get_bpp.html"
+                                  title='fn lodepng::ffi::lodepng_get_bpp'>lodepng_get_bpp</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_get_bpp_lct.html"
+                                  title='fn lodepng::ffi::lodepng_get_bpp_lct'>lodepng_get_bpp_lct</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_get_channels.html"
+                                  title='fn lodepng::ffi::lodepng_get_channels'>lodepng_get_channels</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_get_color_profile.html"
+                                  title='fn lodepng::ffi::lodepng_get_color_profile'>lodepng_get_color_profile</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_get_raw_size.html"
+                                  title='fn lodepng::ffi::lodepng_get_raw_size'>lodepng_get_raw_size</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_get_raw_size_lct.html"
+                                  title='fn lodepng::ffi::lodepng_get_raw_size_lct'>lodepng_get_raw_size_lct</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_has_palette_alpha.html"
+                                  title='fn lodepng::ffi::lodepng_has_palette_alpha'>lodepng_has_palette_alpha</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_huffman_code_lengths.html"
+                                  title='fn lodepng::ffi::lodepng_huffman_code_lengths'>lodepng_huffman_code_lengths</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_inflate.html"
+                                  title='fn lodepng::ffi::lodepng_inflate'>lodepng_inflate</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_info_cleanup.html"
+                                  title='fn lodepng::ffi::lodepng_info_cleanup'>lodepng_info_cleanup</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_info_copy.html"
+                                  title='fn lodepng::ffi::lodepng_info_copy'>lodepng_info_copy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_info_init.html"
+                                  title='fn lodepng::ffi::lodepng_info_init'>lodepng_info_init</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_info_swap.html"
+                                  title='fn lodepng::ffi::lodepng_info_swap'>lodepng_info_swap</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_inspect.html"
+                                  title='fn lodepng::ffi::lodepng_inspect'>lodepng_inspect</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_is_alpha_type.html"
+                                  title='fn lodepng::ffi::lodepng_is_alpha_type'>lodepng_is_alpha_type</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_is_greyscale_type.html"
+                                  title='fn lodepng::ffi::lodepng_is_greyscale_type'>lodepng_is_greyscale_type</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_is_palette_type.html"
+                                  title='fn lodepng::ffi::lodepng_is_palette_type'>lodepng_is_palette_type</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_load_file.html"
+                                  title='fn lodepng::ffi::lodepng_load_file'>lodepng_load_file</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_malloc.html"
+                                  title='fn lodepng::ffi::lodepng_malloc'>lodepng_malloc</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_palette_add.html"
+                                  title='fn lodepng::ffi::lodepng_palette_add'>lodepng_palette_add</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_palette_clear.html"
+                                  title='fn lodepng::ffi::lodepng_palette_clear'>lodepng_palette_clear</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_realloc.html"
+                                  title='fn lodepng::ffi::lodepng_realloc'>lodepng_realloc</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_save_file.html"
+                                  title='fn lodepng::ffi::lodepng_save_file'>lodepng_save_file</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_state_cleanup.html"
+                                  title='fn lodepng::ffi::lodepng_state_cleanup'>lodepng_state_cleanup</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_state_copy.html"
+                                  title='fn lodepng::ffi::lodepng_state_copy'>lodepng_state_copy</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_state_init.html"
+                                  title='fn lodepng::ffi::lodepng_state_init'>lodepng_state_init</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_zlib_compress.html"
+                                  title='fn lodepng::ffi::lodepng_zlib_compress'>lodepng_zlib_compress</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.lodepng_zlib_decompress.html"
+                                  title='fn lodepng::ffi::lodepng_zlib_decompress'>lodepng_zlib_decompress</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.zlib_compress.html"
+                                  title='fn lodepng::ffi::zlib_compress'>zlib_compress</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.zlib_decompress.html"
+                                  title='fn lodepng::ffi::zlib_decompress'>zlib_decompress</a><a title='unsafe function' href='#'><sup>⚠</sup></a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.custom_compress_callback.html"
+                                  title='type lodepng::ffi::custom_compress_callback'>custom_compress_callback</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.custom_decompress_callback.html"
+                                  title='type lodepng::ffi::custom_decompress_callback'>custom_decompress_callback</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
     <script>
         window.rootPath = "../../";
         window.currentCrate = "lodepng";
-        window.playgroundUrl = "";
     </script>
-    <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
-    
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>

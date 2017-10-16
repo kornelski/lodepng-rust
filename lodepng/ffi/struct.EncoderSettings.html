@@ -9,12 +9,15 @@
 
     <title>lodepng::ffi::EncoderSettings - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
+    
 
     
     
 </head>
-<body class="rustdoc">
+<body class="rustdoc struct">
     <!--[if lte IE 8]>
     <div class="warning">
         This old browser is unsupported and will most likely display funky
@@ -22,107 +25,157 @@
     </div>
     <![endif]-->
 
-    <p style="position:absolute;top:0.5em;left:1em;right:0;z-index:999"><a href="https://github.com/pornel/lodepng-rust">GitHub project page</a></p>
+    
 
-
-
-    <section class="sidebar">
+    <nav class="sidebar">
         
-        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'EncoderSettings', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+        <p class='location'>Struct EncoderSettings</p><div class="block items"><ul><li><a href="#fields">Fields</a></li><li><a href="#methods">Methods</a></li><li><a href="#implementations">Trait Implementations</a></li></ul></div><p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'EncoderSettings', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
     </nav>
 
-    <section id='main' class="content struct">
-<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>EncoderSettings</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1680' class='srclink' href='../../src/lodepng/lib.rs.html#608-635' title='goto source code'>[src]</a></span></h1>
-<pre class='rust struct'>pub struct EncoderSettings {
-    pub zlibsettings: <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a>,
-    pub auto_convert: <a class='enum' href='../../lodepng/ffi/enum.AutoConvert.html' title='lodepng::ffi::AutoConvert'>AutoConvert</a>,
-    pub filter_palette_zero: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub filter_strategy: <a class='enum' href='../../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a>,
-    pub force_palette: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class="struct" href=''>EncoderSettings</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lodepng/ffi.rs.html#269-296' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'><div class="docblock attributes">#[repr(C)]
+</div>pub struct EncoderSettings {
+    pub zlibsettings: <a class="struct" href="../../lodepng/ffi/struct.CompressSettings.html" title="struct lodepng::ffi::CompressSettings">CompressSettings</a>,
+    pub auto_convert: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub filter_palette_zero: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub filter_strategy: <a class="enum" href="../../lodepng/ffi/enum.FilterStrategy.html" title="enum lodepng::ffi::FilterStrategy">FilterStrategy</a>,
+    pub force_palette: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub add_id: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub text_compression: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
     // some fields omitted
-}</pre><h2 class='fields'>Fields</h2>
-<table><tr class='stab '>
-                                  <td id='structfield.zlibsettings'><code>zlibsettings</code></td><td><div class='docblock'><p>settings for the zlib encoder, such as window size, ...</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.auto_convert'><code>auto_convert</code></td><td><div class='docblock'><p>how to automatically choose output PNG color type, if at all</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.filter_palette_zero'><code>filter_palette_zero</code></td><td><div class='docblock'><p>If true, follows the official PNG heuristic: if the PNG uses a palette or lower than
+}</pre><h2 id='fields' class='fields small-section-header'>
+                       Fields<a href='#fields' class='anchor'></a></h2><span id="structfield.zlibsettings" class="structfield small-section-header">
+                           <a href="#structfield.zlibsettings" class="anchor field"></a>
+                           <span id="zlibsettings.v" class='invisible'>
+                           <code>zlibsettings: <a class="struct" href="../../lodepng/ffi/struct.CompressSettings.html" title="struct lodepng::ffi::CompressSettings">CompressSettings</a></code>
+                           </span></span><div class='docblock'><p>settings for the zlib encoder, such as window size, ...</p>
+</div><span id="structfield.auto_convert" class="structfield small-section-header">
+                           <a href="#structfield.auto_convert" class="anchor field"></a>
+                           <span id="auto_convert.v" class='invisible'>
+                           <code>auto_convert: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>how to automatically choose output PNG color type, if at all</p>
+</div><span id="structfield.filter_palette_zero" class="structfield small-section-header">
+                           <a href="#structfield.filter_palette_zero" class="anchor field"></a>
+                           <span id="filter_palette_zero.v" class='invisible'>
+                           <code>filter_palette_zero: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>If true, follows the official PNG heuristic: if the PNG uses a palette or lower than
 8 bit depth, set all filters to zero. Otherwise use the filter_strategy. Note that to
 completely follow the official PNG heuristic, filter_palette_zero must be true and
-filter_strategy must be LFS_MINSUM</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.filter_strategy'><code>filter_strategy</code></td><td><div class='docblock'><p>Which filter strategy to use when not using zeroes due to filter_palette_zero.
-Set filter_palette_zero to 0 to ensure always using your chosen strategy. Default: LFS_MINSUM</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.force_palette'><code>force_palette</code></td><td><div class='docblock'><p>force creating a <code>PLTE</code> chunk if colortype is 2 or 6 (= a suggested palette).
+filter_strategy must be FilterStrategy::MINSUM</p>
+</div><span id="structfield.filter_strategy" class="structfield small-section-header">
+                           <a href="#structfield.filter_strategy" class="anchor field"></a>
+                           <span id="filter_strategy.v" class='invisible'>
+                           <code>filter_strategy: <a class="enum" href="../../lodepng/ffi/enum.FilterStrategy.html" title="enum lodepng::ffi::FilterStrategy">FilterStrategy</a></code>
+                           </span></span><div class='docblock'><p>Which filter strategy to use when not using zeroes due to filter_palette_zero.
+Set filter_palette_zero to 0 to ensure always using your chosen strategy. Default: FilterStrategy::MINSUM</p>
+</div><span id="structfield.force_palette" class="structfield small-section-header">
+                           <a href="#structfield.force_palette" class="anchor field"></a>
+                           <span id="force_palette.v" class='invisible'>
+                           <code>force_palette: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>force creating a <code>PLTE</code> chunk if colortype is 2 or 6 (= a suggested palette).
 If colortype is 3, <code>PLTE</code> is <em>always</em> created</p>
-</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a></code></h4>
-<div class='docblock'><p>Creates encoder settings initialized to defaults</p>
+</div><span id="structfield.add_id" class="structfield small-section-header">
+                           <a href="#structfield.add_id" class="anchor field"></a>
+                           <span id="add_id.v" class='invisible'>
+                           <code>add_id: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>add LodePNG identifier and version as a text chunk, for debugging</p>
+</div><span id="structfield.text_compression" class="structfield small-section-header">
+                           <a href="#structfield.text_compression" class="anchor field"></a>
+                           <span id="text_compression.v" class='invisible'>
+                           <code>text_compression: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>encode text chunks as zTXt chunks instead of tEXt chunks, and use compression in iTXt chunks</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../lodepng/ffi/struct.EncoderSettings.html" title="struct lodepng::ffi::EncoderSettings">EncoderSettings</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#972-976' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>() -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#973-975' title='goto source code'>[src]</a></span></h4>
+</div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Clone' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="../../lodepng/ffi/struct.EncoderSettings.html" title="struct lodepng::ffi::EncoderSettings">EncoderSettings</a></code><a href='#impl-Clone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/ffi.rs.html#268' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class="method"><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class="struct" href="../../lodepng/ffi/struct.EncoderSettings.html" title="struct lodepng::ffi::EncoderSettings">EncoderSettings</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/ffi.rs.html#268' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class="method"><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/clone.rs.html#112-114' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div><h3 id='impl-Default' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html" title="trait core::default::Default">Default</a> for <a class="struct" href="../../lodepng/ffi/struct.EncoderSettings.html" title="struct lodepng::ffi::EncoderSettings">EncoderSettings</a></code><a href='#impl-Default' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#978-991' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.default' class="method"><span id='default.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default' class='fnname'>default</a>() -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#979-990' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns the &quot;default value&quot; for a type. <a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default">Read more</a></p>
 </div></div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
     <script>
         window.rootPath = "../../";
         window.currentCrate = "lodepng";
-        window.playgroundUrl = "";
     </script>
-    <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
-    
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>

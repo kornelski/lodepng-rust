@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="Source to the Rust file `src/error.rs`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang">
+
+    <title>error.rs.html -- source</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc source">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content"><pre class="line-numbers"><span id="1">  1</span>
+<span id="2">  2</span>
+<span id="3">  3</span>
+<span id="4">  4</span>
+<span id="5">  5</span>
+<span id="6">  6</span>
+<span id="7">  7</span>
+<span id="8">  8</span>
+<span id="9">  9</span>
+<span id="10"> 10</span>
+<span id="11"> 11</span>
+<span id="12"> 12</span>
+<span id="13"> 13</span>
+<span id="14"> 14</span>
+<span id="15"> 15</span>
+<span id="16"> 16</span>
+<span id="17"> 17</span>
+<span id="18"> 18</span>
+<span id="19"> 19</span>
+<span id="20"> 20</span>
+<span id="21"> 21</span>
+<span id="22"> 22</span>
+<span id="23"> 23</span>
+<span id="24"> 24</span>
+<span id="25"> 25</span>
+<span id="26"> 26</span>
+<span id="27"> 27</span>
+<span id="28"> 28</span>
+<span id="29"> 29</span>
+<span id="30"> 30</span>
+<span id="31"> 31</span>
+<span id="32"> 32</span>
+<span id="33"> 33</span>
+<span id="34"> 34</span>
+<span id="35"> 35</span>
+<span id="36"> 36</span>
+<span id="37"> 37</span>
+<span id="38"> 38</span>
+<span id="39"> 39</span>
+<span id="40"> 40</span>
+<span id="41"> 41</span>
+<span id="42"> 42</span>
+<span id="43"> 43</span>
+<span id="44"> 44</span>
+<span id="45"> 45</span>
+<span id="46"> 46</span>
+<span id="47"> 47</span>
+<span id="48"> 48</span>
+<span id="49"> 49</span>
+<span id="50"> 50</span>
+<span id="51"> 51</span>
+<span id="52"> 52</span>
+<span id="53"> 53</span>
+<span id="54"> 54</span>
+<span id="55"> 55</span>
+<span id="56"> 56</span>
+<span id="57"> 57</span>
+<span id="58"> 58</span>
+<span id="59"> 59</span>
+<span id="60"> 60</span>
+<span id="61"> 61</span>
+<span id="62"> 62</span>
+<span id="63"> 63</span>
+<span id="64"> 64</span>
+<span id="65"> 65</span>
+<span id="66"> 66</span>
+<span id="67"> 67</span>
+<span id="68"> 68</span>
+<span id="69"> 69</span>
+<span id="70"> 70</span>
+<span id="71"> 71</span>
+<span id="72"> 72</span>
+<span id="73"> 73</span>
+<span id="74"> 74</span>
+<span id="75"> 75</span>
+<span id="76"> 76</span>
+<span id="77"> 77</span>
+<span id="78"> 78</span>
+<span id="79"> 79</span>
+<span id="80"> 80</span>
+<span id="81"> 81</span>
+<span id="82"> 82</span>
+<span id="83"> 83</span>
+<span id="84"> 84</span>
+<span id="85"> 85</span>
+<span id="86"> 86</span>
+<span id="87"> 87</span>
+<span id="88"> 88</span>
+<span id="89"> 89</span>
+<span id="90"> 90</span>
+<span id="91"> 91</span>
+<span id="92"> 92</span>
+<span id="93"> 93</span>
+<span id="94"> 94</span>
+<span id="95"> 95</span>
+<span id="96"> 96</span>
+<span id="97"> 97</span>
+<span id="98"> 98</span>
+<span id="99"> 99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+</pre><pre class="rust ">
+<span class="kw">use</span> <span class="ident">std</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">error</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>;
+<span class="kw">use</span> <span class="ident">ffi</span>::<span class="ident">Error</span>;
+
+<span class="kw">impl</span> <span class="ident">Error</span> {
+    <span class="doccomment">/// Returns an English description of the numerical error code.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">as_str</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> <span class="ident">str</span> {
+        <span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="self">self</span>.<span class="ident">c_description</span>()).<span class="ident">unwrap</span>()
+    }
+
+    <span class="doccomment">/// Helper function for the library</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_result</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Error</span><span class="op">&gt;</span> {
+        <span class="kw">match</span> <span class="self">self</span> {
+            <span class="ident">Error</span>(<span class="number">0</span>) <span class="op">=&gt;</span> <span class="prelude-val">Ok</span>(()),
+            <span class="ident">err</span> <span class="op">=&gt;</span> <span class="prelude-val">Err</span>(<span class="ident">err</span>),
+        }
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Error</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">Error</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">Error</span>) <span class="op">-&gt;</span> <span class="self">Self</span> {
+        <span class="ident">err</span>.<span class="ident">to_result</span>()
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">fmt</span>::<span class="ident">Debug</span> <span class="kw">for</span> <span class="ident">Error</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span>) <span class="op">-&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
+        <span class="macro">write</span><span class="macro">!</span>(<span class="ident">f</span>, <span class="string">&quot;{} ({})&quot;</span>, <span class="self">self</span>.<span class="ident">as_str</span>(), <span class="self">self</span>.<span class="number">0</span>)
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">fmt</span>::<span class="ident">Display</span> <span class="kw">for</span> <span class="ident">Error</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span>) <span class="op">-&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
+        <span class="macro">write</span><span class="macro">!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.<span class="ident">as_str</span>())
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">error</span>::<span class="ident">Error</span> <span class="kw">for</span> <span class="ident">Error</span> {
+    <span class="kw">fn</span> <span class="ident">description</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
+        <span class="self">self</span>.<span class="ident">as_str</span>()
+    }
+}
+
+<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
+<span class="kw">impl</span> <span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">From</span><span class="op">&lt;</span><span class="ident">io</span>::<span class="ident">Error</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Error</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">err</span>: <span class="ident">io</span>::<span class="ident">Error</span>) <span class="op">-&gt;</span> <span class="ident">Error</span> {
+        <span class="kw">match</span> <span class="ident">err</span>.<span class="ident">kind</span>() {
+            <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">NotFound</span> <span class="op">|</span> <span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">UnexpectedEof</span> <span class="op">=&gt;</span> <span class="ident">Error</span>(<span class="number">78</span>),
+            _ <span class="op">=&gt;</span> <span class="ident">Error</span>(<span class="number">79</span>),
+        }
+    }
+}
+
+<span class="comment">/*
+This returns the description of a numerical error code in English. This is also
+the documentation of all the error codes.
+*/</span>
+<span class="kw">impl</span> <span class="ident">Error</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">c_description</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;static</span> [<span class="ident">u8</span>] {
+        <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span> {
+            <span class="number">0</span> <span class="op">=&gt;</span> <span class="string">&quot;no error, everything went ok\0&quot;</span>,
+            <span class="number">1</span> <span class="op">=&gt;</span> <span class="string">&quot;nothing done yet\0&quot;</span>,
+
+            <span class="comment">/*the Encoder/Decoder has done nothing yet, error checking makes no sense yet*/</span>
+            <span class="number">10</span> <span class="op">=&gt;</span> <span class="string">&quot;end of input memory reached without huffman end code\0&quot;</span>,
+
+            <span class="comment">/*while huffman decoding*/</span>
+            <span class="number">11</span> <span class="op">=&gt;</span> <span class="string">&quot;error in code tree made it jump outside of huffman tree\0&quot;</span>,
+
+            <span class="comment">/*while huffman decoding*/</span>
+            <span class="number">13</span> <span class="op">|</span> <span class="number">14</span> <span class="op">|</span> <span class="number">15</span> <span class="op">=&gt;</span> <span class="string">&quot;problem while processing dynamic deflate block\0&quot;</span>,
+            <span class="number">16</span> <span class="op">=&gt;</span> <span class="string">&quot;unexisting code while processing dynamic deflate block\0&quot;</span>,
+            <span class="number">18</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid distance code while inflating\0&quot;</span>,
+            <span class="number">17</span> <span class="op">|</span> <span class="number">19</span> <span class="op">|</span> <span class="number">22</span> <span class="op">=&gt;</span> <span class="string">&quot;end of out buffer memory reached while inflating\0&quot;</span>,
+            <span class="number">20</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid deflate block BTYPE encountered while decoding\0&quot;</span>,
+            <span class="number">21</span> <span class="op">=&gt;</span> <span class="string">&quot;NLEN is not ones complement of LEN in a deflate block\0&quot;</span>,
+
+            <span class="comment">/*end of out buffer memory reached while inflating:
+                This can happen if the inflated deflate data is longer than the amount of bytes required to fill up
+                all the pixels of the image, given the color depth and image dimensions. Something that doesn&#39;t
+                happen in a normal, well encoded, PNG image.*/</span>
+            <span class="number">23</span> <span class="op">=&gt;</span> <span class="string">&quot;end of in buffer memory reached while inflating\0&quot;</span>,
+            <span class="number">24</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid FCHECK in zlib header\0&quot;</span>,
+            <span class="number">25</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid compression method in zlib header\0&quot;</span>,
+            <span class="number">26</span> <span class="op">=&gt;</span> <span class="string">&quot;FDICT encountered in zlib header while it\&#39;s not used for PNG\0&quot;</span>,
+            <span class="number">27</span> <span class="op">=&gt;</span> <span class="string">&quot;PNG file is smaller than a PNG header\0&quot;</span>,
+            <span class="comment">/*Checks the magic file header, the first 8 bytes of the PNG file*/</span>
+            <span class="number">28</span> <span class="op">=&gt;</span> <span class="string">&quot;incorrect PNG signature, it\&#39;s no PNG or corrupted\0&quot;</span>,
+            <span class="number">29</span> <span class="op">=&gt;</span> <span class="string">&quot;first chunk is not the header chunk\0&quot;</span>,
+            <span class="number">30</span> <span class="op">=&gt;</span> <span class="string">&quot;chunk length too large, chunk broken off at end of file\0&quot;</span>,
+            <span class="number">31</span> <span class="op">=&gt;</span> <span class="string">&quot;illegal PNG color type or bpp\0&quot;</span>,
+            <span class="number">32</span> <span class="op">=&gt;</span> <span class="string">&quot;illegal PNG compression method\0&quot;</span>,
+            <span class="number">33</span> <span class="op">=&gt;</span> <span class="string">&quot;illegal PNG filter method\0&quot;</span>,
+            <span class="number">34</span> <span class="op">=&gt;</span> <span class="string">&quot;illegal PNG interlace method\0&quot;</span>,
+            <span class="number">35</span> <span class="op">=&gt;</span> <span class="string">&quot;chunk length of a chunk is too large or the chunk too small\0&quot;</span>,
+            <span class="number">36</span> <span class="op">=&gt;</span> <span class="string">&quot;illegal PNG filter type encountered\0&quot;</span>,
+            <span class="number">37</span> <span class="op">=&gt;</span> <span class="string">&quot;illegal bit depth for this color type given\0&quot;</span>,
+            <span class="number">38</span> <span class="op">=&gt;</span> <span class="string">&quot;the palette is too big\0&quot;</span>,
+            <span class="comment">/*more than 256 colors*/</span>
+            <span class="number">39</span> <span class="op">=&gt;</span> <span class="string">&quot;more palette alpha values given in tRNS chunk than there are colors in the palette\0&quot;</span>,
+            <span class="number">40</span> <span class="op">=&gt;</span> <span class="string">&quot;tRNS chunk has wrong size for greyscale image\0&quot;</span>,
+            <span class="number">41</span> <span class="op">=&gt;</span> <span class="string">&quot;tRNS chunk has wrong size for RGB image\0&quot;</span>,
+            <span class="number">42</span> <span class="op">=&gt;</span> <span class="string">&quot;tRNS chunk appeared while it was not allowed for this color type\0&quot;</span>,
+            <span class="number">43</span> <span class="op">=&gt;</span> <span class="string">&quot;bKGD chunk has wrong size for palette image\0&quot;</span>,
+            <span class="number">44</span> <span class="op">=&gt;</span> <span class="string">&quot;bKGD chunk has wrong size for greyscale image\0&quot;</span>,
+            <span class="number">45</span> <span class="op">=&gt;</span> <span class="string">&quot;bKGD chunk has wrong size for RGB image\0&quot;</span>,
+            <span class="number">48</span> <span class="op">=&gt;</span> <span class="string">&quot;empty input buffer given to decoder. Maybe caused by non-existing file?\0&quot;</span>,
+            <span class="number">49</span> <span class="op">|</span> <span class="number">50</span> <span class="op">=&gt;</span> <span class="string">&quot;jumped past memory while generating dynamic huffman tree\0&quot;</span>,
+            <span class="number">51</span> <span class="op">=&gt;</span> <span class="string">&quot;jumped past memory while inflating huffman block\0&quot;</span>,
+            <span class="number">52</span> <span class="op">=&gt;</span> <span class="string">&quot;jumped past memory while inflating\0&quot;</span>,
+            <span class="number">53</span> <span class="op">=&gt;</span> <span class="string">&quot;size of zlib data too small\0&quot;</span>,
+            <span class="number">54</span> <span class="op">=&gt;</span> <span class="string">&quot;repeat symbol in tree while there was no value symbol yet\0&quot;</span>,
+
+            <span class="comment">/*jumped past tree while generating huffman tree, this could be when the
+               tree will have more leaves than symbols after generating it out of the
+               given lenghts. They call this an oversubscribed dynamic bit lengths tree in zlib.*/</span>
+            <span class="number">55</span> <span class="op">=&gt;</span> <span class="string">&quot;jumped past tree while generating huffman tree\0&quot;</span>,
+            <span class="number">56</span> <span class="op">=&gt;</span> <span class="string">&quot;given output image colortype or bitdepth not supported for color conversion\0&quot;</span>,
+            <span class="number">57</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid CRC encountered (checking CRC can be disabled)\0&quot;</span>,
+            <span class="number">58</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid ADLER32 encountered (checking ADLER32 can be disabled)\0&quot;</span>,
+            <span class="number">59</span> <span class="op">=&gt;</span> <span class="string">&quot;requested color conversion not supported\0&quot;</span>,
+            <span class="number">60</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid window size given in the settings of the encoder (must be 0-32768)\0&quot;</span>,
+            <span class="number">61</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid BTYPE given in the settings of the encoder (only 0, 1 and 2 are allowed)\0&quot;</span>,
+
+            <span class="comment">/*LodePNG leaves the choice of RGB to greyscale conversion formula to the user.*/</span>
+            <span class="number">62</span> <span class="op">=&gt;</span> <span class="string">&quot;conversion from color to greyscale not supported\0&quot;</span>,
+            <span class="number">63</span> <span class="op">=&gt;</span> <span class="string">&quot;length of a chunk too long, max allowed for PNG is 2147483647 bytes per chunk\0&quot;</span>,
+
+            <span class="comment">/*(2^31-1)*/</span>
+            <span class="comment">/*this would result in the inability of a deflated block to ever contain an end code. It must be at least 1.*/</span>
+            <span class="number">64</span> <span class="op">=&gt;</span> <span class="string">&quot;the length of the END symbol 256 in the Huffman tree is 0\0&quot;</span>,
+            <span class="number">66</span> <span class="op">=&gt;</span> <span class="string">&quot;the length of a text chunk keyword given to the encoder is longer than the maximum of 79 bytes\0&quot;</span>,
+            <span class="number">67</span> <span class="op">=&gt;</span> <span class="string">&quot;the length of a text chunk keyword given to the encoder is smaller than the minimum of 1 byte\0&quot;</span>,
+            <span class="number">68</span> <span class="op">=&gt;</span> <span class="string">&quot;tried to encode a PLTE chunk with a palette that has less than 1 or more than 256 colors\0&quot;</span>,
+            <span class="number">69</span> <span class="op">=&gt;</span> <span class="string">&quot;unknown chunk type with \&#39;critical\&#39; flag encountered by the decoder\0&quot;</span>,
+            <span class="number">71</span> <span class="op">=&gt;</span> <span class="string">&quot;unexisting interlace mode given to encoder (must be 0 or 1)\0&quot;</span>,
+            <span class="number">72</span> <span class="op">=&gt;</span> <span class="string">&quot;while decoding, unexisting compression method encountering in zTXt or iTXt chunk (it must be 0)\0&quot;</span>,
+            <span class="number">73</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid tIME chunk size\0&quot;</span>,
+            <span class="number">74</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid pHYs chunk size\0&quot;</span>,
+            <span class="comment">/*length could be wrong, or data chopped off*/</span>
+            <span class="number">75</span> <span class="op">=&gt;</span> <span class="string">&quot;no null termination char found while decoding text chunk\0&quot;</span>,
+            <span class="number">76</span> <span class="op">=&gt;</span> <span class="string">&quot;iTXt chunk too short to contain required bytes\0&quot;</span>,
+            <span class="number">77</span> <span class="op">=&gt;</span> <span class="string">&quot;integer overflow in buffer size\0&quot;</span>,
+            <span class="number">78</span> <span class="op">=&gt;</span> <span class="string">&quot;failed to open file for reading\0&quot;</span>,
+
+            <span class="comment">/*file doesn&#39;t exist or couldn&#39;t be opened for reading*/</span>
+            <span class="number">79</span> <span class="op">=&gt;</span> <span class="string">&quot;failed to open file for writing\0&quot;</span>,
+            <span class="number">80</span> <span class="op">=&gt;</span> <span class="string">&quot;tried creating a tree of 0 symbols\0&quot;</span>,
+            <span class="number">81</span> <span class="op">=&gt;</span> <span class="string">&quot;lazy matching at pos 0 is impossible\0&quot;</span>,
+            <span class="number">82</span> <span class="op">=&gt;</span> <span class="string">&quot;color conversion to palette requested while a color isn\&#39;t in palette\0&quot;</span>,
+            <span class="number">83</span> <span class="op">=&gt;</span> <span class="string">&quot;memory allocation failed\0&quot;</span>,
+            <span class="number">84</span> <span class="op">=&gt;</span> <span class="string">&quot;given image too small to contain all pixels to be encoded\0&quot;</span>,
+            <span class="number">86</span> <span class="op">=&gt;</span> <span class="string">&quot;impossible offset in lz77 encoding (internal bug)\0&quot;</span>,
+            <span class="number">87</span> <span class="op">=&gt;</span> <span class="string">&quot;must provide custom zlib function pointer if LODEPNG_COMPILE_ZLIB is not defined\0&quot;</span>,
+            <span class="number">88</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid filter strategy given for EncoderSettings.filter_strategy\0&quot;</span>,
+            <span class="number">89</span> <span class="op">=&gt;</span> <span class="string">&quot;text chunk keyword too short or long: must have size 1-79\0&quot;</span>,
+
+            <span class="comment">/*the windowsize in the CompressSettings. Requiring POT(==&gt; &amp; instead of %) makes encoding 12% faster.*/</span>
+            <span class="number">90</span> <span class="op">=&gt;</span> <span class="string">&quot;windowsize must be a power of two\0&quot;</span>,
+            <span class="number">91</span> <span class="op">=&gt;</span> <span class="string">&quot;invalid decompressed idat size\0&quot;</span>,
+            <span class="number">92</span> <span class="op">=&gt;</span> <span class="string">&quot;too many pixels, not supported\0&quot;</span>,
+            <span class="number">93</span> <span class="op">=&gt;</span> <span class="string">&quot;zero width or height is invalid\0&quot;</span>,
+            <span class="number">94</span> <span class="op">=&gt;</span> <span class="string">&quot;header chunk must have a size of 13 bytes\0&quot;</span>,
+            _ <span class="op">=&gt;</span> <span class="string">&quot;unknown error code\0&quot;</span>,
+        }.<span class="ident">as_bytes</span>()
+    }
+}
+</pre>
+</section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "lodepng";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

@@ -9,12 +9,15 @@
 
     <title>lodepng - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
+    
 
     
     
 </head>
-<body class="rustdoc">
+<body class="rustdoc mod">
     <!--[if lte IE 8]>
     <div class="warning">
         This old browser is unsupported and will most likely display funky
@@ -22,333 +25,252 @@
     </div>
     <![endif]-->
 
-    <p style="position:absolute;top:0.5em;left:1em;right:0;z-index:999"><a href="https://github.com/pornel/lodepng-rust">GitHub project page</a></p>
+    
 
-
-
-    <section class="sidebar">
+    <nav class="sidebar">
         
-        <p class='location'></p><script>window.sidebarCurrent = {name: 'lodepng', ty: 'mod', relpath: '../'};</script>
-    </section>
+        <p class='location'>Crate lodepng</p><div class="block items"><ul><li><a href="#reexports">Reexports</a></li><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#functions">Functions</a></li><li><a href="#types">Type Definitions</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'lodepng', ty: 'mod', relpath: '../'};</script>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
     </nav>
 
-    <section id='main' class="content mod">
-<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>lodepng</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-0' class='srclink' href='../src/lodepng/lib.rs.html#1-1161' title='goto source code'>[src]</a></span></h1>
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Crate <a class="mod" href=''>lodepng</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/lodepng/lib.rs.html#1-1085' title='goto source code'>[src]</a></span></h1>
 <h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
-<table><tr><td><code>pub use ffi::<a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>ColorType</a>;</code></td></tr><tr><td><code>pub use ffi::ColorType::{<a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>LCT_GREY</a>, <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>LCT_RGB</a>, <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>LCT_PALETTE</a>, <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>LCT_GREY_ALPHA</a>, <a class='enum' href='../lodepng/ffi/enum.ColorType.html' title='lodepng::ffi::ColorType'>LCT_RGBA</a>};</code></td></tr><tr><td><code>pub use ffi::<a class='struct' href='../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a>;</code></td></tr><tr><td><code>pub use ffi::<a class='struct' href='../lodepng/ffi/struct.Time.html' title='lodepng::ffi::Time'>Time</a>;</code></td></tr><tr><td><code>pub use ffi::<a class='struct' href='../lodepng/ffi/struct.DecoderSettings.html' title='lodepng::ffi::DecoderSettings'>DecoderSettings</a>;</code></td></tr><tr><td><code>pub use ffi::<a class='enum' href='../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>FilterStrategy</a>;</code></td></tr><tr><td><code>pub use ffi::FilterStrategy::{<a class='enum' href='../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>LFS_ZERO</a>, <a class='enum' href='../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>LFS_MINSUM</a>, <a class='enum' href='../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>LFS_ENTROPY</a>, <a class='enum' href='../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>LFS_BRUTE_FORCE</a>, <a class='enum' href='../lodepng/ffi/enum.FilterStrategy.html' title='lodepng::ffi::FilterStrategy'>LFS_PREDEFINED</a>};</code></td></tr><tr><td><code>pub use ffi::<a class='enum' href='../lodepng/ffi/enum.AutoConvert.html' title='lodepng::ffi::AutoConvert'>AutoConvert</a>;</code></td></tr><tr><td><code>pub use ffi::AutoConvert::{<a class='enum' href='../lodepng/ffi/enum.AutoConvert.html' title='lodepng::ffi::AutoConvert'>LAC_NO</a>, <a class='enum' href='../lodepng/ffi/enum.AutoConvert.html' title='lodepng::ffi::AutoConvert'>LAC_ALPHA</a>, <a class='enum' href='../lodepng/ffi/enum.AutoConvert.html' title='lodepng::ffi::AutoConvert'>LAC_AUTO</a>, <a class='enum' href='../lodepng/ffi/enum.AutoConvert.html' title='lodepng::ffi::AutoConvert'>LAC_AUTO_NO_NIBBLES</a>, <a class='enum' href='../lodepng/ffi/enum.AutoConvert.html' title='lodepng::ffi::AutoConvert'>LAC_AUTO_NO_PALETTE</a>, <a class='enum' href='../lodepng/ffi/enum.AutoConvert.html' title='lodepng::ffi::AutoConvert'>LAC_AUTO_NO_NIBBLES_NO_PALETTE</a>};</code></td></tr><tr><td><code>pub use ffi::<a class='struct' href='../lodepng/ffi/struct.EncoderSettings.html' title='lodepng::ffi::EncoderSettings'>EncoderSettings</a>;</code></td></tr><tr><td><code>pub use ffi::<a class='struct' href='../lodepng/ffi/struct.Error.html' title='lodepng::ffi::Error'>Error</a>;</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table><tr><td><code>pub use ffi::<a class="struct" href="../lodepng/ffi/struct.State.html" title="struct lodepng::ffi::State">State</a>;</code></td></tr><tr><td><code>pub use ffi::<a class="enum" href="../lodepng/ffi/enum.ColorType.html" title="enum lodepng::ffi::ColorType">ColorType</a>;</code></td></tr><tr><td><code>pub use ffi::<a class="struct" href="../lodepng/ffi/struct.CompressSettings.html" title="struct lodepng::ffi::CompressSettings">CompressSettings</a>;</code></td></tr><tr><td><code>pub use ffi::<a class="struct" href="../lodepng/ffi/struct.DecompressSettings.html" title="struct lodepng::ffi::DecompressSettings">DecompressSettings</a>;</code></td></tr><tr><td><code>pub use ffi::<a class="struct" href="../lodepng/ffi/struct.Time.html" title="struct lodepng::ffi::Time">Time</a>;</code></td></tr><tr><td><code>pub use ffi::<a class="struct" href="../lodepng/ffi/struct.DecoderSettings.html" title="struct lodepng::ffi::DecoderSettings">DecoderSettings</a>;</code></td></tr><tr><td><code>pub use ffi::<a class="enum" href="../lodepng/ffi/enum.FilterStrategy.html" title="enum lodepng::ffi::FilterStrategy">FilterStrategy</a>;</code></td></tr><tr><td><code>pub use ffi::<a class="struct" href="../lodepng/ffi/struct.EncoderSettings.html" title="struct lodepng::ffi::EncoderSettings">EncoderSettings</a>;</code></td></tr><tr><td><code>pub use ffi::<a class="struct" href="../lodepng/ffi/struct.Error.html" title="struct lodepng::ffi::Error">Error</a>;</code></td></tr><tr><td><code>pub use ffi::<a class="struct" href="../lodepng/ffi/struct.Info.html" title="struct lodepng::ffi::Info">Info</a>;</code></td></tr><tr><td><code>pub use ffi::<a class="struct" href="../lodepng/ffi/struct.ColorMode.html" title="struct lodepng::ffi::ColorMode">ColorMode</a>;</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='mod' href='ffi/index.html'
-                               title='lodepng::ffi'>ffi</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                </table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="ffi/index.html"
+                                  title='mod lodepng::ffi'>ffi</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.Bitmap.html'
-                               title='lodepng::Bitmap'>Bitmap</a></td>
-                        <td class='docblock short'>
-                             <p>Low-level representation of an image</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.Chunk.html'
-                               title='lodepng::Chunk'>Chunk</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.ColorMode.html'
-                               title='lodepng::ColorMode'>ColorMode</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.Grey.html'
-                               title='lodepng::Grey'>Grey</a></td>
-                        <td class='docblock short'>
-                             <p>Opaque greyscale pixel (acces with <code>px.0</code>)</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.GreyAlpha.html'
-                               title='lodepng::GreyAlpha'>GreyAlpha</a></td>
-                        <td class='docblock short'>
-                             <p>Greyscale pixel with alpha (<code>px.1</code> is alpha)</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.Info.html'
-                               title='lodepng::Info'>Info</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.RGB.html'
-                               title='lodepng::RGB'>RGB</a></td>
-                        <td class='docblock short'>
-                             <p><code>RGB&lt;T&gt;</code> with <code>T</code> appropriate for bit depth (<code>u8</code>, <code>u16</code>)</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.RGBA.html'
-                               title='lodepng::RGBA'>RGBA</a></td>
-                        <td class='docblock short'>
-                             <p><code>RGBA&lt;T&gt;</code> with <code>T</code> appropriate for bit depth (<code>u8</code>, <code>u16</code>)</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.State.html'
-                               title='lodepng::State'>State</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Bitmap.html"
+                                  title='struct lodepng::Bitmap'>Bitmap</a></td>
+                           <td class='docblock-short'>
+                                <p>Low-level representation of an image</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.ChunkRef.html"
+                                  title='struct lodepng::ChunkRef'>ChunkRef</a></td>
+                           <td class='docblock-short'>
+                                <p>Reference to a chunk</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.ChunkRefMut.html"
+                                  title='struct lodepng::ChunkRefMut'>ChunkRefMut</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Grey.html"
+                                  title='struct lodepng::Grey'>Grey</a></td>
+                           <td class='docblock-short'>
+                                <p>Opaque greyscale pixel (acces with <code>px.0</code>)</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.GreyAlpha.html"
+                                  title='struct lodepng::GreyAlpha'>GreyAlpha</a></td>
+                           <td class='docblock-short'>
+                                <p>Greyscale pixel with alpha (<code>px.1</code> is alpha)</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.RGB.html"
+                                  title='struct lodepng::RGB'>RGB</a></td>
+                           <td class='docblock-short'>
+                                <p>This is it. The component type can be <code>u8</code> (aliased as <code>RGB8</code>), <code>u16</code> (aliased as <code>RGB16</code>), or any other type (but simple copyable types are recommended.)</p>
+                           </td>
+                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='enum' href='enum.Image.html'
-                               title='lodepng::Image'>Image</a></td>
-                        <td class='docblock short'>
-                             <p>Bitmap types. Also contains valid values for <code>&lt;PixelType&gt;</code></p>
-
-                        </td>
-                    </tr>
-                </table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.ChunkPosition.html"
+                                  title='enum lodepng::ChunkPosition'>ChunkPosition</a></td>
+                           <td class='docblock-short'>
+                                <p>Position in the file section after…</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="enum" href="enum.Image.html"
+                                  title='enum lodepng::Image'>Image</a></td>
+                           <td class='docblock-short'>
+                                <p>Bitmap types.</p>
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
 <table>
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.auto_choose_color.html'
-                               title='lodepng::auto_choose_color'>auto_choose_color</a></td>
-                        <td class='docblock short'>
-                             <p>Automatically chooses color type that gives smallest amount of bits in the
-output image, e.g. grey if there are only greyscale pixels, palette if there
-are less than 256 colors, ...</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.convert.html'
-                               title='lodepng::convert'>convert</a></td>
-                        <td class='docblock short'>
-                             <p>Converts from any color type to 24-bit or 32-bit (only)</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.decode24.html'
-                               title='lodepng::decode24'>decode24</a></td>
-                        <td class='docblock short'>
-                             <p>Same as <code>decode_memory</code>, but always decodes to 24-bit RGB raw image</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.decode24_file.html'
-                               title='lodepng::decode24_file'>decode24_file</a></td>
-                        <td class='docblock short'>
-                             <p>Same as <code>decode_file</code>, but always decodes to 24-bit RGB raw image</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.decode32.html'
-                               title='lodepng::decode32'>decode32</a></td>
-                        <td class='docblock short'>
-                             <p>Same as <code>decode_memory</code>, but always decodes to 32-bit RGBA raw image</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.decode32_file.html'
-                               title='lodepng::decode32_file'>decode32_file</a></td>
-                        <td class='docblock short'>
-                             <p>Same as <code>decode_file</code>, but always decodes to 32-bit RGBA raw image</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.decode_file.html'
-                               title='lodepng::decode_file'>decode_file</a></td>
-                        <td class='docblock short'>
-                             <p>Load PNG from disk, from file with given name.
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.decode24.html"
+                                  title='fn lodepng::decode24'>decode24</a></td>
+                           <td class='docblock-short'>
+                                <p>Same as <code>decode_memory</code>, but always decodes to 24-bit RGB raw image</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.decode32.html"
+                                  title='fn lodepng::decode32'>decode32</a></td>
+                           <td class='docblock-short'>
+                                <p>Same as <code>decode_memory</code>, but always decodes to 32-bit RGBA raw image</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.decode24_file.html"
+                                  title='fn lodepng::decode24_file'>decode24_file</a></td>
+                           <td class='docblock-short'>
+                                <p>Same as <code>decode_file</code>, but always decodes to 24-bit RGB raw image</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.decode32_file.html"
+                                  title='fn lodepng::decode32_file'>decode32_file</a></td>
+                           <td class='docblock-short'>
+                                <p>Same as <code>decode_file</code>, but always decodes to 32-bit RGBA raw image</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.decode_file.html"
+                                  title='fn lodepng::decode_file'>decode_file</a></td>
+                           <td class='docblock-short'>
+                                <p>Load PNG from disk, from file with given name.
 Same as the other decode functions, but instead takes a file path as input.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.decode_memory.html'
-                               title='lodepng::decode_memory'>decode_memory</a></td>
-                        <td class='docblock short'>
-                             <p>Converts PNG data in memory to raw pixel data.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.deflate.html'
-                               title='lodepng::deflate'>deflate</a></td>
-                        <td class='docblock short'>
-                             <p>Compress a buffer with deflate. See RFC 1951.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.encode24.html'
-                               title='lodepng::encode24'>encode24</a></td>
-                        <td class='docblock short'>
-                             <p>Same as <code>encode_memory</code>, but always encodes from 24-bit RGB raw image</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.encode24_file.html'
-                               title='lodepng::encode24_file'>encode24_file</a></td>
-                        <td class='docblock short'>
-                             <p>Same as <code>encode_file</code>, but always encodes from 24-bit RGB raw image</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.encode32.html'
-                               title='lodepng::encode32'>encode32</a></td>
-                        <td class='docblock short'>
-                             <p>Same as <code>encode_memory</code>, but always encodes from 32-bit RGBA raw image</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.encode32_file.html'
-                               title='lodepng::encode32_file'>encode32_file</a></td>
-                        <td class='docblock short'>
-                             <p>Same as <code>encode_file</code>, but always encodes from 32-bit RGBA raw image</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.encode_file.html'
-                               title='lodepng::encode_file'>encode_file</a></td>
-                        <td class='docblock short'>
-                             <p>Converts raw pixel data into a PNG file on disk.
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.decode_memory.html"
+                                  title='fn lodepng::decode_memory'>decode_memory</a></td>
+                           <td class='docblock-short'>
+                                <p>Converts PNG data in memory to raw pixel data.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.encode24.html"
+                                  title='fn lodepng::encode24'>encode24</a></td>
+                           <td class='docblock-short'>
+                                <p>Same as <code>encode_memory</code>, but always encodes from 24-bit RGB raw image</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.encode32.html"
+                                  title='fn lodepng::encode32'>encode32</a></td>
+                           <td class='docblock-short'>
+                                <p>Same as <code>encode_memory</code>, but always encodes from 32-bit RGBA raw image</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.encode24_file.html"
+                                  title='fn lodepng::encode24_file'>encode24_file</a></td>
+                           <td class='docblock-short'>
+                                <p>Same as <code>encode_file</code>, but always encodes from 24-bit RGB raw image</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.encode32_file.html"
+                                  title='fn lodepng::encode32_file'>encode32_file</a></td>
+                           <td class='docblock-short'>
+                                <p>Same as <code>encode_file</code>, but always encodes from 32-bit RGBA raw image</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.encode_file.html"
+                                  title='fn lodepng::encode_file'>encode_file</a></td>
+                           <td class='docblock-short'>
+                                <p>Converts raw pixel data into a PNG file on disk.
 Same as the other encode functions, but instead takes a file path as output.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.encode_memory.html'
-                               title='lodepng::encode_memory'>encode_memory</a></td>
-                        <td class='docblock short'>
-                             <p>Converts raw pixel data into a PNG image in memory. The colortype and bitdepth
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.encode_memory.html"
+                                  title='fn lodepng::encode_memory'>encode_memory</a></td>
+                           <td class='docblock-short'>
+                                <p>Converts raw pixel data into a PNG image in memory. The colortype and bitdepth
 of the output PNG image cannot be chosen, they are automatically determined
 by the colortype, bitdepth and content of the input pixel data.</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.zlib_compress.html'
-                               title='lodepng::zlib_compress'>zlib_compress</a></td>
-                        <td class='docblock short'>
-                             <p>Compresses data with Zlib.
-Zlib adds a small header and trailer around the deflate data.
-The data is output in the format of the zlib specification.</p>
-
-                        </td>
-                    </tr>
-                </table></section>
+                           </td>
+                       </tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="type" href="type.RGBA.html"
+                                  title='type lodepng::RGBA'>RGBA</a></td>
+                           <td class='docblock-short'>
+                                <p>Alpha is last. The crate doesn&#39;t impose which value represents transparency, but usually it&#39;s 0 = transparent, 255 = opaque.</p>
+                           </td>
+                       </tr></table></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
     <script>
         window.rootPath = "../";
         window.currentCrate = "lodepng";
-        window.playgroundUrl = "";
     </script>
-    <script src="../jquery.js"></script>
     <script src="../main.js"></script>
-    
-    <script async src="../search-index.js"></script>
+    <script defer src="../search-index.js"></script>
 </body>
 </html>

@@ -9,12 +9,15 @@
 
     <title>lodepng::ffi::CompressSettings - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
+    
 
     
     
 </head>
-<body class="rustdoc">
+<body class="rustdoc struct">
     <!--[if lte IE 8]>
     <div class="warning">
         This old browser is unsupported and will most likely display funky
@@ -22,116 +25,168 @@
     </div>
     <![endif]-->
 
-    <p style="position:absolute;top:0.5em;left:1em;right:0;z-index:999"><a href="https://github.com/pornel/lodepng-rust">GitHub project page</a></p>
+    
 
-
-
-    <section class="sidebar">
+    <nav class="sidebar">
         
-        <p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'CompressSettings', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
-    </section>
+        <p class='location'>Struct CompressSettings</p><div class="block items"><ul><li><a href="#fields">Fields</a></li><li><a href="#methods">Methods</a></li><li><a href="#implementations">Trait Implementations</a></li></ul></div><p class='location'><a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a></p><script>window.sidebarCurrent = {name: 'CompressSettings', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
     </nav>
 
-    <section id='main' class="content struct">
-<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class='struct' href=''>CompressSettings</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-1154' class='srclink' href='../../src/lodepng/lib.rs.html#409-442' title='goto source code'>[src]</a></span></h1>
-<pre class='rust struct'>pub struct CompressSettings {
-    pub btype: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub use_lz77: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub windowsize: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub minmatch: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub nicematch: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub lazymatching: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>,
-    pub custom_zlib: <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt; extern "C" fn(arg1: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a></a></a>, arg2: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a></a>, arg3: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a></a>, arg4: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a>, arg5: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a></a>) -&gt; <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>&gt;,
-    pub custom_deflate: <a class='enum' href='http://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt; extern "C" fn(arg1: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a></a></a>, arg2: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*mut <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a></a>, arg3: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uchar.html' title='libc::types::os::arch::c95::c_uchar'>c_uchar</a></a>, arg4: <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.size_t.html' title='libc::types::os::arch::c95::size_t'>size_t</a>, arg5: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a></a>) -&gt; <a class='type' href='http://doc.rust-lang.org/nightly/libc/types/os/arch/c95/type.c_uint.html' title='libc::types::os::arch::c95::c_uint'>c_uint</a>&gt;,
-    pub custom_context: <a href='http://doc.rust-lang.org/nightly/std/primitive.pointer.html'>*const <a class='enum' href='http://doc.rust-lang.org/nightly/libc/types/common/c95/enum.c_void.html' title='libc::types::common::c95::c_void'>c_void</a></a>,
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>lodepng</a>::<wbr><a href='index.html'>ffi</a>::<wbr><a class="struct" href=''>CompressSettings</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/lodepng/ffi.rs.html#126-147' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'><div class="docblock attributes">#[repr(C)]
+</div>pub struct CompressSettings {
+    pub btype: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub use_lz77: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub windowsize: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub minmatch: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub nicematch: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub lazymatching: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a>,
+    pub custom_zlib: <a class="type" href="../../lodepng/ffi/type.custom_compress_callback.html" title="type lodepng::ffi::custom_compress_callback">custom_compress_callback</a>,
+    pub custom_deflate: <a class="type" href="../../lodepng/ffi/type.custom_compress_callback.html" title="type lodepng::ffi::custom_compress_callback">custom_compress_callback</a>,
+    pub custom_context: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.pointer.html">*const </a><a class="enum" href="https://doc.rust-lang.org/nightly/std/os/raw/enum.c_void.html" title="enum std::os::raw::c_void">c_void</a>,
 }</pre><div class='docblock'><p>Settings for zlib compression. Tweaking these settings tweaks the balance between speed and compression ratio.</p>
-</div><h2 class='fields'>Fields</h2>
-<table><tr class='stab '>
-                                  <td id='structfield.btype'><code>btype</code></td><td><div class='docblock'><p>the block type for LZ (0, 1, 2 or 3, see zlib standard). Should be 2 for proper compression.</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.use_lz77'><code>use_lz77</code></td><td><div class='docblock'><p>whether or not to use LZ77. Should be 1 for proper compression.</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.windowsize'><code>windowsize</code></td><td><div class='docblock'><p>must be a power of two &lt;= 32768. higher compresses more but is slower. Typical value: 2048.</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.minmatch'><code>minmatch</code></td><td><div class='docblock'><p>mininum lz77 length. 3 is normally best, 6 can be better for some PNGs. Default: 0</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.nicematch'><code>nicematch</code></td><td><div class='docblock'><p>stop searching if &gt;= this length found. Set to 258 for best compression. Default: 128</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.lazymatching'><code>lazymatching</code></td><td><div class='docblock'><p>use lazy matching: better compression but a bit slower. Default: true</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.custom_zlib'><code>custom_zlib</code></td><td><div class='docblock'><p>use custom zlib encoder instead of built in one (default: None)</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.custom_deflate'><code>custom_deflate</code></td><td><div class='docblock'><p>use custom deflate encoder instead of built in one (default: null)
+</div><h2 id='fields' class='fields small-section-header'>
+                       Fields<a href='#fields' class='anchor'></a></h2><span id="structfield.btype" class="structfield small-section-header">
+                           <a href="#structfield.btype" class="anchor field"></a>
+                           <span id="btype.v" class='invisible'>
+                           <code>btype: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>the block type for LZ (0, 1, 2 or 3, see zlib standard). Should be 2 for proper compression.</p>
+</div><span id="structfield.use_lz77" class="structfield small-section-header">
+                           <a href="#structfield.use_lz77" class="anchor field"></a>
+                           <span id="use_lz77.v" class='invisible'>
+                           <code>use_lz77: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>whether or not to use LZ77. Should be 1 for proper compression.</p>
+</div><span id="structfield.windowsize" class="structfield small-section-header">
+                           <a href="#structfield.windowsize" class="anchor field"></a>
+                           <span id="windowsize.v" class='invisible'>
+                           <code>windowsize: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>must be a power of two &lt;= 32768. higher compresses more but is slower. Typical value: 2048.</p>
+</div><span id="structfield.minmatch" class="structfield small-section-header">
+                           <a href="#structfield.minmatch" class="anchor field"></a>
+                           <span id="minmatch.v" class='invisible'>
+                           <code>minmatch: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>mininum lz77 length. 3 is normally best, 6 can be better for some PNGs. Default: 0</p>
+</div><span id="structfield.nicematch" class="structfield small-section-header">
+                           <a href="#structfield.nicematch" class="anchor field"></a>
+                           <span id="nicematch.v" class='invisible'>
+                           <code>nicematch: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>stop searching if &gt;= this length found. Set to 258 for best compression. Default: 128</p>
+</div><span id="structfield.lazymatching" class="structfield small-section-header">
+                           <a href="#structfield.lazymatching" class="anchor field"></a>
+                           <span id="lazymatching.v" class='invisible'>
+                           <code>lazymatching: <a class="type" href="https://doc.rust-lang.org/nightly/std/os/raw/type.c_uint.html" title="type std::os::raw::c_uint">c_uint</a></code>
+                           </span></span><div class='docblock'><p>use lazy matching: better compression but a bit slower. Default: true</p>
+</div><span id="structfield.custom_zlib" class="structfield small-section-header">
+                           <a href="#structfield.custom_zlib" class="anchor field"></a>
+                           <span id="custom_zlib.v" class='invisible'>
+                           <code>custom_zlib: <a class="type" href="../../lodepng/ffi/type.custom_compress_callback.html" title="type lodepng::ffi::custom_compress_callback">custom_compress_callback</a></code>
+                           </span></span><div class='docblock'><p>use custom zlib encoder instead of built in one (default: None)</p>
+</div><span id="structfield.custom_deflate" class="structfield small-section-header">
+                           <a href="#structfield.custom_deflate" class="anchor field"></a>
+                           <span id="custom_deflate.v" class='invisible'>
+                           <code>custom_deflate: <a class="type" href="../../lodepng/ffi/type.custom_compress_callback.html" title="type lodepng::ffi::custom_compress_callback">custom_compress_callback</a></code>
+                           </span></span><div class='docblock'><p>use custom deflate encoder instead of built in one (default: null)
 if custom_zlib is used, custom_deflate is ignored since only the built in
 zlib function will call custom_deflate</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.custom_context'><code>custom_context</code></td><td><div class='docblock'><p>optional custom settings for custom functions</p>
-</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class='struct' href='../../lodepng/ffi/struct.CompressSettings.html' title='lodepng::ffi::CompressSettings'>CompressSettings</a></code></h4>
+</div><span id="structfield.custom_context" class="structfield small-section-header">
+                           <a href="#structfield.custom_context" class="anchor field"></a>
+                           <span id="custom_context.v" class='invisible'>
+                           <code>custom_context: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.pointer.html">*const </a><a class="enum" href="https://doc.rust-lang.org/nightly/std/os/raw/enum.c_void.html" title="enum std::os::raw::c_void">c_void</a></code>
+                           </span></span><div class='docblock'><p>optional custom settings for custom functions</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../lodepng/ffi/struct.CompressSettings.html" title="struct lodepng::ffi::CompressSettings">CompressSettings</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#914-919' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class="struct" href="../../lodepng/ffi/struct.CompressSettings.html" title="struct lodepng::ffi::CompressSettings">CompressSettings</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#916-918' title='goto source code'>[src]</a></span></h4>
 <div class='docblock'><p>Default compression settings</p>
+</div></div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Clone' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="../../lodepng/ffi/struct.CompressSettings.html" title="struct lodepng::ffi::CompressSettings">CompressSettings</a></code><a href='#impl-Clone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/ffi.rs.html#125' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class="method"><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class="struct" href="../../lodepng/ffi/struct.CompressSettings.html" title="struct lodepng::ffi::CompressSettings">CompressSettings</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/ffi.rs.html#125' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class="method"><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/clone.rs.html#112-114' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div><h3 id='impl-Sync' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html" title="trait core::marker::Sync">Sync</a> for <a class="struct" href="../../lodepng/ffi/struct.CompressSettings.html" title="struct lodepng::ffi::CompressSettings">CompressSettings</a></code><a href='#impl-Sync' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/rustimpl.rs.html#3789' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'></div><h3 id='impl-Default' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html" title="trait core::default::Default">Default</a> for <a class="struct" href="../../lodepng/ffi/struct.CompressSettings.html" title="struct lodepng::ffi::CompressSettings">CompressSettings</a></code><a href='#impl-Default' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#921-935' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.default' class="method"><span id='default.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default' class='fnname'>default</a>() -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/lodepng/lib.rs.html#922-934' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns the &quot;default value&quot; for a type. <a href="https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default">Read more</a></p>
 </div></div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
     <script>
         window.rootPath = "../../";
         window.currentCrate = "lodepng";
-        window.playgroundUrl = "";
     </script>
-    <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
-    
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>
