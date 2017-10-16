@@ -7,16 +7,19 @@ extern crate rgb;
 #[allow(non_camel_case_types)]
 pub mod ffi;
 
+mod error;
+pub use error::*;
+mod iter;
+use iter::*;
+
 pub use rgb::RGB;
-pub use rgb::RGBA;
+pub use rgb::RGBA8 as RGBA;
 
 use std::os::raw::c_uint;
 use std::fmt;
 use std::mem;
 use std::ptr;
 use std::cmp;
-use std::error;
-use std::io;
 use std::fs::File;
 use std::io::Write;
 use std::io::Read;
@@ -26,7 +29,7 @@ use std::os::raw::c_void;
 
 pub use ffi::ColorType;
 pub use ffi::CompressSettings;
-use ffi::DecompressSettings;
+pub use ffi::DecompressSettings;
 pub use ffi::Time;
 pub use ffi::DecoderSettings;
 pub use ffi::FilterStrategy;
@@ -55,6 +58,7 @@ impl ColorMode {
         self.colortype
     }
 
+    #[inline]
     pub fn bitdepth(&self) -> u32 {
         self.bitdepth
     }
@@ -71,19 +75,19 @@ impl ColorMode {
     }
 
     /// add 1 color to the palette
-    pub fn palette_add(&mut self, rgba: RGBA<u8>) -> Result<(), Error> {
+    pub fn palette_add(&mut self, rgba: RGBA) -> Result<(), Error> {
         unsafe {
             ffi::lodepng_palette_add(self, rgba.r, rgba.g, rgba.b, rgba.a).into()
         }
     }
 
-    pub fn palette(&self) -> &[RGBA<u8>] {
+    pub fn palette(&self) -> &[RGBA] {
         unsafe {
             std::slice::from_raw_parts(self.palette, self.palettesize)
         }
     }
 
-    pub fn palette_mut(&mut self) -> &mut [RGBA<u8>] {
+    pub fn palette_mut(&mut self) -> &mut [RGBA] {
         unsafe {
             std::slice::from_raw_parts_mut(self.palette as *mut _, self.palettesize)
         }
@@ -141,7 +145,7 @@ impl ColorMode {
     pub fn can_have_alpha(&self) -> bool {
         unsafe {
             ffi::lodepng_can_have_alpha(self) != 0
-        }
+    }
     }
 
     /// Returns the byte size of a raw image buffer with given width, height and color mode
@@ -178,9 +182,43 @@ impl ColorType {
             }
         }
     }
+
+    pub fn channels(&self) -> u8 {
+        match *self {
+            ColorType::GREY | ColorType::PALETTE => 1,
+            ColorType::GREY_ALPHA => 2,
+            ColorType::RGB => 3,
+            ColorType::RGBA => 4,
+        }
+    }
+}
+
+impl Time {
+    pub fn new() -> Self {
+        Self::default()
+    }
 }
 
 impl Info {
+    pub fn text_keys_cstr(&self) -> TextKeysCStrIter {
+        TextKeysCStrIter {
+            k: self.text_keys,
+            v: self.text_strings,
+            n: self.text_num,
+            _p: PhantomData,
+        }
+    }
+
+    pub fn itext_keys(&self) -> ITextKeysIter {
+        ITextKeysIter {
+            k: self.itext_keys,
+            l: self.itext_langtags,
+            t: self.itext_transkeys,
+            s: self.itext_strings,
+            n: self.itext_num,
+            _p: PhantomData,
+        }
+    }
 
     /// use this to clear the texts again after you filled them in
     pub fn clear_text(&mut self) {
@@ -210,7 +248,7 @@ impl Info {
         }
     }
 
-    pub fn append_chunk(&mut self, position: ChunkPosition, chunk: &Chunk) -> Result<(), Error> {
+    pub fn append_chunk(&mut self, position: ChunkPosition, chunk: ChunkRef) -> Result<(), Error> {
         unsafe {
             ffi::lodepng_chunk_append(&mut self.unknown_chunks_data[position as usize], &mut self.unknown_chunks_size[position as usize],
                 chunk.data).to_result()
@@ -220,7 +258,7 @@ impl Info {
     pub fn create_chunk<C: AsRef<[u8]>>(&mut self, position: ChunkPosition, chtype: C, data: &[u8]) -> Result<(), Error> {
         let chtype = chtype.as_ref();
         if chtype.len() != 4 {
-            return Error(67).into();
+            return Err(Error(67));
         }
         unsafe {
             ffi::lodepng_chunk_create(&mut self.unknown_chunks_data[position as usize], &mut self.unknown_chunks_size[position as usize],
@@ -228,7 +266,7 @@ impl Info {
         }
     }
 
-    pub fn get<Name: AsRef<[u8]>>(&self, index: Name) -> Option<Chunk> {
+    pub fn get<Name: AsRef<[u8]>>(&self, index: Name) -> Option<ChunkRef> {
         let index = index.as_ref();
         self.unknown_chunks(ChunkPosition::IHDR)
             .chain(self.unknown_chunks(ChunkPosition::PLTE))
@@ -236,41 +274,12 @@ impl Info {
             .find(|c| c.is_type(index))
     }
 
-    pub fn unknown_chunks(&self, position: ChunkPosition) -> Chunks {
-        Chunks {
+    pub fn unknown_chunks(&self, position: ChunkPosition) -> ChunksIter {
+        ChunksIter {
             data: self.unknown_chunks_data[position as usize],
             len: self.unknown_chunks_size[position as usize],
             _ref: PhantomData,
         }
-    }
-}
-
-pub struct Chunks<'a> {
-    data: *mut u8,
-    len: usize,
-    _ref: PhantomData<&'a u8>,
-}
-
-impl<'a> Iterator for Chunks<'a> {
-    type Item = Chunk<'a>;
-    fn next(&mut self) -> Option<Self::Item> {
-        let chunk_header_len = 12;
-        if self.data.is_null() || self.len < chunk_header_len {
-            return None;
-        }
-
-        let c = Chunk { data: self.data, _ref: PhantomData };
-        let l = chunk_header_len + c.len();
-        if self.len < l {
-            return None;
-        }
-
-        self.len -= l;
-        unsafe {
-            self.data = ffi::lodepng_chunk_next(self.data);
-        }
-
-        return Some(c);
     }
 }
 
@@ -384,8 +393,8 @@ impl State {
         }
     }
 
-    pub fn decode_file<P: AsRef<Path>>(&mut self, filepath: P) -> Result<::Image, Error> {
-        self.decode(&try!(::load_file(filepath)))
+    pub fn decode_file<P: AsRef<Path>>(&mut self, filepath: P) -> Result<Image, Error> {
+        self.decode(&load_file(filepath)?)
     }
 
     /// Returns (width, height)
@@ -413,8 +422,8 @@ impl State {
     }
 
     pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
-        let buf = try!(self.encode(image, w, h));
-        ::save_file(filepath, buf.as_ref())
+        let buf = self.encode(image, w, h)?;
+        save_file(filepath, buf.as_ref())
     }
 }
 
@@ -468,62 +477,10 @@ pub enum Image {
     Grey16(Bitmap<Grey<u16>>),
     GreyAlpha(Bitmap<GreyAlpha<u8>>),
     GreyAlpha16(Bitmap<GreyAlpha<u16>>),
-    RGBA(Bitmap<RGBA<u8>>),
+    RGBA(Bitmap<RGBA>),
     RGB(Bitmap<RGB<u8>>),
-    RGBA16(Bitmap<RGBA<u16>>),
+    RGBA16(Bitmap<rgb::RGBA<u16>>),
     RGB16(Bitmap<RGB<u16>>),
-}
-
-impl Error {
-    /// Returns an English description of the numerical error code.
-    pub fn as_str(&self) -> &'static str {
-        unsafe {
-            let cstr = std::ffi::CStr::from_ptr(ffi::lodepng_error_text(self.0) as *const _);
-            std::str::from_utf8(cstr.to_bytes()).unwrap()
-        }
-    }
-
-    /// Helper function for the library
-    pub fn to_result(self) -> Result<(), Error> {
-        match self {
-            Error(0) => Ok(()),
-            err => Err(err),
-        }
-    }
-}
-
-impl From<Error> for Result<(), Error> {
-    fn from(err: Error) -> Self {
-        err.to_result()
-    }
-}
-
-impl fmt::Debug for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} ({})", self.as_str(), self.0)
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.as_str())
-    }
-}
-
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        self.as_str()
-    }
-}
-
-#[doc(hidden)]
-impl std::convert::From<io::Error> for Error {
-    fn from(err: io::Error) -> Error {
-        match err.kind() {
-            io::ErrorKind::NotFound | io::ErrorKind::UnexpectedEof => {Error(78)}
-            _ => {Error(79)}
-        }
-    }
 }
 
 /// Position in the file section after…
@@ -535,7 +492,8 @@ pub enum ChunkPosition {
 }
 
 /// Reference to a chunk
-pub struct Chunk<'a> {
+#[derive(Copy, Clone)]
+pub struct ChunkRef<'a> {
     data: *mut u8,
     _ref: PhantomData<&'a [u8]>,
 }
@@ -599,15 +557,15 @@ unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bit
 }
 
 fn save_file<P: AsRef<Path>>(filepath: P, data: &[u8]) -> Result<(), Error> {
-    let mut file = try!(File::create(filepath));
-    try!(file.write_all(data));
-    return Ok(());
+    let mut file = File::create(filepath)?;
+    file.write_all(data)?;
+    Ok(())
 }
 
 fn load_file<P: AsRef<Path>>(filepath: P) -> Result<Vec<u8>, Error> {
-    let mut file = try!(File::open(filepath));
+    let mut file = File::open(filepath)?;
     let mut data = Vec::new();
-    try!(file.read_to_end(&mut data));
+    file.read_to_end(&mut data)?;
     Ok(data)
 }
 
@@ -615,7 +573,7 @@ fn load_file<P: AsRef<Path>>(filepath: P) -> Result<Vec<u8>, Error> {
 ///
 /// `decode32` and `decode24` are more convenient if you want specific image format.
 ///
-/// See `ffi::State::decode()` for advanced decoding.
+/// See `State::decode()` for advanced decoding.
 ///
 /// * `in`: Memory buffer with the PNG file.
 /// * `colortype`: the desired color type for the raw output image. See `ColorType`.
@@ -634,8 +592,8 @@ pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bit
 }
 
 /// Same as `decode_memory`, but always decodes to 32-bit RGBA raw image
-pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA<u8>>, Error> {
-    match try!(decode_memory(input, ColorType::RGBA, 8)) {
+pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA>, Error> {
+    match decode_memory(input, ColorType::RGBA, 8)? {
         Image::RGBA(img) => Ok(img),
         _ => Err(Error(56)), // given output image colortype or bitdepth not supported for color conversion
     }
@@ -643,7 +601,7 @@ pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA<u8>>, Er
 
 /// Same as `decode_memory`, but always decodes to 24-bit RGB raw image
 pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Error> {
-    match try!(decode_memory(input, ColorType::RGB, 8)) {
+    match decode_memory(input, ColorType::RGB, 8)? {
         Image::RGB(img) => Ok(img),
         _ => Err(Error(56)),
     }
@@ -654,7 +612,7 @@ pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Err
 ///
 /// `decode32_file` and `decode24_file` are more convenient if you want specific image format.
 ///
-/// There's also `ffi::State::decode()` if you'd like to set more settings.
+/// There's also `State::decode()` if you'd like to set more settings.
 ///
 ///  ```no_run
 ///  # use lodepng::*; let filepath = std::path::Path::new("");
@@ -667,12 +625,12 @@ pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Err
 ///  }
 ///  ```
 pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
-    return decode_memory(&try!(::load_file(filepath)), colortype, bitdepth);
+    return decode_memory(&load_file(filepath)?, colortype, bitdepth);
 }
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
-pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA<u8>>, Error> {
-    match try!(decode_file(filepath, ColorType::RGBA, 8)) {
+pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA>, Error> {
+    match decode_file(filepath, ColorType::RGBA, 8)? {
         Image::RGBA(img) => Ok(img),
         _ => Err(Error(56)),
     }
@@ -680,7 +638,7 @@ pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA<u8>>, Er
 
 /// Same as `decode_file`, but always decodes to 24-bit RGB raw image
 pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Error> {
-    match try!(decode_file(filepath, ColorType::RGB, 8)) {
+    match decode_file(filepath, ColorType::RGB, 8)? {
         Image::RGB(img) => Ok(img),
         _ => Err(Error(56)),
     }
@@ -743,7 +701,7 @@ pub fn encode24<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Res
 ///
 /// NOTE: This overwrites existing files without warning!
 pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
-    let encoded = try!(encode_memory(image, w, h, colortype, bitdepth));
+    let encoded = encode_memory(image, w, h, colortype, bitdepth)?;
     save_file(filepath, encoded.as_ref())
 }
 
@@ -755,18 +713,6 @@ pub fn encode32_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[Pixe
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
 pub fn encode24_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGB, 8)
-}
-
-/// Converts from any color type to 24-bit or 32-bit (only)
-#[doc(hidden)]
-pub fn convert<PixelType: Copy>(input: &[PixelType], mode_out: &mut ColorMode, mode_in: &ColorMode, w: usize, h: usize) -> Result<Image, Error> {
-    unsafe {
-        let out = mem::zeroed();
-        try!(with_buffer_for_type(input, w, h, mode_in.colortype(), mode_in.bitdepth(), |ptr| {
-            ffi::lodepng_convert(out, ptr, mode_out, mode_in, w as c_uint, h as c_uint)
-        }).into());
-        Ok(new_bitmap(out, w, h, mode_out.colortype(), mode_out.bitdepth()))
-    }
 }
 
 /// Automatically chooses color type that gives smallest amount of bits in the
@@ -784,11 +730,11 @@ pub fn auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: usize, h
     }
 }
 
-impl<'a> Chunk<'a> {
+impl<'a> ChunkRef<'a> {
     pub fn len(&self) -> usize {
         unsafe {
             ffi::lodepng_chunk_length(self.data) as usize
-        }
+    }
     }
 
     pub fn name(&self) -> [u8; 4] {
@@ -843,7 +789,7 @@ impl<'a> Chunk<'a> {
     pub fn check_crc(&self) -> bool {
         unsafe {
             ffi::lodepng_chunk_check_crc(&*self.data) == 0
-        }
+    }
     }
 
     #[deprecated(note = "unsound")]
@@ -947,7 +893,7 @@ mod test {
 
     #[test]
     fn pixel_sizes() {
-        assert_eq!(4, mem::size_of::<RGBA<u8>>());
+        assert_eq!(4, mem::size_of::<RGBA>());
         assert_eq!(3, mem::size_of::<RGB<u8>>());
         assert_eq!(2, mem::size_of::<GreyAlpha<u8>>());
         assert_eq!(1, mem::size_of::<Grey<u8>>());

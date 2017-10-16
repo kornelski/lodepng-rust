@@ -1,6 +1,5 @@
 
 use std::os::raw::{c_char, c_uchar, c_uint, c_void};
-use std::ptr;
 
 #[repr(C)]
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -43,7 +42,7 @@ pub struct ColorMode {
     /// fills the palette colors in the pixels of the raw RGBA output.
     ///
     /// The palette is only supported for color type 3.
-    pub(crate) palette: *mut ::RGBA<u8>,
+    pub(crate) palette: *mut ::RGBA,
     /// palette size in number of colors (amount of bytes is 4 * `palettesize`)
     pub(crate) palettesize: usize,
 
@@ -277,7 +276,7 @@ pub struct ColorProfile {
     /// amount of colors, up to 257. Not valid if bits == 16.
     pub numcolors: c_uint,
     /// Remembers up to the first 256 RGBA colors, in no particular order
-    pub palette: [::RGBA<u8>; 256],
+    pub palette: [::RGBA; 256],
     /// bits per channel (not for palette). 1,2 or 4 for greyscale only. 16 if 16-bit per channel required.
     pub bits: c_uint,
 }
