@@ -10,7 +10,7 @@ To do so, add this to your `Cargo.toml`:
 lodepng = "2.0.0"
 ```
 
-See [API reference](https://docs.rs/lodepng/) for details.
+See [API reference](https://docs.rs/lodepng/) for details. Requires Rust 1.21 or later.
 
 ### Loading image example
 
