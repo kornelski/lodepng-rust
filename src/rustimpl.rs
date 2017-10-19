@@ -3698,12 +3698,11 @@ fn encodeLZ77(
                     backptr += skip;
                     foreptr += skip;
                 }
-                /*maximum supported length by deflate is max length*/
-                while foreptr != lastptr && in_[backptr as usize] == in_[foreptr as usize] {
-                    backptr += 1; /*the longest length*/
-                    foreptr += 1; /*the offset that is related to this longest length*/
-                    current_length += 1;
-                }
+                /* maximum supported length by deflate is max length */
+                let current_length = in_[backptr as usize..].iter().cloned()
+                        .zip(in_[foreptr as usize..lastptr as usize].iter().cloned())
+                        .take_while(|&(a,b)| a == b)
+                        .count() as u32;
                 if current_length > length {
                     length = current_length;
                     offset = current_offset;
