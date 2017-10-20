@@ -434,15 +434,8 @@ impl Clone for Info {
 
 impl State {
     pub fn new() -> Self {
-        Self {
-            decoder: DecoderSettings::new(),
-            encoder: EncoderSettings::new(),
-            info_raw: ColorMode::new(),
-            info_png: Info::new(),
-            error: Error(1),
-        }
+        Self::default()
     }
-
 
     pub fn set_auto_convert(&mut self, mode: bool) {
         self.encoder.auto_convert = mode as c_uint;
@@ -557,6 +550,18 @@ impl State {
     pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = self.encode(image, w, h)?;
         save_file(filepath, buf.as_ref())
+    }
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            decoder: DecoderSettings::new(),
+            encoder: EncoderSettings::new(),
+            info_raw: ColorMode::new(),
+            info_png: Info::new(),
+            error: Error(1),
+        }
     }
 }
 
