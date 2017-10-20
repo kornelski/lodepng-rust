@@ -240,7 +240,7 @@ fn boundary_pm(lists: &mut BPMLists, leaves: &[BPMNode], c: usize, num: usize) {
             lists.chains1[c] = BPMNode::new(w, lastindex as u32 + 1, t);
             return;
         }
-        let t = lists.chains1[c - 1].clone();
+        let t = Rc::clone(&lists.chains1[c - 1]);
         mem::swap(&mut lists.chains0[c], &mut lists.chains1[c]);
         lists.chains1[c] = BPMNode::new(sum, lastindex as u32, Some(t));
         /*in the end we are only interested in the chain of the last list, so no

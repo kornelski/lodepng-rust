@@ -457,19 +457,19 @@ impl State {
     }
 
     pub fn info_raw(&self) -> &ColorMode {
-        return &self.info_raw;
+        &self.info_raw
     }
 
     pub fn info_raw_mut(&mut self) -> &mut ColorMode {
-        return &mut self.info_raw;
+        &mut self.info_raw
     }
 
     pub fn info_png(&self) -> &Info {
-        return &self.info_png;
+        &self.info_png
     }
 
     pub fn info_png_mut(&mut self) -> &mut Info {
-        return &mut self.info_png;
+        &mut self.info_png
     }
 
     /// whether to convert the PNG to the color type you want. Default: yes
@@ -507,7 +507,7 @@ impl State {
                 return zlib_decompress(&iccp[i+2 ..], &self.decoder.zlibsettings);
             }
         }
-        return Err(Error(75));
+        Err(Error(75))
     }
 
     /// Load PNG from buffer using State's settings
@@ -741,7 +741,7 @@ pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Err
 ///  }
 ///  ```
 pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
-    return decode_memory(&load_file(filepath)?, colortype, bitdepth);
+    decode_memory(&load_file(filepath)?, colortype, bitdepth)
 }
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
@@ -853,7 +853,7 @@ impl<'a> ChunkRef<'a> {
 
         let mut tmp2 = [0; 4];
         tmp2.copy_from_slice(&tmp[0..4]);
-        return tmp2;
+        tmp2
     }
 
     pub fn is_type<C: AsRef<[u8]>>(&self, name: C) -> bool {

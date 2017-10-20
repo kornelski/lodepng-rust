@@ -310,7 +310,7 @@ pub struct State {
 }
 
 /// Gives characteristics about the colors of the image, which helps decide which color model to use for encoding.
-/// Used internally by default if "auto_convert" is enabled. Public because it's useful for custom algorithms.
+/// Used internally by default if `auto_convert` is enabled. Public because it's useful for custom algorithms.
 #[repr(C)]
 pub struct ColorProfile {
     /// not greyscale

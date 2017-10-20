@@ -46,7 +46,7 @@ impl ucvector {
         let start_offset = self.size;
         let new_length = start_offset.checked_add(data.len()).ok_or(Error(77))?;
         self.resize(new_length)?;
-        self.slice_mut()[start_offset..start_offset + data.len()].clone_from_slice(&data);
+        self.slice_mut()[start_offset..start_offset + data.len()].clone_from_slice(data);
         Ok(())
     }
 

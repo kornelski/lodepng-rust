@@ -12,7 +12,7 @@ fn main() {
         Ok(image) => match image {
             lodepng::Image::RGBA(bitmap) => {
                 println!("Decoded image {} x {}", bitmap.width, bitmap.height);
-                println!("The first pixel is {}", bitmap.buffer.get(0).unwrap());
+                println!("The first pixel is {}", bitmap.buffer[0]);
                 println!("The raw bytes are {:?}", bitmap.buffer.as_bytes());
             },
             x => println!("Decoded some other image format {:?}", x),

@@ -3689,7 +3689,6 @@ fn encodeLZ77(
             if current_offset > 0 {
                 let mut foreptr = pos as u32; /*common case in PNGs is lots of zeros. Quickly skip over them as a speedup*/
                 let mut backptr = pos as u32 - current_offset;
-                let mut current_length = 0;
                 if numzeros >= 3 {
                     let mut skip = hash.zeros[hashpos as usize] as u32;
                     if skip > numzeros {

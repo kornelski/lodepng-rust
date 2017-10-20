@@ -92,6 +92,6 @@ impl<'a> Iterator for ChunksIter<'a> {
         }
         let c = ChunkRef::new(&self.data[0..len + header_len]);
         self.data = rustimpl::lodepng_chunk_next(self.data);
-        return Some(c);
+        Some(c)
     }
 }
