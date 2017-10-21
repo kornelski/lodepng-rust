@@ -514,7 +514,7 @@ impl State {
     ///
     ///  ```no_run
     ///  # use lodepng::*; let mut state = State::new();
-    ///  # let slice = [0u8]; #[allow(unused_variables)] fn do_stuff<T>(buf: T) {}
+    ///  # let slice = [0u8]; #[allow(unused_variables)] fn do_stuff<T>(_buf: T) {}
     ///
     ///  state.info_raw_mut().colortype = ColorType::RGBA;
     ///  match state.decode(&slice) {
@@ -732,7 +732,7 @@ pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Err
 ///
 ///  ```no_run
 ///  # use lodepng::*; let filepath = std::path::Path::new("");
-///  # fn do_stuff<T>(buf: T) {}
+///  # fn do_stuff<T>(_buf: T) {}
 ///
 ///  match decode_file(filepath, ColorType::RGBA, 8) {
 ///      Ok(Image::RGBA(with_alpha)) => do_stuff(with_alpha),
