@@ -847,17 +847,13 @@ impl<'a> ChunkRef<'a> {
     }
 
     pub fn name(&self) -> [u8; 4] {
-        let mut tmp = [0; 5];
-
-        rustimpl::lodepng_chunk_type(&mut tmp, self.data);
-
-        let mut tmp2 = [0; 4];
-        tmp2.copy_from_slice(&tmp[0..4]);
-        tmp2
+        let mut tmp = [0; 4];
+        tmp.copy_from_slice(rustimpl::lodepng_chunk_type(self.data));
+        tmp
     }
 
     pub fn is_type<C: AsRef<[u8]>>(&self, name: C) -> bool {
-        rustimpl::lodepng_chunk_type_equals(self.data, name.as_ref())
+        rustimpl::lodepng_chunk_type(self.data) == name.as_ref()
     }
 
     pub fn is_ancillary(&self) -> bool {

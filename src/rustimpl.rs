@@ -1567,16 +1567,8 @@ pub fn lodepng_chunk_length(chunk: &[u8]) -> usize {
     lodepng_read32bitInt(chunk) as usize
 }
 
-pub fn lodepng_chunk_type(type_: &mut [u8; 5], chunk: &[u8]) {
-    type_[0..4].clone_from_slice(&chunk[4..8]);
-    type_[4] = 0;
-}
-
-pub(crate) fn lodepng_chunk_type_equals(chunk: &[u8], ty: &[u8]) -> bool {
-    if ty.iter().any(|&t| t == 0) {
-        return false;
-    }
-    &chunk[4..8] == ty
+pub fn lodepng_chunk_type(chunk: &[u8]) -> &[u8] {
+    &chunk[4..8]
 }
 
 pub(crate) fn lodepng_chunk_data(chunk: &[u8]) -> Result<&[u8], Error> {
@@ -3001,7 +2993,7 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8]) -> Result<(Info, u
     }
     /*when decoding a new PNG image, make sure all parameters created after previous decoding are reset*/
     let mut info_png = Info::new();
-    if inp[0] != 137 || inp[1] != 80 || inp[2] != 78 || inp[3] != 71 || inp[4] != 13 || inp[5] != 10 || inp[6] != 26 || inp[7] != 10 {
+    if &inp[0..8] != &[137, 80, 78, 71, 13, 10, 26, 10] {
         /*error: the first 8 bytes are not the correct PNG signature*/
         return Err(Error(28));
     }
@@ -3009,7 +3001,7 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8]) -> Result<(Info, u
         /*error: header size must be 13 bytes*/
         return Err(Error(94));
     }
-    if !lodepng_chunk_type_equals(&inp[8..], b"IHDR") {
+    if lodepng_chunk_type(&inp[8..]) != b"IHDR" {
         /*error: it doesn't start with a IHDR chunk!*/
         return Err(Error(29));
     }
@@ -3083,46 +3075,49 @@ fn decodeGeneric(state: &mut State, inp: &[u8]) -> Result<(ucvector, usize, usiz
         }
         /*length of the data of the chunk, excluding the length bytes, chunk type and CRC bytes*/
         let data = lodepng_chunk_data(chunk)?;
-        if lodepng_chunk_type_equals(chunk, b"IDAT") {
-            idat.reserve(data.len());
-            for &d in data {
-                idat.push(d);
-            }
-            critical_pos = ChunkPosition::IDAT; /*palette transparency chunk (tRNS)*/
-        } else if lodepng_chunk_type_equals(chunk, b"IEND") {
-            IEND = 1u8; /*background color chunk (bKGD)*/
-        } else if lodepng_chunk_type_equals(chunk, b"PLTE") {
-            readChunk_PLTE(&mut state.info_png.color, data)?; /*text chunk (tEXt)*/
-            critical_pos = ChunkPosition::PLTE;
-        } else if lodepng_chunk_type_equals(chunk, b"tRNS") {
-            readChunk_tRNS(&mut state.info_png.color, data)?; /*it's not an implemented chunk type, so ignore it: skip over the data*/
-        } else if lodepng_chunk_type_equals(chunk, b"bKGD") {
-            readChunk_bKGD(&mut state.info_png, data)?; /*check CRC if wanted, only on known chunk types*/
-        } else if lodepng_chunk_type_equals(chunk, b"tEXt") {
-            if state.decoder.read_text_chunks != 0 {
+        match lodepng_chunk_type(chunk) {
+            b"IDAT" => {
+                idat.extend_from_slice(data);
+                critical_pos = ChunkPosition::IDAT;
+            },
+            b"IEND" => {
+                IEND = 1u8;
+            },
+            b"PLTE" => {
+                readChunk_PLTE(&mut state.info_png.color, data)?;
+                critical_pos = ChunkPosition::PLTE;
+            },
+            b"tRNS" => {
+                readChunk_tRNS(&mut state.info_png.color, data)?;
+            },
+            b"bKGD" => {
+                readChunk_bKGD(&mut state.info_png, data)?;
+            },
+            b"tEXt" => if state.decoder.read_text_chunks != 0 {
                 readChunk_tEXt(&mut state.info_png, data)?;
-            };
-        } else if lodepng_chunk_type_equals(chunk, b"zTXt") {
-            if state.decoder.read_text_chunks != 0 {
+            },
+            b"zTXt" => if state.decoder.read_text_chunks != 0 {
                 readChunk_zTXt(&mut state.info_png, &state.decoder.zlibsettings, data)?;
-            };
-        } else if lodepng_chunk_type_equals(chunk, b"iTXt") {
-            if state.decoder.read_text_chunks != 0 {
+            },
+            b"iTXt" => if state.decoder.read_text_chunks != 0 {
                 readChunk_iTXt(&mut state.info_png, &state.decoder.zlibsettings, data)?;
-            };
-        } else if lodepng_chunk_type_equals(chunk, b"tIME") {
-            readChunk_tIME(&mut state.info_png, data)?;
-        } else if lodepng_chunk_type_equals(chunk, b"pHYs") {
-            readChunk_pHYs(&mut state.info_png, data)?;
-        } else {
-            if !lodepng_chunk_ancillary(chunk) {
-                return Err(Error(69));
-            }
-            unknown = true;
-            if state.decoder.remember_unknown_chunks != 0 {
-                state.info_png.push_unknown_chunk(critical_pos, chunk)?;
-            }
-        }
+            },
+            b"tIME" => {
+                readChunk_tIME(&mut state.info_png, data)?;
+            },
+            b"pHYs" => {
+                readChunk_pHYs(&mut state.info_png, data)?;
+            },
+            _ => {
+                if !lodepng_chunk_ancillary(chunk) {
+                    return Err(Error(69));
+                }
+                unknown = true;
+                if state.decoder.remember_unknown_chunks != 0 {
+                    state.info_png.push_unknown_chunk(critical_pos, chunk)?;
+                }
+            },
+        };
         if state.decoder.ignore_crc == 0 && !unknown && !lodepng_chunk_check_crc(chunk) {
             return Err(Error(57));
         }
@@ -3132,14 +3127,13 @@ fn decodeGeneric(state: &mut State, inp: &[u8]) -> Result<(ucvector, usize, usiz
     }
     /*predict output size, to allocate exact size for output buffer to avoid more dynamic allocation.
       If the decompressed size does not match the prediction, the image must be corrupt.*/
-    let mut predict;
-    if state.info_png.interlace_method == 0 {
+    let predict = if state.info_png.interlace_method == 0 {
         /*The extra *h is added because this are the filter bytes every scanline starts with*/
-        predict = state.info_png.color.raw_size_idat(w, h) + h; /*Adam-7 interlaced: predicted size is the sum of the 7 sub-images sizes*/
+        state.info_png.color.raw_size_idat(w, h) + h
     } else {
+        /*Adam-7 interlaced: predicted size is the sum of the 7 sub-images sizes*/
         let color = &state.info_png.color;
-        predict = 0;
-        predict += color.raw_size_idat((w + 7) >> 3, (h + 7) >> 3) + ((h + 7) >> 3) as usize;
+        let mut predict = color.raw_size_idat((w + 7) >> 3, (h + 7) >> 3) + ((h + 7) >> 3) as usize;
         if w > 4 {
             predict += color.raw_size_idat((w + 3) >> 3, (h + 7) >> 3) + ((h + 7) >> 3) as usize;
         }
@@ -3152,12 +3146,13 @@ fn decodeGeneric(state: &mut State, inp: &[u8]) -> Result<(ucvector, usize, usiz
             predict += color.raw_size_idat((w + 0) >> 1, (h + 1) >> 1) + ((h + 1) >> 1) as usize;
         }
         predict += color.raw_size_idat((w + 0), (h + 0) >> 1) + ((h + 0) >> 1) as usize;
-    }
+        predict
+    };
     let mut scanlines = zlib_decompress(&idat, &state.decoder.zlibsettings)?;
     if scanlines.len() != predict {
+        /*decompressed size doesn't match prediction*/
         return Err(Error(91));
     }
-    /*decompressed size doesn't match prediction*/
     let mut out = ucvector::new();
     out.resize(state.info_png.color.raw_size(w as u32, h as u32))?;
     for i in out.slice_mut() {

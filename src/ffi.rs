@@ -503,12 +503,17 @@ pub unsafe extern "C" fn lodepng_chunk_length(chunk: *const u8) -> c_uint {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_type(type_: &mut [u8; 5], chunk: *const u8) {
-    rustimpl::lodepng_chunk_type(type_, slice::from_raw_parts(chunk, 8))
+    let t = rustimpl::lodepng_chunk_type(slice::from_raw_parts(chunk, 8));
+    type_[0..4].clone_from_slice(t);
+    type_[4] = 0;
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_chunk_type_equals(chunk: *const u8, type_: &mut [u8; 4]) -> u8 {
-    rustimpl::lodepng_chunk_type_equals(slice::from_raw_parts(chunk, 8), type_) as u8
+pub unsafe extern "C" fn lodepng_chunk_type_equals(chunk: *const u8, ty: &mut [u8; 4]) -> u8 {
+    if ty.iter().any(|&t| t == 0) {
+        return 0;
+    }
+    (ty == rustimpl::lodepng_chunk_type(slice::from_raw_parts(chunk, 8))) as u8
 }
 
 #[no_mangle]
