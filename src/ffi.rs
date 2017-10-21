@@ -445,7 +445,9 @@ pub unsafe extern "C" fn lodepng_get_raw_size_lct(w: c_uint, h: c_uint, colortyp
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_huffman_code_lengths(lengths: *mut c_uint, frequencies: *const c_uint, numcodes: usize, maxbitlen: c_uint) -> Error {
-    lode_error!(huffman::huffman_code_lengths(slice::from_raw_parts_mut(lengths, numcodes), slice::from_raw_parts(frequencies, numcodes), maxbitlen))
+    let l = lode_try!(huffman::huffman_code_lengths(slice::from_raw_parts(frequencies, numcodes), maxbitlen));
+    slice::from_raw_parts_mut(lengths, numcodes).clone_from_slice(&l);
+    Error(0)
 }
 
 #[no_mangle]

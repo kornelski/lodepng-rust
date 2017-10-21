@@ -11,13 +11,13 @@ pub(crate) struct HuffmanTree {
 }
 
 impl HuffmanTree {
-    pub fn new() -> Self {
+    pub fn new(numcodes: usize, lengths: Vec<u32>, maxbitlen: usize) -> Self {
         Self {
-            maxbitlen: 0,
-            numcodes: 0,
+            numcodes,
+            lengths,
+            maxbitlen,
             tree2d: Vec::new(),
             tree1d: Vec::new(),
-            lengths: Vec::new(),
         }
     }
 
@@ -116,10 +116,7 @@ impl HuffmanTree {
     }
 
     pub fn from_lengths(bitlen: &[u32], maxbitlen: usize) -> Result<Self, Error> {
-        let mut tree = Self::new();
-        tree.lengths = bitlen.to_owned();
-        tree.numcodes = bitlen.len();
-        tree.maxbitlen = maxbitlen;
+        let mut tree = Self::new(bitlen.len(), bitlen.to_owned(), maxbitlen);
         Self::from_lengths2(&mut tree)?;
         Ok(tree)
     }
@@ -129,11 +126,7 @@ impl HuffmanTree {
         while frequencies[numcodes - 1] == 0 && numcodes > mincodes {
             numcodes -= 1;
         }
-        let mut tree = Self::new();
-        tree.maxbitlen = maxbitlen as usize;
-        tree.numcodes = numcodes;
-        tree.lengths.resize(numcodes, 0);
-        huffman_code_lengths(&mut tree.lengths, frequencies, maxbitlen)?;
+        let mut tree = Self::new(numcodes, huffman_code_lengths(frequencies, maxbitlen)?, maxbitlen as usize);
         Self::from_lengths2(&mut tree)?;
         Ok(tree)
     }
@@ -154,8 +147,8 @@ struct BPMLists {
 }
 
 
-pub(crate) fn huffman_code_lengths(lengths: &mut [u32], frequencies: &[u32], maxbitlen: u32) -> Result<(), Error> {
-    let numcodes = lengths.len();
+pub(crate) fn huffman_code_lengths(frequencies: &[u32], maxbitlen: u32) -> Result<Vec<u32>, Error> {
+    let numcodes = frequencies.len();
     if numcodes == 0 {
         return Err(Error(80)); /*error: a tree of 0 symbols is not supposed to be made*/
     } /*error: represent all symbols*/
@@ -172,9 +165,7 @@ pub(crate) fn huffman_code_lengths(lengths: &mut [u32], frequencies: &[u32], max
             });
         };
     }
-    for l in lengths.iter_mut() {
-        *l = 0;
-    }
+    let mut lengths = vec![0; numcodes];
     /*ensure at least two present symbols. There should be at least one symbol
       according to RFC 1951 section 3.2.7. Some decoders incorrectly require two. To
       make these work as well ensure there are at least two symbols. The
@@ -207,7 +198,7 @@ pub(crate) fn huffman_code_lengths(lengths: &mut [u32], frequencies: &[u32], max
             next_node = node.tail.as_ref();
         }
     }
-    Ok(())
+    Ok(lengths)
 }
 
 impl BPMNode {
