@@ -3249,7 +3249,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     }
     if state.encoder.auto_convert != 0 {
         /*write signature and chunks*/
-        auto_choose_color(&mut info.color, image, w, h, &state.info_raw)?;
+        info.color = auto_choose_color(image, w, h, &state.info_raw)?;
     }
     if state.encoder.zlibsettings.btype > 2 {
         /*bKGD (must come between PLTE and the IDAt chunks*/
@@ -3344,7 +3344,8 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
 
 /*profile must already have been inited with mode.
 It's ok to set some parameters of profile to done already.*/
-pub fn lodepng_get_color_profile(profile: &mut ColorProfile, inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result<(), Error> {
+pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result<ColorProfile, Error> {
+    let mut profile = ColorProfile::new();
     let numpixels: usize = w as usize * h as usize;
     let mut colored_done = mode.is_greyscale_type();
     let mut alpha_done = !mode.can_have_alpha();
@@ -3486,7 +3487,7 @@ pub fn lodepng_get_color_profile(profile: &mut ColorProfile, inp: &[u8], w: u32,
         profile.key_g += profile.key_g << 8;
         profile.key_b += profile.key_b << 8;
     }
-    Ok(())
+    Ok(profile)
 }
 
 /*Automatically chooses color type that gives smallest amount of bits in the
@@ -3494,9 +3495,9 @@ output image, e.g. grey if there are only greyscale pixels, palette if there
 are less than 256 colors, ...
 Updates values of mode with a potentially smaller color model. mode_out should
 contain the user chosen color model, but will be overwritten with the new chosen one.*/
-pub fn auto_choose_color(mode_out: &mut ColorMode, image: &[u8], w: usize, h: usize, mode_in: &ColorMode) -> Result<(), Error> {
-    let mut prof = ColorProfile::new();
-    lodepng_get_color_profile(&mut prof, image, w as u32, h as u32, mode_in)?;
+pub fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &ColorMode) -> Result<ColorMode, Error> {
+    let mut mode_out = ColorMode::new();
+    let mut prof = get_color_profile(image, w as u32, h as u32, mode_in)?;
 
     mode_out.clear_key();
     if prof.key != 0 && w * h <= 16 {
@@ -3530,7 +3531,7 @@ pub fn auto_choose_color(mode_out: &mut ColorMode, image: &[u8], w: usize, h: us
         mode_out.set_bitdepth(palettebits);
         if mode_in.colortype == ColorType::PALETTE && mode_in.palette().len() >= mode_out.palette().len() && mode_in.bitdepth() == mode_out.bitdepth() {
             /*If input should have same palette colors, keep original to preserve its order and prevent conversion*/
-            *mode_out = mode_in.clone();
+            mode_out = mode_in.clone();
         };
     } else {
         mode_out.set_bitdepth(prof.bits);
@@ -3554,7 +3555,7 @@ pub fn auto_choose_color(mode_out: &mut ColorMode, image: &[u8], w: usize, h: us
                 prof.key_b as u16 & mask);
         };
     }
-    Ok(())
+    Ok(mode_out)
 }
 
 pub fn lodepng_filesize(filename: &Path) -> Option<u64> {

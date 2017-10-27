@@ -833,8 +833,10 @@ pub fn encode24_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[Pixe
 /// updates values of mode with a potentially smaller color model. mode_out should
 /// contain the user chosen color model, but will be overwritten with the new chosen one.
 #[doc(hidden)]
+#[deprecated]
 pub fn auto_choose_color(mode_out: &mut ColorMode, image: &[u8], w: usize, h: usize, mode_in: &ColorMode) -> Result<(), Error> {
-    rustimpl::auto_choose_color(mode_out, image, w, h, mode_in)
+    *mode_out = rustimpl::auto_choose_color(image, w, h, mode_in)?;
+    Ok(())
 }
 
 impl<'a> ChunkRef<'a> {

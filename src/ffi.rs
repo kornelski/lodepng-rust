@@ -768,13 +768,17 @@ pub unsafe extern "C" fn lodepng_encode(out: &mut *mut u8, outsize: &mut usize, 
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_get_color_profile(profile: &mut ColorProfile, image: *const u8, w: c_uint, h: c_uint, mode: &ColorMode) -> Error {
-    lode_error!(rustimpl::lodepng_get_color_profile(profile, slice::from_raw_parts(image, 0x1FFFFFFF), w, h, mode))
+pub unsafe extern "C" fn lodepng_get_color_profile(profile_out: *mut ColorProfile, image: *const u8, w: c_uint, h: c_uint, mode: &ColorMode) -> Error {
+    let prof = lode_try!(rustimpl::get_color_profile(slice::from_raw_parts(image, 0x1FFFFFFF), w, h, mode));
+    ptr::write(profile_out, prof);
+    Error(0)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: c_uint, h: c_uint, mode_in: &ColorMode) -> Error {
-    lode_error!(rustimpl::auto_choose_color(mode_out, slice::from_raw_parts(image, 0x1FFFFFFF), w as usize, h as usize, mode_in))
+    let mode = lode_try!(rustimpl::auto_choose_color(slice::from_raw_parts(image, 0x1FFFFFFF), w as usize, h as usize, mode_in));
+    ptr::write(mode_out, mode);
+    Error(0)
 }
 
 #[no_mangle]
