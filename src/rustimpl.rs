@@ -1727,7 +1727,7 @@ fn getTreeInflateFixed() -> Result<(HuffmanTree, HuffmanTree), Error> {
     generateFixedDistanceTree()?))
 }
 
-pub static NUM_CODE_LENGTH_CODES: usize = 19;
+pub const NUM_CODE_LENGTH_CODES: usize = 19;
 /*the order in which "code length alphabet code lengths" are stored, out of this
 the huffman tree of the dynamic huffman tree lengths is generated*/
 pub const CLCL_ORDER: [u32; 19] = [
@@ -2049,9 +2049,8 @@ fn searchCodeIndex(array: &[u32], value: u32) -> u32 {
   256: end
   257-285: length/distance pair (length code, followed by extra length bits, distance code, extra distance bits)
   286-287: invalid*/
+#[inline]
 fn addLengthDistance(values: &mut Vec<u32>, length: u32, distance: u32) {
-    debug_assert_eq!(29, LENGTHBASE.len());
-    debug_assert_eq!(30, DISTANCEBASE.len());
     let length_code = searchCodeIndex(&LENGTHBASE, length);
     let extra_length = length - LENGTHBASE[length_code as usize];
     let dist_code = searchCodeIndex(&DISTANCEBASE, distance);
@@ -2062,7 +2061,7 @@ fn addLengthDistance(values: &mut Vec<u32>, length: u32, distance: u32) {
     values.push(extra_distance);
 }
 
-pub static HASH_NUM_VALUES: usize = 65536;
+pub const HASH_NUM_VALUES: usize = 65536;
 
 struct Hash {
     pub head: Vec<i32>,
@@ -2094,6 +2093,7 @@ impl Hash {
     }
 }
 
+#[inline(always)]
 fn getHash(data: &[u8], pos: usize) -> u16 {
     let mut result = 0;
     if pos + 2 < data.len() {
@@ -2115,7 +2115,7 @@ fn getHash(data: &[u8], pos: usize) -> u16 {
     result as u16
 }
 
-
+#[inline(always)]
 fn countZeros(data: &[u8], pos: usize) -> u32 {
     data[pos..].iter()
         .take(MAX_SUPPORTED_DEFLATE_LENGTH)
@@ -2123,6 +2123,7 @@ fn countZeros(data: &[u8], pos: usize) -> u32 {
         .count() as u32
 }
 
+#[inline]
 fn updateHashChain(hash: &mut Hash, wpos: u32, hashval: u32, numzeros: u16) {
     hash.val[wpos as usize] = hashval as i32;
     if hash.head[hashval as usize] != -1 {
@@ -2219,7 +2220,7 @@ fn deflateDynamic(
             settings.windowsize,
             settings.minmatch,
             settings.nicematch,
-            settings.lazymatching,
+            settings.lazymatching != 0,
         )?;
     } else {
         lz77_encoded.reserve(datasize);
@@ -2417,7 +2418,7 @@ fn deflateFixed(out: &mut ucvector, bp: &mut usize, hash: &mut Hash, data: &[u8]
             settings.windowsize,
             settings.minmatch,
             settings.nicematch,
-            settings.lazymatching,
+            settings.lazymatching != 0,
         )?;
         writeLZ77data(bp, out, &lz77_encoded, &tree_ll, &tree_d);
     } else {
@@ -3624,7 +3625,7 @@ fn encodeLZ77(
     windowsize: u32,
     minmatch: u32,
     nicematch: u32,
-    lazymatching: u32,
+    lazymatching: bool,
 ) -> Result<(), Error> {
     let nicematch = (nicematch).min(MAX_SUPPORTED_DEFLATE_LENGTH as u32);
     /*for large window lengths, assume the user wants no compression loss. Otherwise, max hash chain length speedup.*/
@@ -3723,7 +3724,7 @@ fn encodeLZ77(
                 }; /*push the previous character as literal*/
             };
         }
-        if lazymatching != 0 {
+        if lazymatching {
             if !lazy && length >= 3 && length <= maxlazymatch && length < MAX_SUPPORTED_DEFLATE_LENGTH as u32 {
                 lazy = true;
                 lazylength = length;
