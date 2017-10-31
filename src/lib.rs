@@ -395,6 +395,23 @@ impl Info {
             }
         }
     }
+
+
+    fn set_unknown_chunks(&mut self, src: &Info) -> Result<(), Error> {
+        for i in 0..3 {
+            unsafe {
+                self.unknown_chunks_size[i] = src.unknown_chunks_size[i];
+                self.unknown_chunks_data[i] = lodepng_malloc(src.unknown_chunks_size[i]) as *mut u8;
+                if self.unknown_chunks_data[i].is_null() && self.unknown_chunks_size[i] != 0 {
+                    return Err(Error(83));
+                }
+                for j in 0..src.unknown_chunks_size[i] {
+                    *self.unknown_chunks_data[i].offset(j as isize) = *src.unknown_chunks_data[i].offset(j as isize);
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 impl Clone for Info {
@@ -427,7 +444,7 @@ impl Clone for Info {
         };
         rustimpl::Text_copy(&mut dest, self).unwrap();
         rustimpl::LodePNGIText_copy(&mut dest, self).unwrap();
-        rustimpl::UnknownChunks_copy(&mut dest, self).unwrap();
+        dest.set_unknown_chunks(self).unwrap();
         dest
     }
 }
@@ -888,7 +905,6 @@ impl<'a> ChunkRefMut<'a> {
         rustimpl::lodepng_chunk_data_mut(self.data).unwrap()
     }
 
-    #[deprecated(note = "unsound")]
     pub fn generate_crc(&mut self) {
         rustimpl::lodepng_chunk_generate_crc(self.data)
     }
@@ -1007,14 +1023,14 @@ mod test {
     }
 
     #[test]
-    fn create_and_dstroy1() {
+    fn create_and_destroy1() {
         DecoderSettings::new();
         EncoderSettings::new();
         CompressSettings::new();
     }
 
     #[test]
-    fn create_and_dstroy2() {
+    fn create_and_destroy2() {
         State::new().info_png();
         State::new().info_png_mut();
         State::new().clone().info_raw();

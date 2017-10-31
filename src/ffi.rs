@@ -462,7 +462,7 @@ pub unsafe extern "C" fn lodepng_palette_add(info: &mut ColorMode, r: u8, g: u8,
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_clear_text(info: &mut Info) {
-    rustimpl::lodepng_clear_text(info)
+    info.clear_text()
 }
 
 #[no_mangle]
@@ -474,7 +474,7 @@ pub unsafe extern "C" fn lodepng_add_text(info: &mut Info, key: *const i8, str: 
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_clear_itext(info: &mut Info) {
-    rustimpl::lodepng_clear_itext(info)
+    info.clear_itext();
 }
 
 #[no_mangle]

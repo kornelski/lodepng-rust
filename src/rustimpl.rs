@@ -510,35 +510,6 @@ fn lodepng_add32bitInt(buffer: &mut ucvector, value: u32) {
     lodepng_set32bitInt(&mut buffer.slice_mut()[n..], value);
 }
 
-pub(crate) fn UnknownChunks_copy(dest: &mut Info, src: &Info) -> Result<(), Error> {
-    unsafe {
-        for i in 0..3 {
-            dest.unknown_chunks_size[i] = src.unknown_chunks_size[i];
-            dest.unknown_chunks_data[i] = lodepng_malloc(src.unknown_chunks_size[i]) as *mut u8;
-            if dest.unknown_chunks_data[i].is_null() && dest.unknown_chunks_size[i] != 0 {
-                return Err(Error(83));
-            }
-            for j in 0..src.unknown_chunks_size[i] {
-                *dest.unknown_chunks_data[i].offset(j as isize) = *src.unknown_chunks_data[i].offset(j as isize);
-            }
-        }
-    }
-    Ok(())
-}
-
-pub(crate) fn Text_cleanup(info: &mut Info) {
-    unsafe {
-        for i in 0..info.text_num as isize {
-            string_cleanup(&mut *info.text_keys.offset(i));
-            string_cleanup(&mut *info.text_strings.offset(i));
-        }
-        lodepng_free(info.text_keys as *mut _);
-        lodepng_free(info.text_strings as *mut _);
-        info.text_num = 0;
-        info.itext_num = 0;
-    }
-}
-
 pub(crate) fn Text_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
     dest.text_keys = ptr::null_mut();
     dest.text_strings = ptr::null_mut();
@@ -547,10 +518,6 @@ pub(crate) fn Text_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
         dest.push_text(string_copy(k), string_copy(v))?;
     }
     Ok(())
-}
-
-pub fn lodepng_clear_text(info: &mut Info) {
-    Text_cleanup(info);
 }
 
 unsafe fn realloc_push<T>(array: &mut *mut T, len: usize, new: T) -> Result<(), Error> {
@@ -618,26 +585,6 @@ pub fn lodepng_add_text(info: &mut Info, key: &CStr, str: &CStr) -> Result<(), E
     info.push_text(string_copy(key), string_copy(str))
 }
 
-fn LodePNGIText_cleanup(info: &mut Info) {
-    unsafe {
-        for i in 0..info.itext_num as isize {
-            string_cleanup(&mut *info.itext_keys.offset(i));
-            string_cleanup(&mut *info.itext_langtags.offset(i));
-            string_cleanup(&mut *info.itext_transkeys.offset(i));
-            string_cleanup(&mut *info.itext_strings.offset(i));
-        }
-        lodepng_free(info.itext_keys as *mut _);
-        lodepng_free(info.itext_langtags as *mut _);
-        lodepng_free(info.itext_transkeys as *mut _);
-        lodepng_free(info.itext_strings as *mut _);
-    }
-    info.itext_keys = ptr::null_mut();
-    info.itext_langtags = ptr::null_mut();
-    info.itext_transkeys = ptr::null_mut();
-    info.itext_strings = ptr::null_mut();
-    info.itext_num = 0;
-}
-
 pub(crate) fn LodePNGIText_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
     dest.itext_keys = ptr::null_mut();
     dest.itext_langtags = ptr::null_mut();
@@ -651,10 +598,6 @@ pub(crate) fn LodePNGIText_copy(dest: &mut Info, source: &Info) -> Result<(), Er
             string_copy_slice(s.as_bytes()))?;
     }
     Ok(())
-}
-
-pub fn lodepng_clear_itext(info: &mut Info) {
-    LodePNGIText_cleanup(info);
 }
 
 pub fn lodepng_add_itext(info: &mut Info, key: &CStr, langtag: &CStr, transkey: &CStr, str: &CStr) -> Result<(), Error> {
@@ -1723,8 +1666,7 @@ fn generateFixedDistanceTree() -> Result<HuffmanTree, Error> {
 
 /*get the tree of a deflated block with fixed tree, as specified in the deflate specification*/
 fn getTreeInflateFixed() -> Result<(HuffmanTree, HuffmanTree), Error> {
-    Ok((generateFixedLitLenTree()?,
-    generateFixedDistanceTree()?))
+    Ok((generateFixedLitLenTree()?, generateFixedDistanceTree()?))
 }
 
 pub const NUM_CODE_LENGTH_CODES: usize = 19;
@@ -2204,42 +2146,35 @@ fn deflateDynamic(
     settings: &CompressSettings,
     final_: u32,
 ) -> Result<(), Error> {
-    let mut lz77_encoded = Vec::new();
     let mut frequencies_cl = Vec::new();
     let mut bitlen_cl = Vec::new();
     let datasize = dataend - datapos;
     let BFINAL = final_;
 
     let data = &data[0..dataend]; // not datasize. Truncating the length is important.
-    if settings.use_lz77 != 0 {
-        encodeLZ77(
-            &mut lz77_encoded,
-            hash,
-            data,
-            datapos,
-            settings.windowsize,
-            settings.minmatch,
-            settings.nicematch,
-            settings.lazymatching != 0,
-        )?;
+    let lz77_encoded = if settings.use_lz77 != 0 {
+        encodeLZ77(hash, data, datapos, settings.windowsize, settings.minmatch, settings.nicematch, settings.lazymatching != 0)?
     } else {
-        lz77_encoded.reserve(datasize);
+        let mut t = Vec::with_capacity(datasize);
         for &d in &data[datapos..dataend] {
-            lz77_encoded.push(d as u32);
+            t.push(d as u32);
         }
-    }
+        t
+    };
     let mut frequencies_ll = [0; 286];
     let mut frequencies_d = [0; 30];
-    let mut i = 0;
-    while i != lz77_encoded.len() {
-        let symbol = lz77_encoded[i];
+    let mut l = &lz77_encoded[..];
+    while !l.is_empty() {
+        let symbol = l[0];
         frequencies_ll[symbol as usize] += 1;
-        if symbol > 256 {
-            let dist = lz77_encoded[i + 2];
+        let skip = if symbol > 256 {
+            let dist = l[2];
             frequencies_d[dist as usize] += 1;
-            i += 3;
+            4
+        } else {
+            1
         };
-        i += 1
+        l = &l[skip..];
     }
     frequencies_ll[256] = 1;
     let tree_ll = HuffmanTree::from_frequencies(&frequencies_ll, 257, 15)?;
@@ -2409,9 +2344,7 @@ fn deflateFixed(out: &mut ucvector, bp: &mut usize, hash: &mut Hash, data: &[u8]
     out.slice_mut()[end] |= (0 << ((*bp as u32) & 7)) as u8;
     (*bp) += 1;
     if settings.use_lz77 != 0 {
-        let mut lz77_encoded = Vec::new();
-        encodeLZ77(
-            &mut lz77_encoded,
+        let lz77_encoded = encodeLZ77(
             hash,
             data,
             datapos,
@@ -2651,8 +2584,8 @@ pub fn lodepng_crc32(data: &[u8]) -> u32 {
 impl Drop for Info {
     fn drop(&mut self) {
         unsafe {
-            Text_cleanup(self);
-            LodePNGIText_cleanup(self);
+            self.clear_text();
+            self.clear_itext();
             for &i in &self.unknown_chunks_data {
                 lodepng_free(i as *mut _);
             }
@@ -3619,7 +3552,6 @@ the "dictionary". A brute force search through all possible distances would be s
 this hash technique is one out of several ways to speed this up.
 */
 fn encodeLZ77(
-    out: &mut Vec<u32>,
     hash: &mut Hash,
     in_: &[u8],
     inpos: usize,
@@ -3627,7 +3559,8 @@ fn encodeLZ77(
     minmatch: u32,
     nicematch: u32,
     lazymatching: bool,
-) -> Result<(), Error> {
+) -> Result<Vec<u32>, Error> {
+    let mut out = Vec::new();
     let nicematch = (nicematch).min(MAX_SUPPORTED_DEFLATE_LENGTH as u32);
     /*for large window lengths, assume the user wants no compression loss. Otherwise, max hash chain length speedup.*/
     let maxchainlength = if windowsize >= 8192 {
@@ -3758,7 +3691,7 @@ fn encodeLZ77(
                   length of only 3 may be not worth it then*/
             out.push(in_[pos] as u32);
         } else {
-            addLengthDistance(out, length, offset);
+            addLengthDistance(&mut out, length, offset);
             for _ in 1..length {
                 pos += 1;
                 wpos = pos as u32 & (windowsize - 1);
@@ -3777,7 +3710,7 @@ fn encodeLZ77(
         }
         pos += 1;
     }
-    Ok(())
+    Ok(out)
 }
 
 
