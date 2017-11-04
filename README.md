@@ -24,7 +24,7 @@ The RGB/RGBA pixel types are from the [RGB crate](https://crates.io/crates/rgb),
 
 ```rust
 [dependencies]
-rgb = "0.7"
+rgb = "0.8"
 ```
 
 ```rust
