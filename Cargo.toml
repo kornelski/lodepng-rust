@@ -10,11 +10,11 @@ license = "BSD-3-Clause"
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/pornel/lodepng-rust.git"
-version = "2.0.3"
+version = "2.0.4"
 
 [dependencies]
-libc = "0.2.30"
-rgb = "0.7.2"
+libc = "0.2.33"
+rgb = "0.8"
 
 [dev-dependencies]
 lodepng_unittest = { path="lodepng_unittest" }
