@@ -29,6 +29,7 @@ impl HuffmanTree {
         self.lengths[index as usize]
     }
 
+    #[inline]
     pub fn decode_symbol(&self, inp: &[u8], bp: &mut usize) -> Option<u32> {
         let inbitlength = inp.len() * 8;
         let mut treepos = 0;
