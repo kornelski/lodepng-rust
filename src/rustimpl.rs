@@ -3542,6 +3542,19 @@ fn getValueRequiredBits(value: u8) -> u8 {
     }
 }
 
+#[inline]
+fn longest_match(a: &[u8], b: &[u8]) -> usize {
+    let len = a.len().min(b.len());
+    let a = &a[0..len];
+    let b = &b[0..len];
+    for i in 0..len {
+        if a[i] != b[i] {
+            return i;
+        }
+    }
+    return len;
+}
+
 /*
 LZ77-encode the data. Return value is error code. The input are raw bytes, the output
 is in the form of unsigned integers with codes representing for example literal bytes, or
@@ -3627,11 +3640,7 @@ fn encodeLZ77(
                     backptr += skip;
                     foreptr += skip;
                 }
-                /* maximum supported length by deflate is max length */
-                let current_length = in_[backptr as usize..].iter().cloned()
-                        .zip(in_[foreptr as usize..lastptr as usize].iter().cloned())
-                        .take_while(|&(a,b)| a == b)
-                        .count() as u32;
+                let current_length = longest_match(&in_[foreptr as usize..lastptr as usize], &in_[backptr as usize..]) as u32;
                 if current_length > length {
                     length = current_length;
                     offset = current_offset;
