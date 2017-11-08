@@ -97,15 +97,11 @@ impl HuffmanTree {
         let mut nextcode: Vec<u32> = vec![0; tree.maxbitlen + 1];
         tree.tree1d = vec![0; tree.numcodes];
 
-        let mut bits = 0;
-        while bits != tree.numcodes {
+        for bits in 0..tree.numcodes {
             blcount[tree.lengths[bits] as usize] += 1;
-            bits += 1
         }
-        bits = 1;
-        while bits <= tree.maxbitlen {
-            nextcode[bits] = (nextcode[bits - 1] + blcount[bits - 1]) << 1;
-            bits += 1
+        for bits in 0..tree.maxbitlen {
+            nextcode[bits+1] = (nextcode[bits] + blcount[bits]) << 1;
         }
         for n in 0..tree.numcodes {
             if tree.lengths[n] != 0 {

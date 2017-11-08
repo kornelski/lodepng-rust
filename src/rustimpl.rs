@@ -111,8 +111,6 @@ fn addPaddingBits(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usize
             let bit = readBitFromReversedStream(&mut ibp, inp);
             setBitOfReversedStream(&mut obp, out, bit);
         }
-        /*obp += diff; --> no, fill in some value in the padding bits too, to avoid
-            "Use of uninitialised value of size ###" warning from valgrind*/
         for _ in 0..diff {
             setBitOfReversedStream(&mut obp, out, 0u8);
         }
@@ -231,20 +229,14 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
             for y in 0..h {
                 for type_ in 0..5 {
                     filterScanline(&mut attempt[type_], &inp[(y * linebytes)..], prevline, linebytes, bytewidth, type_ as u8);
-                    sum[type_] = 0;
-                    if type_ == 0 {
-                        for x in 0..linebytes {
-                            sum[type_] += (attempt[type_][x]) as usize;
-                        }
+                    sum[type_] = if type_ == 0 {
+                        attempt[type_][0..linebytes].iter().map(|&s| s as usize).sum()
                     } else {
-                        for x in 0..linebytes {
-                            /*For differences, each byte should be treated as signed, values above 127 are negative
-                                          (converted to signed char). Filtertype 0 isn't a difference though, so use unsigned there.
-                                          This means filtertype 0 is almost never chosen, but that is justified.*/
-                            let s = attempt[type_][x];
-                            sum[type_] += if s < 128 { s } else { 255 - s } as usize;
-                        }
-                    }
+                        /*For differences, each byte should be treated as signed, values above 127 are negative
+                          (converted to signed char). Filtertype 0 isn't a difference though, so use unsigned there.
+                          This means filtertype 0 is almost never chosen, but that is justified.*/
+                        attempt[type_][0..linebytes].iter().map(|&s| if s < 128 { s } else { 255 - s } as usize).sum()
+                    };
                     /*check if this is smallest sum (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || sum[type_] < smallest {
                         bestType = type_; /*now fill the out values*/
