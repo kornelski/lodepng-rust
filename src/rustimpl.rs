@@ -1104,13 +1104,13 @@ fn readChunk_bKGD(info: &mut Info, data: &[u8]) -> Result<(), Error> {
 }
 /*text chunk (tEXt)*/
 fn readChunk_tEXt(info: &mut Info, data: &[u8]) -> Result<(), Error> {
-    let (key, str) = split_at_nul(data);
-    if data.len() < 1 || data.len() > 79 {
+    let (keyword, str) = split_at_nul(data);
+    if keyword.len() < 1 || keyword.len() > 79 {
         return Err(Error(89));
     }
     /*even though it's not allowed by the standard, no error is thrown if
         there's no null termination char, if the text is empty*/
-    info.push_text(string_copy_slice(key), string_copy_slice(str))
+    info.push_text(string_copy_slice(keyword), string_copy_slice(str))
 }
 
 /*compressed text chunk (zTXt)*/
