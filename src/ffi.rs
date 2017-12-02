@@ -64,6 +64,13 @@ pub enum ColorType {
     GREY_ALPHA = 4,
     /// RGB with alpha: 8, 16 bit
     RGBA = 6,
+
+    /// Not PNG standard, for internal use only. BGRA with alpha, 8 bit
+    BGRA = 6|64,
+    /// Not PNG standard, for internal use only. BGR no alpha, 8 bit
+    BGR = 2|64,
+    /// Not PNG standard, for internal use only. BGR no alpha, padded, 8 bit
+    BGRX = 3|64,
 }
 
 /// Color mode of an image. Contains all information required to decode the pixel

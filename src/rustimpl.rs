@@ -678,6 +678,11 @@ fn rgba8ToPixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTree
             out[i * 8 + 6] = a;
             out[i * 8 + 7] = a;
         },
+        ColorType::BGRA |
+        ColorType::BGR |
+        ColorType::BGRX => {
+            return Err(Error(31));
+        },
     };
     Ok(())
 }
@@ -686,8 +691,8 @@ fn rgba8ToPixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTree
 fn rgba16ToPixel(out: &mut [u8], i: usize, mode: &ColorMode, r: u16, g: u16, b: u16, a: u16) {
     match mode.colortype {
         ColorType::GREY => {
-            let grey = r; /*((unsigned)r + g + b) / 3*/
-            out[i * 2 + 0] = (grey >> 8) as u8; /*((unsigned)r + g + b) / 3*/
+            let grey = r;
+            out[i * 2 + 0] = (grey >> 8) as u8;
             out[i * 2 + 1] = grey as u8;
         },
         ColorType::RGB => {
@@ -715,6 +720,9 @@ fn rgba16ToPixel(out: &mut [u8], i: usize, mode: &ColorMode, r: u16, g: u16, b: 
             out[i * 8 + 6] = (a >> 8) as u8;
             out[i * 8 + 7] = a as u8;
         },
+        ColorType::BGR |
+        ColorType::BGRA |
+        ColorType::BGRX |
         ColorType::PALETTE => unreachable!(),
     };
 }
@@ -811,6 +819,31 @@ fn getPixelColorRGBA8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8,u8,u8,u8) {
         } else {
             (inp[i * 8 + 0], inp[i * 8 + 2], inp[i * 8 + 4], inp[i * 8 + 6])
         },
+        ColorType::BGRA => {
+            (inp[i * 4 + 2], inp[i * 4 + 1], inp[i * 4 + 0], inp[i * 4 + 3])
+        },
+        ColorType::BGR => {
+            let b = inp[i * 3 + 0];
+            let g = inp[i * 3 + 1];
+            let r = inp[i * 3 + 2];
+            let a = if mode.key() == Some((r as u16, g as u16, b as u16)) {
+                0
+            } else {
+                255
+            };
+            (r, g, b, a)
+        },
+        ColorType::BGRX => {
+            let b = inp[i * 4 + 0];
+            let g = inp[i * 4 + 1];
+            let r = inp[i * 4 + 2];
+            let a = if mode.key() == Some((r as u16, g as u16, b as u16)) {
+                0
+            } else {
+                255
+            };
+            (r, g, b, a)
+        }
     }
 }
 /*Similar to getPixelColorRGBA8, but with all the for loops inside of the color
@@ -969,6 +1002,44 @@ fn getPixelColorsRGBA8(buffer: &mut [u8], numpixels: usize, has_alpha: bool, inp
                 }
             }
         },
+        ColorType::BGR => {
+            for (i, buffer) in buffer.chunks_mut(num_channels).take(numpixels).enumerate() {
+                buffer[0] = inp[i * 3 + 2];
+                buffer[1] = inp[i * 3 + 1];
+                buffer[2] = inp[i * 3 + 0];
+                if has_alpha {
+                    buffer[3] = if mode.key() == Some((buffer[0] as u16, buffer[1] as u16, buffer[2] as u16)) {
+                        0
+                    } else {
+                        255
+                    };
+                };
+            }
+        },
+        ColorType::BGRX => {
+            for (i, buffer) in buffer.chunks_mut(num_channels).take(numpixels).enumerate() {
+                buffer[0] = inp[i * 4 + 2];
+                buffer[1] = inp[i * 4 + 1];
+                buffer[2] = inp[i * 4 + 0];
+                if has_alpha {
+                    buffer[3] = if mode.key() == Some((buffer[0] as u16, buffer[1] as u16, buffer[2] as u16)) {
+                        0
+                    } else {
+                        255
+                    };
+                };
+            }
+        },
+        ColorType::BGRA => {
+            for (i, buffer) in buffer.chunks_mut(num_channels).take(numpixels).enumerate() {
+                buffer[0] = inp[i * 4 + 2];
+                buffer[1] = inp[i * 4 + 1];
+                buffer[2] = inp[i * 4 + 0];
+                if has_alpha {
+                    buffer[3] = inp[i * 4 + 3];
+                }
+            }
+        },
     };
 }
 /*Get RGBA16 color of pixel with index i (y * width + x) from the raw image with
@@ -1006,6 +1077,9 @@ fn getPixelColorRGBA16(inp: &[u8], i: usize, mode: &ColorMode) -> (u16,u16,u16,u
             256 * inp[i * 8 + 4] as u16 + inp[i * 8 + 5] as u16,
             256 * inp[i * 8 + 6] as u16 + inp[i * 8 + 7] as u16,
         ),
+        ColorType::BGR |
+        ColorType::BGRA |
+        ColorType::BGRX |
         ColorType::PALETTE => unreachable!(),
     }
 }
@@ -1576,7 +1650,7 @@ pub(crate) fn chunk_append(out: &mut ucvector, chunk: &[u8]) -> Result<(), Error
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / Color types and such                                                   / */
 /* ////////////////////////////////////////////////////////////////////////// */
-fn checkColorValidity(colortype: ColorType, bd: u32) -> Result<(), Error> {
+fn checkPngColorValidity(colortype: ColorType, bd: u32) -> Result<(), Error> {
     /*allowed color type / bits combination*/
     match colortype {
         ColorType::GREY => if !(bd == 1 || bd == 2 || bd == 4 || bd == 8 || bd == 16) {
@@ -1593,6 +1667,15 @@ fn checkColorValidity(colortype: ColorType, bd: u32) -> Result<(), Error> {
         },
     }
     Ok(())
+}
+/// Internally BGRA is allowed
+fn checkLodeColorValidity(colortype: ColorType, bd: u32) -> Result<(), Error> {
+    match colortype {
+        ColorType::BGRA | ColorType::BGRX | ColorType::BGR if bd == 8 => {
+            Ok(())
+        },
+        ct => checkPngColorValidity(ct, bd),
+    }
 }
 
 pub fn lodepng_color_mode_equal(a: &ColorMode, b: &ColorMode) -> bool {
@@ -2972,7 +3055,7 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8]) -> Result<(Info, u
         /*error: only interlace methods 0 and 1 exist in the specification*/
         return Err(Error(34));
     }
-    checkColorValidity(info_png.color.colortype, info_png.color.bitdepth())?;
+    checkPngColorValidity(info_png.color.colortype, info_png.color.bitdepth())?;
     Ok((info_png, w, h))
 }
 
@@ -3191,8 +3274,8 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
         return Err(Error(71)); /*unknown chunks between PLTE and IDAT*/
         /*IDAT (multiple IDAT chunks must be consecutive)*/
     }
-    checkColorValidity(info.color.colortype, info.color.bitdepth())?; /*tEXt and/or zTXt */
-    checkColorValidity(state.info_raw.colortype, state.info_raw.bitdepth())?; /*LodePNG version id in text chunk */
+    checkPngColorValidity(info.color.colortype, info.color.bitdepth())?; /*tEXt and/or zTXt */
+    checkLodeColorValidity(state.info_raw.colortype, state.info_raw.bitdepth())?; /*LodePNG version id in text chunk */
 
     let data = if !lodepng_color_mode_equal(&state.info_raw, &info.color) {
         let size = (w * h * (info.color.bpp() as usize) + 7) / 8;
@@ -3440,7 +3523,7 @@ pub fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &ColorMode) 
             prof.bits = 8;
         };
     }
-    let n = prof.numcolors; /*grey is less overhead*/
+    let n = prof.numcolors;
     let palettebits = if n <= 2 {
         1
     } else if n <= 4 {
@@ -3449,12 +3532,13 @@ pub fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &ColorMode) 
         4
     } else {
         8
-    }; /*remove potential earlier palette*/
+    };
     let palette_ok = (n <= 256 && prof.bits <= 8) &&
         (w * h >= (n * 2) as usize) &&
         (prof.colored != 0 || prof.bits > palettebits);
     if palette_ok {
         let pal = &prof.palette[0..prof.numcolors as usize];
+        /*remove potential earlier palette*/
         mode_out.palette_clear();
         for p in pal {
             mode_out.palette_add(*p)?;

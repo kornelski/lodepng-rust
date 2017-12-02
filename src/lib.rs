@@ -247,11 +247,15 @@ impl ColorType {
         }
     }
 
+    /// channels * bytes per channel = bytes per pixel
     pub fn channels(&self) -> u8 {
         match *self {
             ColorType::GREY | ColorType::PALETTE => 1,
             ColorType::GREY_ALPHA => 2,
+            ColorType::BGR |
             ColorType::RGB => 3,
+            ColorType::BGRA |
+            ColorType::BGRX |
             ColorType::RGBA => 4,
         }
     }

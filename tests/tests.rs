@@ -1,8 +1,38 @@
 extern crate lodepng;
+extern crate rgb;
+use lodepng::*;
+
+fn encode<T: Copy>(pixels: &[T], in_type: ColorType, out_type: ColorType) -> Result<Vec<u8>, Error> {
+    let mut state = State::new();
+    state.set_auto_convert(true);
+    state.info_raw.colortype = in_type;
+    state.info_raw.set_bitdepth(8);
+    state.info_png.color.colortype = out_type;
+    state.info_png.color.set_bitdepth(8);
+    state.encode(pixels, pixels.len(), 1)
+}
+
+#[test]
+fn bgr() {
+    let png = encode(&[rgb::alt::BGR{r:1u8,g:2,b:3}], ColorType::BGR, ColorType::RGB).unwrap();
+    let img = decode24(&png).unwrap();
+    assert_eq!(img.buffer[0], rgb::RGB{r:1,g:2,b:3});
+
+    let png = encode(&[rgb::alt::BGRA{r:1u8,g:2,b:3,a:111u8}], ColorType::BGRX, ColorType::RGB).unwrap();
+    let img = decode32(&png).unwrap();
+    assert_eq!(img.buffer[0], rgb::RGBA8{r:1,g:2,b:3,a:255});
+}
+
+#[test]
+fn bgra() {
+    let png = encode(&[rgb::alt::BGRA{r:1u8,g:2,b:3,a:4u8}], ColorType::BGRA, ColorType::RGBA).unwrap();
+    let img = decode32(&png).unwrap();
+    assert_eq!(img.buffer[0], rgb::RGBA8{r:1,g:2,b:3,a:4u8});
+}
 
 #[test]
 fn text_chunks() {
-    let mut s = lodepng::State::new();
+    let mut s = State::new();
     s.encoder.text_compression = 0;
     let longstr = "World 123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_";
     assert!(longstr.len() > 89);
@@ -12,7 +42,7 @@ fn text_chunks() {
 
     assert!(data.windows(4).any(|w| w == b"tEXt"));
 
-    let mut s = lodepng::State::new();
+    let mut s = State::new();
     s.read_text_chunks(true);
     s.decode(data).unwrap();
     assert_eq!(1, s.info_png().text_keys_cstr().count());
