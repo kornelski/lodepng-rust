@@ -7,4 +7,5 @@ extern "C" {
     pub fn lode_unittest_main6() -> std::os::raw::c_uint;
     pub fn lode_unittest_main7() -> std::os::raw::c_uint;
     pub fn lode_unittest_main8() -> std::os::raw::c_uint;
+    pub fn lode_unittest_main9() -> std::os::raw::c_uint;
 }

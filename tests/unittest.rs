@@ -49,3 +49,9 @@ fn test8() {
         assert_eq!(0, lodepng_unittest::lode_unittest_main8());
     }
 }
+#[test]
+fn test9() {
+    unsafe {
+        assert_eq!(0, lodepng_unittest::lode_unittest_main9());
+    }
+}

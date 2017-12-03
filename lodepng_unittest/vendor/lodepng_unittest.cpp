@@ -2099,7 +2099,15 @@ extern "C" int lode_unittest_main7() {
 extern "C" int lode_unittest_main8() {
   try {
     testAutoColorModels2();
+  } catch(...) {
+    std::cout << "error!" << std::endl;
+    return 1;
+  }
+  return 0;
+}
 
+extern "C" int lode_unittest_main9() {
+  try {
     //Zlib
     testCompressZlib();
     testHuffmanCodeLengths();
