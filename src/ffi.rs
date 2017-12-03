@@ -806,7 +806,6 @@ pub unsafe extern "C" fn lodepng_color_profile_init(prof: *mut ColorProfile) {
     ptr::write(prof, ColorProfile::new());
 }
 
-#[cfg(feature = "c_statics")]
 #[no_mangle]
 pub static lodepng_default_compress_settings: CompressSettings = CompressSettings {
     btype: 2,
@@ -817,16 +816,15 @@ pub static lodepng_default_compress_settings: CompressSettings = CompressSetting
     lazymatching: 1,
     custom_zlib: None,
     custom_deflate: None,
-    custom_context: ptr::null_mut(),
+    custom_context: 0usize as *mut _,
 };
 
-#[cfg(feature = "c_statics")]
 #[no_mangle]
 pub static lodepng_default_decompress_settings: DecompressSettings = DecompressSettings {
     ignore_adler32: 0,
     custom_zlib: None,
     custom_inflate: None,
-    custom_context: ptr::null_mut(),
+    custom_context: 0usize as *mut _,
 };
 
 

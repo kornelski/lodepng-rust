@@ -1,4 +1,3 @@
-#![cfg_attr(feature = "c_statics", feature(const_ptr_null_mut))]
 
 extern crate libc;
 extern crate rgb;
