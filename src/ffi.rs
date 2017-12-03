@@ -683,6 +683,9 @@ pub unsafe extern "C" fn lodepng_inspect(w_out: &mut c_uint, h_out: &mut c_uint,
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_decode(out: &mut *mut u8, w_out: &mut c_uint, h_out: &mut c_uint, state: &mut State, inp: *const u8, insize: usize) -> Error {
+    if inp.is_null() || insize == 0 {
+        return Error(48);
+    }
     *out = ptr::null_mut();
     let (v, w, h) = lode_try_state!(state.error, rustimpl::lodepng_decode(state, slice::from_raw_parts(inp, insize)));
     *w_out = w as u32;
@@ -694,6 +697,9 @@ pub unsafe extern "C" fn lodepng_decode(out: &mut *mut u8, w_out: &mut c_uint, h
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_decode_memory(out: &mut *mut u8, w_out: &mut c_uint, h_out: &mut c_uint, inp: *const u8, insize: usize, colortype: ColorType, bitdepth: c_uint) -> Error {
+    if inp.is_null() || insize == 0 {
+        return Error(48);
+    }
     *out = ptr::null_mut();
     let (v, w, h) = lode_try!(rustimpl::lodepng_decode_memory(slice::from_raw_parts(inp, insize), colortype, bitdepth));
     *w_out = w as u32;
