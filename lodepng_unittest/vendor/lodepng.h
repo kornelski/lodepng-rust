@@ -228,7 +228,9 @@ struct LodePNGDecompressSettings
   const void* custom_context; /*optional custom settings for custom functions*/
 };
 
-extern const LodePNGDecompressSettings lodepng_default_decompress_settings;
+extern "C" {
+  extern const LodePNGDecompressSettings lodepng_default_decompress_settings;
+}
 extern "C" void lodepng_decompress_settings_init(LodePNGDecompressSettings* settings);
 
 /*
@@ -260,7 +262,9 @@ struct LodePNGCompressSettings /*deflate = compress*/
   const void* custom_context; /*optional custom settings for custom functions*/
 };
 
-extern const LodePNGCompressSettings lodepng_default_compress_settings;
+extern "C" {
+  extern const LodePNGCompressSettings lodepng_default_compress_settings;
+}
 extern "C" void lodepng_compress_settings_init(LodePNGCompressSettings* settings);
 
 /*
