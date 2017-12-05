@@ -1362,7 +1362,7 @@ fn addChunk_pHYs(out: &mut ucvector, info: &Info) -> Result<(), Error> {
 /*chunkName must be string of 4 characters*/
 pub(crate) fn addChunk(out: &mut ucvector, type_: &[u8; 4], data: &[u8]) -> Result<(), Error> {
     let length = data.len() as usize;
-    if length > (2 << 31) {
+    if length > (1 << 31) {
         return Err(Error(77));
     }
     let previous_length = out.len();
@@ -1509,7 +1509,7 @@ pub fn lodepng_chunk_type(chunk: &[u8]) -> &[u8] {
 pub(crate) fn lodepng_chunk_data(chunk: &[u8]) -> Result<&[u8], Error> {
     let len = lodepng_chunk_length(chunk) as usize;
     /*error: chunk length larger than the max PNG chunk size*/
-    if len > (2<<31) {
+    if len > (1 << 31) {
         return Err(Error(63));
     }
     if chunk.len() < len + 12 {
@@ -1522,7 +1522,7 @@ pub(crate) fn lodepng_chunk_data(chunk: &[u8]) -> Result<&[u8], Error> {
 pub(crate) fn lodepng_chunk_data_mut(chunk: &mut [u8]) -> Result<&mut [u8], Error> {
     let len = lodepng_chunk_length(chunk) as usize;
     /*error: chunk length larger than the max PNG chunk size*/
-    if len > (2<<31) {
+    if len > (1 << 31) {
         return Err(Error(63));
     }
     if chunk.len() < len + 12 {
@@ -2267,14 +2267,14 @@ fn deflateDynamic(
     if ((*bp) & 7) == 0 {
         out.push(0); /*write the lenghts of the lit/len AND the dist alphabet*/
     } /*extra bits of repeat codes*/
-    *out.last_mut() |= (0u32 << ((*bp as u32) & 7)) as u8; /*write the compressed data symbols*/
+    *out.last_mut() |= (0 << ((*bp as u32) & 7)) as u8; /*write the compressed data symbols*/
     (*bp) += 1; /*error: the length of the end code 256 must be larger than 0*/
     /*write the end code*/
 
     if ((*bp) & 7) == 0 {
         out.push(0); /*end of error-while*/
     }
-    *out.last_mut() |= (1u32 << ((*bp as u32) & 7)) as u8;
+    *out.last_mut() |= (1 << ((*bp as u32) & 7)) as u8;
     (*bp) += 1;
 
     let HLIT = (numcodes_ll - 257) as u32;
