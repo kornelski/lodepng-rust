@@ -16,8 +16,8 @@ version = "2.0.6"
 libc = "0.2.33"
 rgb = "0.8"
 
-[dev-dependencies]
-lodepng_unittest = { path="lodepng_unittest" }
+[workspace]
+members = ["lodepng_unittest"]
 
 [[example]]
 name = "read"
