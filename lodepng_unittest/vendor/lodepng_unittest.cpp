@@ -2018,8 +2018,6 @@ extern "C" int lode_unittest_main1() {
     testPngSuiteTiny();
     testPaletteFilterTypesZero();
     testComplexPNG();
-    testPredefinedFilters();
-    testWrongWindowSizeGivesError();
 
     std::cout << "\ntest successful" << std::endl;
   } catch(...) {
@@ -2031,6 +2029,8 @@ extern "C" int lode_unittest_main1() {
 
 extern "C" int lode_unittest_main2() {
   try {
+    testPredefinedFilters();
+    testWrongWindowSizeGivesError();
     testFuzzing();
     testPaletteToPaletteDecode();
     testPaletteToPaletteDecode2();
