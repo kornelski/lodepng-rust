@@ -345,9 +345,9 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
 }
 
 fn filterScanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, length: usize, bytewidth: usize, filterType: u8) {
-    let out: &mut [Wrapping<u8>] = unsafe { mem::transmute(out) };
-    let scanline: &[Wrapping<u8>] = unsafe { mem::transmute(scanline) };
-    let prevline: Option<&[Wrapping<u8>]> = unsafe { mem::transmute(prevline) };
+    let out = unsafe { &mut *(out as *mut [u8] as *mut [Wrapping<u8>]) };
+    let scanline = unsafe { &*(scanline as *const [u8] as *const [Wrapping<u8>]) };
+    let prevline = prevline.map(|p| unsafe { &*(p as *const [u8] as *const [Wrapping<u8>]) });
 
     match filterType {
         0 => {
@@ -2939,7 +2939,14 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8]) -> Result<(Info, u
         return Err(Error(29));
     }
     info_png.color.set_bitdepth(inp[24] as u32);
-    info_png.color.colortype = unsafe { mem::transmute(inp[25] as u32) };
+    info_png.color.colortype = match inp[25] {
+        0 => ColorType::GREY,
+        2 => ColorType::RGB,
+        3 => ColorType::PALETTE,
+        4 => ColorType::GREY_ALPHA,
+        6 => ColorType::RGBA,
+        _ => return Err(Error(31)),
+    };
     info_png.compression_method = inp[26] as u32;
     info_png.filter_method = inp[27] as u32;
     info_png.interlace_method = inp[28] as u32;
