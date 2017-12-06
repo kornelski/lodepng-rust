@@ -1577,21 +1577,21 @@ pub(crate) fn chunk_append(out: &mut ucvector, chunk: &[u8]) -> Result<(), Error
 /* / Color types and such                                                   / */
 /* ////////////////////////////////////////////////////////////////////////// */
 fn checkColorValidity(colortype: ColorType, bd: u32) -> Result<(), Error> {
-    match colortype as u32 {
-        0 => if !(bd == 1 || bd == 2 || bd == 4 || bd == 8 || bd == 16) {
-            return Err(Error(37)); /*grey*/
-        },
-        3 => if !(bd == 1 || bd == 2 || bd == 4 || bd == 8) {
+    /*allowed color type / bits combination*/
+    match colortype {
+        ColorType::GREY => if !(bd == 1 || bd == 2 || bd == 4 || bd == 8 || bd == 16) {
             return Err(Error(37));
         },
-
-        /*palette*/ /*RGB*/
-        /*grey + alpha*/
-        2 | 4 | 6 => if !(bd == 8 || bd == 16) {
+        ColorType::PALETTE => if !(bd == 1 || bd == 2 || bd == 4 || bd == 8) {
             return Err(Error(37));
         },
-        _ => return Err(Error(31)),
-    } /*allowed color type / bits combination*/
+        ColorType::RGB | ColorType::GREY_ALPHA | ColorType::RGBA => if !(bd == 8 || bd == 16) {
+            return Err(Error(37));
+        },
+        _ => {
+            return Err(Error(31))
+        },
+    }
     Ok(())
 }
 
