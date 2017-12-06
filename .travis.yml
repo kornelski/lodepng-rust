@@ -2,3 +2,5 @@ language: rust
 rust:
   - stable
   - nightly
+script:
+  - cargo test --verbose --all
