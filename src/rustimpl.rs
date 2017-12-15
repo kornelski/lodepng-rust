@@ -344,6 +344,33 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
     Ok(())
 }
 
+#[test]
+fn test_filter() {
+    let mut line1 = Vec::with_capacity(1<<16);
+    let mut line2 = Vec::with_capacity(1<<16);
+    for p in 0..256 {
+        for q in 0..256 {
+            line1.push(q as u8);
+            line2.push(p as u8);
+        }
+    }
+
+    let mut filtered = vec![99u8; 1<<16];
+    let mut unfiltered = vec![66u8; 1<<16];
+    for filterType in 0..5 {
+        let len = filtered.len();
+        filterScanline(&mut filtered, &line1, Some(&line2), len, 1, filterType);
+        unfilterScanline(&mut unfiltered, &filtered, Some(&line2), 1, filterType, len).unwrap();
+        assert_eq!(unfiltered, line1, "prev+filter={}", filterType);
+    }
+    for filterType in 0..5 {
+        let len = filtered.len();
+        filterScanline(&mut filtered, &line1, None, len, 1, filterType);
+        unfilterScanline(&mut unfiltered, &filtered, None, 1, filterType, len).unwrap();
+        assert_eq!(unfiltered, line1, "none+filter={}", filterType);
+    }
+}
+
 fn filterScanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, length: usize, bytewidth: usize, filterType: u8) {
     let out = unsafe { &mut *(out as *mut [u8] as *mut [Wrapping<u8>]) };
     let scanline = unsafe { &*(scanline as *const [u8] as *const [Wrapping<u8>]) };

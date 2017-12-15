@@ -24,12 +24,42 @@ fn bgr() {
 }
 
 #[test]
-fn redecode() {
+fn redecode1() {
+    let img1 = decode_file("tests/graytest.png", ColorType::GREY, 8).unwrap();
+    let img1 = match img1 {
+        Image::Grey(a) => a,
+        _ => panic!(),
+    };
+    let png = encode_memory(&img1.buffer, img1.width, img1.height, ColorType::GREY, 8).unwrap();
+    let img2 = decode_memory(&png, ColorType::GREY, 8).unwrap();
+    let img2 = match img2 {
+        Image::Grey(a) => a,
+        _ => panic!(),
+    };
+    assert_eq!(img1.buffer, img2.buffer);
+}
+
+#[test]
+fn redecode2() {
     let img1 = decode24_file("tests/fry-test.png").unwrap();
     let png = encode24(&img1.buffer, img1.width, img1.height).unwrap();
     let img2 = decode24(&png).unwrap();
 
     assert_eq!(img1.buffer, img2.buffer);
+}
+
+#[test]
+fn random() {
+    let mut data = vec![0u8; 639*479*3];
+    for (i, px) in data.iter_mut().enumerate() {
+        *px = ((i ^ (13 + i * 17) ^ (i * 13) ^ (i/113 * 11)) >> 5) as u8;
+    }
+
+    let png = encode24(&data, 639, 479).unwrap();
+    let img2 = decode24(&png).unwrap();
+
+    use rgb::*;
+    assert_eq!(data.as_rgb(), &img2.buffer[..]);
 }
 
 #[test]
