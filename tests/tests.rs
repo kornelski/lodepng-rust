@@ -24,6 +24,15 @@ fn bgr() {
 }
 
 #[test]
+fn redecode() {
+    let img1 = decode24_file("tests/fry-test.png").unwrap();
+    let png = encode24(&img1.buffer, img1.width, img1.height).unwrap();
+    let img2 = decode24(&png).unwrap();
+
+    assert_eq!(img1.buffer, img2.buffer);
+}
+
+#[test]
 fn bgra() {
     let png = encode(&[rgb::alt::BGRA{r:1u8,g:2,b:3,a:4u8}], ColorType::BGRA, ColorType::RGBA).unwrap();
     let img = decode32(&png).unwrap();

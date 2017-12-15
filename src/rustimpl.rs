@@ -2820,7 +2820,7 @@ fn unfilterScanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, by
             }
             for i in bytewidth..length {
                 let t = recon[i - bytewidth] as u16 + precon[i] as u16;
-                recon[i] = scanline[i].wrapping_add((t >> 1) as u8);
+                recon[i] = scanline[i].wrapping_add((t as u8) >> 1);
             }
         } else {
             recon[0..bytewidth].clone_from_slice(&scanline[0..bytewidth]);
