@@ -1,4 +1,0 @@
-[submodule "doc"]
-	path = doc
-	url = https://github.com/pornel/lodepng-rust.git
-	branch = gh-pages
