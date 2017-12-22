@@ -372,10 +372,6 @@ fn test_filter() {
 }
 
 fn filterScanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, length: usize, bytewidth: usize, filterType: u8) {
-    let out = unsafe { &mut *(out as *mut [u8] as *mut [Wrapping<u8>]) };
-    let scanline = unsafe { &*(scanline as *const [u8] as *const [Wrapping<u8>]) };
-    let prevline = prevline.map(|p| unsafe { &*(p as *const [u8] as *const [Wrapping<u8>]) });
-
     match filterType {
         0 => {
             out[..length].clone_from_slice(&scanline[..length]);
@@ -383,40 +379,41 @@ fn filterScanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, leng
         1 => {
             out[..bytewidth].clone_from_slice(&scanline[..bytewidth]);
             for i in bytewidth..length {
-                out[i] = scanline[i] - scanline[i - bytewidth];
+                out[i] = scanline[i].wrapping_sub(scanline[i - bytewidth]);
             }
         },
         2 => if let Some(prevline) = prevline {
             for i in 0..length {
-                out[i] = scanline[i] - prevline[i];
+                out[i] = scanline[i].wrapping_sub(prevline[i]);
             }
         } else {
             out[..length].clone_from_slice(&scanline[..length]);
         },
         3 => if let Some(prevline) = prevline {
             for i in 0..bytewidth {
-                out[i] = scanline[i] - (prevline[i] >> 1);
+                out[i] = scanline[i].wrapping_sub(prevline[i] >> 1);
             }
             for i in bytewidth..length {
-                out[i] = scanline[i] - ((scanline[i - bytewidth] + prevline[i]) >> 1);
+                let s = scanline[i - bytewidth] as u16 + prevline[i] as u16;
+                out[i] = scanline[i].wrapping_sub((s >> 1) as u8);
             }
         } else {
             out[..bytewidth].clone_from_slice(&scanline[..bytewidth]);
             for i in bytewidth..length {
-                out[i] = scanline[i] - (scanline[i - bytewidth] >> 1);
+                out[i] = scanline[i].wrapping_sub(scanline[i - bytewidth] >> 1);
             }
         },
         4 => if let Some(prevline) = prevline {
             for i in 0..bytewidth {
-                out[i] = scanline[i] - prevline[i];
+                out[i] = scanline[i].wrapping_sub(prevline[i]);
             }
             for i in bytewidth..length {
-                out[i] = scanline[i] - Wrapping(paethPredictor(scanline[i - bytewidth].0.into(), prevline[i].0.into(), prevline[i - bytewidth].0.into()));
+                out[i] = scanline[i].wrapping_sub(paethPredictor(scanline[i - bytewidth].into(), prevline[i].into(), prevline[i - bytewidth].into()));
             }
         } else {
             out[..bytewidth].clone_from_slice(&scanline[..bytewidth]);
             for i in bytewidth..length {
-                out[i] = scanline[i] - scanline[i - bytewidth];
+                out[i] = scanline[i].wrapping_sub(scanline[i - bytewidth]);
             }
         },
         _ => return,
@@ -2847,7 +2844,7 @@ fn unfilterScanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, by
             }
             for i in bytewidth..length {
                 let t = recon[i - bytewidth] as u16 + precon[i] as u16;
-                recon[i] = scanline[i].wrapping_add((t as u8) >> 1);
+                recon[i] = scanline[i].wrapping_add((t >> 1) as u8);
             }
         } else {
             recon[0..bytewidth].clone_from_slice(&scanline[0..bytewidth]);

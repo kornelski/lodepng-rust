@@ -10,7 +10,7 @@ license = "BSD-3-Clause"
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/pornel/lodepng-rust.git"
-version = "2.1.1"
+version = "2.1.2"
 
 [badges]
 travis-ci = { repository = "pornel/lodepng-rust" }
