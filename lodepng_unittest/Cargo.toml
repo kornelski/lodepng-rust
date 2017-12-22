@@ -7,6 +7,10 @@ version = "0.1.0"
 
 [build-dependencies]
 cc = "1.0.0"
+[dependencies.lodepng]
+path = ".."
 
-[dependencies]
-lodepng = { path = ".." }
+[dev-dependencies]
+glob = "0.2.11"
+png = "0.11.0"
+rgb = "0.8.6"
