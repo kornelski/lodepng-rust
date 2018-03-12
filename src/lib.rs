@@ -129,9 +129,9 @@ impl ColorMode {
 
     pub(crate) fn set_key(&mut self, r: u16, g: u16, b: u16) {
         self.key_defined = 1;
-        self.key_r = r as c_uint;
-        self.key_g = g as c_uint;
-        self.key_b = b as c_uint;
+        self.key_r = c_uint::from(r);
+        self.key_g = c_uint::from(g);
+        self.key_b = c_uint::from(b);
     }
 
     pub(crate) fn key(&self) -> Option<(u16, u16, u16)> {
@@ -241,7 +241,7 @@ impl ColorType {
         unsafe {
             ColorMode {
                 colortype: *self,
-                bitdepth: bitdepth,
+                bitdepth,
                 ..mem::zeroed()
             }
         }

@@ -70,7 +70,7 @@ impl ucvector {
         Self {
             data,
             allocsize: size,
-            size: size,
+            size,
         }
     }
 

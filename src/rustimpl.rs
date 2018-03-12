@@ -442,7 +442,7 @@ pub(crate) fn lodepng_get_bpp_lct(colortype: ColorType, bitdepth: u32) -> u32 {
     assert!(bitdepth >= 1 && bitdepth <= 16);
     /*bits per pixel is amount of channels * bits per channel*/
     let ch = colortype.channels() as u32;
-    return ch * if ch > 1 {
+    ch * if ch > 1 {
         if bitdepth == 8 {
             8
         } else {
@@ -450,7 +450,7 @@ pub(crate) fn lodepng_get_bpp_lct(colortype: ColorType, bitdepth: u32) -> u32 {
         }
     } else {
         bitdepth
-    };
+    }
 }
 
 pub fn lodepng_get_raw_size_lct(w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> usize {
