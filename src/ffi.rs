@@ -201,17 +201,17 @@ pub struct Info {
     ///  A keyword is minimum 1 character and maximum 79 characters long. It's
     ///  discouraged to use a single line length longer than 79 characters for texts.
     pub(crate) text_num: usize,
-    pub(crate) text_keys: *mut *mut c_char,
-    pub(crate) text_strings: *mut *mut c_char,
+    pub(crate) text_keys: *mut *mut i8,
+    pub(crate) text_strings: *mut *mut i8,
 
     ///  international text chunks (iTXt)
     ///  Similar to the non-international text chunks, but with additional strings
     ///  "langtags" and "transkeys".
     pub(crate) itext_num: usize,
-    pub(crate) itext_keys: *mut *mut c_char,
-    pub(crate) itext_langtags: *mut *mut c_char,
-    pub(crate) itext_transkeys: *mut *mut c_char,
-    pub(crate) itext_strings: *mut *mut c_char,
+    pub(crate) itext_keys: *mut *mut i8,
+    pub(crate) itext_langtags: *mut *mut i8,
+    pub(crate) itext_transkeys: *mut *mut i8,
+    pub(crate) itext_strings: *mut *mut i8,
 
     /// set to 1 to make the encoder generate a tIME chunk
     pub time_defined: c_uint,
