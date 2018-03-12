@@ -2,18 +2,18 @@
 authors = ["Kornel <kornel@geekhood.net>", "Lode Vandevenne <lvandeve@gmail.com>"]
 categories = ["multimedia::encoding", "multimedia::images"]
 description = "Reading and writing PNG files without system dependencies. Pure Rust port of LodePNG."
-documentation = "https://pornel.github.io/lodepng-rust/lodepng/"
-homepage = "https://github.com/pornel/lodepng-rust#readme"
+documentation = "https://kornelski.github.io/lodepng-rust/lodepng/"
+homepage = "https://github.com/kornelski/lodepng-rust#readme"
 include = ["src/**/*", "examples/**/*", "tests/**/*", "COPYRIGHT", "README.md", "Cargo.toml"]
 keywords = ["PNG","lodepng","encoder","decoder"]
 license = "BSD-3-Clause"
 name = "lodepng"
 readme = "README.md"
-repository = "https://github.com/pornel/lodepng-rust.git"
+repository = "https://github.com/kornelski/lodepng-rust.git"
 version = "2.1.2"
 
 [badges]
-travis-ci = { repository = "pornel/lodepng-rust" }
+travis-ci = { repository = "kornelski/lodepng-rust" }
 
 [dependencies]
 libc = "0.2.33"
