@@ -133,7 +133,7 @@ fn preProcessScanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settings
         let mut out = vec![0u8; outsize];
         /*image size plus an extra byte per scanline + possible padding bits*/
         if bpp < 8 && w * bpp != ((w * bpp + 7) / 8) * 8 {
-            let mut padded = vec![0u8; (h * ((w * bpp + 7) / 8))]; /*we can immediately filter into the out buffer, no other steps needed*/
+            let mut padded = vec![0u8; h * ((w * bpp + 7) / 8)]; /*we can immediately filter into the out buffer, no other steps needed*/
             addPaddingBits(&mut padded, inp, ((w * bpp + 7) / 8) * 8, w * bpp, h);
             filter(&mut out, &padded, w, h, &info_png.color, settings)?;
         } else {
@@ -149,7 +149,7 @@ fn preProcessScanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settings
         Adam7_interlace(&mut adam7, inp, w, h, bpp);
         for i in 0..7 {
             if bpp < 8 {
-                let mut padded = vec![0u8; (padded_passstart[i + 1] - padded_passstart[i])];
+                let mut padded = vec![0u8; padded_passstart[i + 1] - padded_passstart[i]];
                 addPaddingBits(
                     &mut padded,
                     &adam7[passstart[i]..],
@@ -3185,7 +3185,7 @@ fn decodeGeneric(state: &mut State, inp: &[u8]) -> Result<(ucvector, usize, usiz
         if w > 1 {
             predict += color.raw_size_idat((w + 0) >> 1, (h + 1) >> 1) + ((h + 1) >> 1) as usize;
         }
-        predict += color.raw_size_idat((w + 0), (h + 0) >> 1) + ((h + 0) >> 1) as usize;
+        predict += color.raw_size_idat(w + 0, (h + 0) >> 1) + ((h + 0) >> 1) as usize;
         predict
     };
     let mut scanlines = zlib_decompress(&idat, &state.decoder.zlibsettings)?;
