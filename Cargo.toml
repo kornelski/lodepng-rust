@@ -10,7 +10,7 @@ license = "BSD-3-Clause"
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/kornelski/lodepng-rust.git"
-version = "2.1.4"
+version = "2.1.5"
 
 [badges]
 travis-ci = { repository = "kornelski/lodepng-rust" }
