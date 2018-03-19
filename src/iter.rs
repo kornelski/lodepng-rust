@@ -1,12 +1,13 @@
 use std;
 use std::ffi::CStr;
 use std::marker::PhantomData;
+use std::os::raw::c_char;
 use super::ChunkRef;
 use rustimpl;
 
 pub struct TextKeysCStrIter<'a> {
-    pub(crate) k: *mut *mut i8,
-    pub(crate) v: *mut *mut i8,
+    pub(crate) k: *mut *mut c_char,
+    pub(crate) v: *mut *mut c_char,
     pub(crate) n: usize,
     pub(crate) _p: PhantomData<&'a CStr>,
 }
@@ -30,10 +31,10 @@ impl<'a> Iterator for TextKeysCStrIter<'a> {
 }
 
 pub struct ITextKeysIter<'a> {
-    pub(crate) k: *mut *mut i8,
-    pub(crate) l: *mut *mut i8,
-    pub(crate) t: *mut *mut i8,
-    pub(crate) s: *mut *mut i8,
+    pub(crate) k: *mut *mut c_char,
+    pub(crate) l: *mut *mut c_char,
+    pub(crate) t: *mut *mut c_char,
+    pub(crate) s: *mut *mut c_char,
     pub(crate) n: usize,
     pub(crate) _p: PhantomData<&'a str>,
 }

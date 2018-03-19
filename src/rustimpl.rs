@@ -479,21 +479,21 @@ pub const DISTANCEBASE: [u32; 30] = [
 pub const DISTANCEEXTRA: [u32; 30] = [
     0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, ];
 
-pub(crate) unsafe fn string_cleanup(out: &mut *mut i8) {
+pub(crate) unsafe fn string_cleanup(out: &mut *mut c_char) {
     lodepng_free((*out) as *mut _);
     *out = ptr::null_mut();
 }
 
-pub(crate) fn string_copy(inp: &CStr) -> *mut i8 {
+pub(crate) fn string_copy(inp: &CStr) -> *mut c_char {
     string_copy_slice(inp.to_bytes())
 }
 
-pub(crate) fn string_copy_slice(inp: &[u8]) -> *mut i8 {
+pub(crate) fn string_copy_slice(inp: &[u8]) -> *mut c_char {
     let insize = inp.len();
     unsafe {
-        let out = lodepng_malloc(insize + 1) as *mut i8;
+        let out = lodepng_malloc(insize + 1) as *mut c_char;
         for i in 0..insize {
-            *out.offset(i as isize) = inp[i] as i8;
+            *out.offset(i as isize) = inp[i] as c_char;
         }
         *out.offset(insize as isize) = 0;
         out
@@ -547,7 +547,7 @@ use ChunkPosition;
 
 impl Info {
 
-    pub(crate) fn push_itext(&mut self, key: *mut i8, langtag: *mut i8, transkey: *mut i8, str: *mut i8) -> Result<(), Error> {
+    pub(crate) fn push_itext(&mut self, key: *mut c_char, langtag: *mut c_char, transkey: *mut c_char, str: *mut c_char) -> Result<(), Error> {
         assert!(!key.is_null());
         assert!(!langtag.is_null());
         assert!(!transkey.is_null());
@@ -562,7 +562,7 @@ impl Info {
         Ok(())
     }
 
-    pub(crate) fn push_text(&mut self, k: *mut i8, v: *mut i8) -> Result<(), Error> {
+    pub(crate) fn push_text(&mut self, k: *mut c_char, v: *mut c_char) -> Result<(), Error> {
         assert!(!k.is_null());
         assert!(!v.is_null());
         unsafe {

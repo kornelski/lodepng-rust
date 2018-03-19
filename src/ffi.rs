@@ -201,17 +201,17 @@ pub struct Info {
     ///  A keyword is minimum 1 character and maximum 79 characters long. It's
     ///  discouraged to use a single line length longer than 79 characters for texts.
     pub(crate) text_num: usize,
-    pub(crate) text_keys: *mut *mut i8,
-    pub(crate) text_strings: *mut *mut i8,
+    pub(crate) text_keys: *mut *mut c_char,
+    pub(crate) text_strings: *mut *mut c_char,
 
     ///  international text chunks (iTXt)
     ///  Similar to the non-international text chunks, but with additional strings
     ///  "langtags" and "transkeys".
     pub(crate) itext_num: usize,
-    pub(crate) itext_keys: *mut *mut i8,
-    pub(crate) itext_langtags: *mut *mut i8,
-    pub(crate) itext_transkeys: *mut *mut i8,
-    pub(crate) itext_strings: *mut *mut i8,
+    pub(crate) itext_keys: *mut *mut c_char,
+    pub(crate) itext_langtags: *mut *mut c_char,
+    pub(crate) itext_transkeys: *mut *mut c_char,
+    pub(crate) itext_strings: *mut *mut c_char,
 
     /// set to 1 to make the encoder generate a tIME chunk
     pub time_defined: c_uint,
@@ -384,17 +384,17 @@ pub unsafe extern "C" fn lodepng_encode24(out: &mut *mut u8, outsize: &mut usize
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_encode_file(filename: *const i8, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error {
+pub unsafe extern "C" fn lodepng_encode_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error {
     lode_error!(rustimpl::lodepng_encode_file(c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, colortype, bitdepth))
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_encode32_file(filename: *const i8, image: *const u8, w: c_uint, h: c_uint) -> Error {
+pub unsafe extern "C" fn lodepng_encode32_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint) -> Error {
     lode_error!(rustimpl::lodepng_encode_file(c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, ColorType::RGBA, 8))
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_encode24_file(filename: *const i8, image: *const u8, w: c_uint, h: c_uint) -> Error {
+pub unsafe extern "C" fn lodepng_encode24_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint) -> Error {
     lode_error!(rustimpl::lodepng_encode_file(c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, ColorType::RGB, 8))
 }
 
@@ -471,7 +471,7 @@ pub unsafe extern "C" fn lodepng_clear_text(info: &mut Info) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_add_text(info: &mut Info, key: *const i8, str: *const i8) -> Error {
+pub unsafe extern "C" fn lodepng_add_text(info: &mut Info, key: *const c_char, str: *const c_char) -> Error {
     let k = CStr::from_ptr(key);
     let s = CStr::from_ptr(str);
     lode_error!(rustimpl::lodepng_add_text(info, k, s))
@@ -483,7 +483,7 @@ pub unsafe extern "C" fn lodepng_clear_itext(info: &mut Info) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_add_itext(info: &mut Info, key: *const i8, langtag: *const i8, transkey: *const i8, str: *const i8) -> Error {
+pub unsafe extern "C" fn lodepng_add_itext(info: &mut Info, key: *const c_char, langtag: *const c_char, transkey: *const c_char, str: *const c_char) -> Error {
     let k = CStr::from_ptr(key);
     let l = CStr::from_ptr(langtag);
     let t = CStr::from_ptr(transkey);
@@ -727,7 +727,7 @@ pub unsafe extern "C" fn lodepng_decode24(out: &mut *mut u8, w: &mut c_uint, h: 
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_decode_file(out: &mut *mut u8, w_out: &mut c_uint, h_out: &mut c_uint, filename: *const i8, colortype: ColorType, bitdepth: c_uint) -> Error {
+pub unsafe extern "C" fn lodepng_decode_file(out: &mut *mut u8, w_out: &mut c_uint, h_out: &mut c_uint, filename: *const c_char, colortype: ColorType, bitdepth: c_uint) -> Error {
     *out = ptr::null_mut();
     let (v, w, h) = lode_try!(rustimpl::lodepng_decode_file(c_path(filename), colortype, bitdepth));
     *w_out = w as u32;
@@ -738,12 +738,12 @@ pub unsafe extern "C" fn lodepng_decode_file(out: &mut *mut u8, w_out: &mut c_ui
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_decode32_file(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, filename: *const i8) -> Error {
+pub unsafe extern "C" fn lodepng_decode32_file(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, filename: *const c_char) -> Error {
     lodepng_decode_file(out, w, h, filename, ColorType::RGBA, 8)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_decode24_file(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, filename: *const i8) -> Error {
+pub unsafe extern "C" fn lodepng_decode24_file(out: &mut *mut u8, w: &mut c_uint, h: &mut c_uint, filename: *const c_char) -> Error {
     lodepng_decode_file(out, w, h, filename, ColorType::RGB, 8)
 }
 
@@ -753,17 +753,17 @@ pub unsafe extern "C" fn lodepng_decoder_settings_init(settings: *mut DecoderSet
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_buffer_file(out: *mut u8, size: usize, filename: *const i8) -> Error {
+pub unsafe extern "C" fn lodepng_buffer_file(out: *mut u8, size: usize, filename: *const c_char) -> Error {
     lode_error!(rustimpl::lodepng_buffer_file(slice::from_raw_parts_mut(out, size), c_path(filename)))
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_load_file(out: &mut *mut u8, outsize: &mut usize, filename: *const i8) -> Error {
+pub unsafe extern "C" fn lodepng_load_file(out: &mut *mut u8, outsize: &mut usize, filename: *const c_char) -> Error {
     to_vec(out, outsize, rustimpl::lodepng_load_file(c_path(filename)))
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_save_file(buffer: *const u8, buffersize: usize, filename: *const i8) -> Error {
+pub unsafe extern "C" fn lodepng_save_file(buffer: *const u8, buffersize: usize, filename: *const c_char) -> Error {
     lode_error!(rustimpl::lodepng_save_file(slice::from_raw_parts(buffer, buffersize), c_path(filename)))
 }
 
@@ -793,7 +793,7 @@ pub unsafe extern "C" fn lodepng_auto_choose_color(mode_out: &mut ColorMode, ima
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_filesize(filename: *const i8) -> c_long {
+pub unsafe extern "C" fn lodepng_filesize(filename: *const c_char) -> c_long {
     rustimpl::lodepng_filesize(c_path(filename))
         .map_or(-1, |l| l as c_long)
 }
@@ -836,7 +836,7 @@ pub static lodepng_default_decompress_settings: DecompressSettings = DecompressS
 
 
 #[cfg(unix)]
-unsafe fn c_path<'meh>(filename: *const i8) -> &'meh Path {
+unsafe fn c_path<'meh>(filename: *const c_char) -> &'meh Path {
     use std::ffi::OsStr;
     use std::os::unix::ffi::OsStrExt;
     assert!(!filename.is_null());
@@ -845,7 +845,7 @@ unsafe fn c_path<'meh>(filename: *const i8) -> &'meh Path {
 }
 
 #[cfg(not(unix))]
-unsafe fn c_path(filename: *const i8) -> PathBuf {
+unsafe fn c_path(filename: *const c_char) -> PathBuf {
     let tmp = CStr::from_ptr(filename);
     tmp.to_string_lossy().to_string().into()
 }
