@@ -1,4 +1,4 @@
-
+#![cfg_attr(feature = "cargo-clippy", allow(needless_borrow))]
 #![allow(non_upper_case_globals)]
 
 use rustimpl::*;
@@ -385,17 +385,17 @@ pub unsafe extern "C" fn lodepng_encode24(out: &mut *mut u8, outsize: &mut usize
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error {
-    lode_error!(rustimpl::lodepng_encode_file(c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, colortype, bitdepth))
+    lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, colortype, bitdepth))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode32_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint) -> Error {
-    lode_error!(rustimpl::lodepng_encode_file(c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, ColorType::RGBA, 8))
+    lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, ColorType::RGBA, 8))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode24_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint) -> Error {
-    lode_error!(rustimpl::lodepng_encode_file(c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, ColorType::RGB, 8))
+    lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, ColorType::RGB, 8))
 }
 
 #[no_mangle]
@@ -729,7 +729,7 @@ pub unsafe extern "C" fn lodepng_decode24(out: &mut *mut u8, w: &mut c_uint, h: 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_decode_file(out: &mut *mut u8, w_out: &mut c_uint, h_out: &mut c_uint, filename: *const c_char, colortype: ColorType, bitdepth: c_uint) -> Error {
     *out = ptr::null_mut();
-    let (v, w, h) = lode_try!(rustimpl::lodepng_decode_file(c_path(filename), colortype, bitdepth));
+    let (v, w, h) = lode_try!(rustimpl::lodepng_decode_file(&c_path(filename), colortype, bitdepth));
     *w_out = w as u32;
     *h_out = h as u32;
     let (data, _) = v.into_raw();
@@ -754,17 +754,17 @@ pub unsafe extern "C" fn lodepng_decoder_settings_init(settings: *mut DecoderSet
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_buffer_file(out: *mut u8, size: usize, filename: *const c_char) -> Error {
-    lode_error!(rustimpl::lodepng_buffer_file(slice::from_raw_parts_mut(out, size), c_path(filename)))
+    lode_error!(rustimpl::lodepng_buffer_file(slice::from_raw_parts_mut(out, size), &c_path(filename)))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_load_file(out: &mut *mut u8, outsize: &mut usize, filename: *const c_char) -> Error {
-    to_vec(out, outsize, rustimpl::lodepng_load_file(c_path(filename)))
+    to_vec(out, outsize, rustimpl::lodepng_load_file(&c_path(filename)))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_save_file(buffer: *const u8, buffersize: usize, filename: *const c_char) -> Error {
-    lode_error!(rustimpl::lodepng_save_file(slice::from_raw_parts(buffer, buffersize), c_path(filename)))
+    lode_error!(rustimpl::lodepng_save_file(slice::from_raw_parts(buffer, buffersize), &c_path(filename)))
 }
 
 #[no_mangle]
@@ -794,7 +794,7 @@ pub unsafe extern "C" fn lodepng_auto_choose_color(mode_out: &mut ColorMode, ima
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_filesize(filename: *const c_char) -> c_long {
-    rustimpl::lodepng_filesize(c_path(filename))
+    rustimpl::lodepng_filesize(&c_path(filename))
         .map_or(-1, |l| l as c_long)
 }
 
