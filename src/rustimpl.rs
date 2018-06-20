@@ -1652,12 +1652,19 @@ pub fn lodepng_chunk_safetocopy(chunk: &[u8]) -> bool {
     (chunk[7] & 32) != 0
 }
 
+
+#[cfg(not(fuzzing))]
 pub fn lodepng_chunk_check_crc(chunk: &[u8]) -> bool {
     let length = lodepng_chunk_length(chunk) as usize;
     /*the CRC is taken of the data and the 4 chunk type letters, not the length*/
     let CRC = lodepng_read32bitInt(&chunk[length + 8..]);
     let checksum = lodepng_crc32(&chunk[4..length + 8]);
     CRC == checksum
+}
+
+#[cfg(fuzzing)]
+pub fn lodepng_chunk_check_crc(chunk: &[u8]) -> bool {
+    true // Disable crc32 checks so that random data from fuzzer gets actually parsed
 }
 
 pub fn lodepng_chunk_generate_crc(chunk: &mut [u8]) {
@@ -2564,7 +2571,7 @@ pub fn lodepng_zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Res
         return Err(Error(26));
     }
     let out = inflate(&inp[2..], settings)?;
-    if settings.ignore_adler32 == 0 {
+    if (! cfg!(fuzzing)) && settings.ignore_adler32 == 0 {
         let ADLER32 = lodepng_read32bitInt(&inp[(inp.len() - 4)..]);
         let checksum = adler32(out.slice());
         /*error, adler checksum not correct, data must be corrupted*/
