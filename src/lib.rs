@@ -445,8 +445,8 @@ impl Clone for Info {
             unknown_chunks_data: [ptr::null_mut(), ptr::null_mut(), ptr::null_mut()],
             unknown_chunks_size: [0, 0, 0],
         };
-        rustimpl::Text_copy(&mut dest, self).unwrap();
-        rustimpl::LodePNGIText_copy(&mut dest, self).unwrap();
+        rustimpl::text_copy(&mut dest, self).unwrap();
+        rustimpl::itext_copy(&mut dest, self).unwrap();
         dest.set_unknown_chunks(self).unwrap();
         dest
     }

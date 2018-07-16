@@ -494,7 +494,7 @@ pub unsafe extern "C" fn lodepng_add_itext(info: &mut Info, key: *const c_char, 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_create(out: &mut *mut u8, outsize: &mut usize, length: c_uint, type_: *const [u8; 4], data: *const u8) -> Error {
     let mut v = ucvector::from_raw(out, *outsize);
-    let err = lode_error!(rustimpl::addChunk(&mut v, type_.as_ref().unwrap(), slice::from_raw_parts(data, length as usize)));
+    let err = lode_error!(rustimpl::add_chunk(&mut v, type_.as_ref().unwrap(), slice::from_raw_parts(data, length as usize)));
     let (data, size) = v.into_raw();
     *out = data;
     *outsize = size;
