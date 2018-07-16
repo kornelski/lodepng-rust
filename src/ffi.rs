@@ -375,27 +375,27 @@ pub unsafe extern "C" fn lodepng_error_text(code: Error) -> *const u8 {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode32(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint) -> Error {
-    to_vec(out, outsize, rustimpl::lodepng_encode_memory(slice::from_raw_parts(image, 0x1FFFFFFF), w, h, ColorType::RGBA, 8))
+    to_vec(out, outsize, rustimpl::lodepng_encode_memory(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, ColorType::RGBA, 8))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode24(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint) -> Error {
-    to_vec(out, outsize, rustimpl::lodepng_encode_memory(slice::from_raw_parts(image, 0x1FFFFFFF), w, h, ColorType::RGB, 8))
+    to_vec(out, outsize, rustimpl::lodepng_encode_memory(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, ColorType::RGB, 8))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error {
-    lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, colortype, bitdepth))
+    lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, colortype, bitdepth))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode32_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint) -> Error {
-    lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, ColorType::RGBA, 8))
+    lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, ColorType::RGBA, 8))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode24_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint) -> Error {
-    lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFFFFFF), w, h, ColorType::RGB, 8))
+    lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, ColorType::RGB, 8))
 }
 
 #[no_mangle]
@@ -410,7 +410,7 @@ pub unsafe extern "C" fn lodepng_get_bpp(info: &ColorMode) -> c_uint {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_get_channels(info: &ColorMode) -> c_uint {
-    info.channels() as c_uint
+    c_uint::from(info.channels())
 }
 
 #[no_mangle]
@@ -523,54 +523,54 @@ pub unsafe extern "C" fn lodepng_chunk_type_equals(chunk: *const u8, ty: &mut [u
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_data_const(chunk: *const u8) -> *const u8 {
-    let chunk = slice::from_raw_parts(chunk, 0x7FFFFFF);
+    let chunk = slice::from_raw_parts(chunk, 0x7FFF_FFFF);
     rustimpl::lodepng_chunk_data(chunk).unwrap().as_ptr()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_next(chunk: *mut u8) -> *mut u8 {
-    rustimpl::lodepng_chunk_next_mut(slice::from_raw_parts_mut(chunk, 0x7FFFFFF)).as_mut_ptr()
+    rustimpl::lodepng_chunk_next_mut(slice::from_raw_parts_mut(chunk, 0x7FFF_FFFF)).as_mut_ptr()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_next_const(chunk: *const u8) -> *const u8 {
-    rustimpl::lodepng_chunk_next(slice::from_raw_parts(chunk, 0x7FFFFFF)).as_ptr()
+    rustimpl::lodepng_chunk_next(slice::from_raw_parts(chunk, 0x7FFF_FFFF)).as_ptr()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_ancillary(chunk: *const u8) -> u8 {
-    rustimpl::lodepng_chunk_ancillary(slice::from_raw_parts(chunk, 0x7FFFFFFF)) as u8
+    rustimpl::lodepng_chunk_ancillary(slice::from_raw_parts(chunk, 0x7FFF_FFFF)) as u8
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_private(chunk: *const u8) -> u8 {
-    rustimpl::lodepng_chunk_private(slice::from_raw_parts(chunk, 0x7FFFFFFF)) as u8
+    rustimpl::lodepng_chunk_private(slice::from_raw_parts(chunk, 0x7FFF_FFFF)) as u8
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_safetocopy(chunk: *const u8) -> u8 {
-    rustimpl::lodepng_chunk_safetocopy(slice::from_raw_parts(chunk, 0x7FFFFFFF)) as u8
+    rustimpl::lodepng_chunk_safetocopy(slice::from_raw_parts(chunk, 0x7FFF_FFFF)) as u8
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_data(chunk: *mut u8) -> *mut u8 {
-    rustimpl::lodepng_chunk_data_mut(slice::from_raw_parts_mut(chunk, 0x7FFFFFF)).unwrap().as_mut_ptr()
+    rustimpl::lodepng_chunk_data_mut(slice::from_raw_parts_mut(chunk, 0x7FFF_FFFF)).unwrap().as_mut_ptr()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_check_crc(chunk: *const u8) -> c_uint {
-    if rustimpl::lodepng_chunk_check_crc(slice::from_raw_parts(chunk, 0x7FFFFFFF)) {0} else {1}
+    if rustimpl::lodepng_chunk_check_crc(slice::from_raw_parts(chunk, 0x7FFF_FFFF)) {0} else {1}
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_generate_crc(chunk: *mut u8) {
-    rustimpl::lodepng_chunk_generate_crc(slice::from_raw_parts_mut(chunk, 0x7FFFFFFF))
+    rustimpl::lodepng_chunk_generate_crc(slice::from_raw_parts_mut(chunk, 0x7FFF_FFFF))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_append(out: &mut *mut u8, outsize: &mut usize, chunk: *const u8) -> Error {
     let mut v = ucvector::from_raw(out, *outsize);
-    let err = lode_error!(rustimpl::chunk_append(&mut v, slice::from_raw_parts(chunk, 0x7FFFFFF)));
+    let err = lode_error!(rustimpl::chunk_append(&mut v, slice::from_raw_parts(chunk, 0x7FFF_FFFF)));
     let (data, size) = v.into_raw();
     *out = data;
     *outsize = size;
@@ -673,7 +673,7 @@ pub unsafe extern "C" fn lodepng_info_swap(a: &mut Info, b: &mut Info) {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_convert(out: *mut u8, image: *const u8, mode_out: &ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint) -> Error {
-    lode_error!(rustimpl::lodepng_convert(slice::from_raw_parts_mut(out, 0x1FFFFFFF), slice::from_raw_parts(image, 0x1FFFFFFF), mode_out, mode_in, w, h))
+    lode_error!(rustimpl::lodepng_convert(slice::from_raw_parts_mut(out, 0x1FFF_FFFF), slice::from_raw_parts(image, 0x1FFF_FFFF), mode_out, mode_in, w, h))
 }
 
 #[no_mangle]
@@ -771,7 +771,7 @@ pub unsafe extern "C" fn lodepng_save_file(buffer: *const u8, buffersize: usize,
 pub unsafe extern "C" fn lodepng_encode(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint, state: &mut State) -> Error {
     *out = ptr::null_mut();
     *outsize = 0;
-    let res = lode_try_state!(state.error, rustimpl::lodepng_encode(slice::from_raw_parts(image, 0x1FFFFFFF), w, h, state));
+    let res = lode_try_state!(state.error, rustimpl::lodepng_encode(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, state));
     let (data, size) = res.into_raw();
     *out = data;
     *outsize = size;
@@ -780,14 +780,14 @@ pub unsafe extern "C" fn lodepng_encode(out: &mut *mut u8, outsize: &mut usize, 
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_get_color_profile(profile_out: *mut ColorProfile, image: *const u8, w: c_uint, h: c_uint, mode: &ColorMode) -> Error {
-    let prof = lode_try!(rustimpl::get_color_profile(slice::from_raw_parts(image, 0x1FFFFFFF), w, h, mode));
+    let prof = lode_try!(rustimpl::get_color_profile(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, mode));
     ptr::write(profile_out, prof);
     Error(0)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: c_uint, h: c_uint, mode_in: &ColorMode) -> Error {
-    let mode = lode_try!(rustimpl::auto_choose_color(slice::from_raw_parts(image, 0x1FFFFFFF), w as usize, h as usize, mode_in));
+    let mode = lode_try!(rustimpl::auto_choose_color(slice::from_raw_parts(image, 0x1FFF_FFFF), w as usize, h as usize, mode_in));
     ptr::write(mode_out, mode);
     Error(0)
 }
@@ -800,7 +800,7 @@ pub unsafe extern "C" fn lodepng_filesize(filename: *const c_char) -> c_long {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode_memory(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> Error {
-    to_vec(out, outsize, rustimpl::lodepng_encode_memory(slice::from_raw_parts(image, 0x1FFFFFFF), w, h, colortype, bitdepth))
+    to_vec(out, outsize, rustimpl::lodepng_encode_memory(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, colortype, bitdepth))
 }
 
 #[no_mangle]

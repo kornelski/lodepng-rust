@@ -63,7 +63,7 @@ impl HuffmanTree {
         for n in 0..tree.numcodes as usize {
             for i in 0..tree.lengths[n] as isize {
                 let bit = ((tree.tree1d[n] >> (tree.lengths[n] as isize - i - 1)) & 1) as usize;
-                if treepos > 2147483647 || treepos + 2 > tree.numcodes {
+                if treepos > ‎0x7FFF_FFFF || treepos + 2 > tree.numcodes {
                     return Err(Error(55));
                 }
                 if tree.tree2d[2 * treepos + bit as usize] == 32767 {

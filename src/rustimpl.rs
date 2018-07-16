@@ -1201,7 +1201,7 @@ fn read_chunk_bkgd(info: &mut Info, data: &[u8]) -> Result<(), Error> {
 /*text chunk (tEXt)*/
 fn read_chunk_text(info: &mut Info, data: &[u8]) -> Result<(), Error> {
     let (keyword, str) = split_at_nul(data);
-    if keyword.len() < 1 || keyword.len() > 79 {
+    if keyword.is_empty() || keyword.len() > 79 {
         return Err(Error(89));
     }
     /*even though it's not allowed by the standard, no error is thrown if
@@ -1313,7 +1313,7 @@ fn add_chunk_iend(out: &mut ucvector) -> Result<(), Error> {
 }
 
 fn add_chunk_text(out: &mut ucvector, keyword: &CStr, textstring: &CStr) -> Result<(), Error> {
-    if keyword.to_bytes().len() < 1 || keyword.to_bytes().len() > 79 {
+    if keyword.to_bytes().is_empty() || keyword.to_bytes().len() > 79 {
         return Err(Error(89));
     }
     let mut text = Vec::from(keyword.to_bytes_with_nul());
@@ -1322,7 +1322,7 @@ fn add_chunk_text(out: &mut ucvector, keyword: &CStr, textstring: &CStr) -> Resu
 }
 
 fn add_chunk_ztxt(out: &mut ucvector, keyword: &CStr, textstring: &CStr, zlibsettings: &CompressSettings) -> Result<(), Error> {
-    if keyword.to_bytes().len() < 1 || keyword.to_bytes().len() > 79 {
+    if keyword.to_bytes().is_empty() || keyword.to_bytes().len() > 79 {
         return Err(Error(89));
     }
     let mut data = Vec::from(keyword.to_bytes_with_nul());
@@ -3029,7 +3029,7 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8]) -> Result<(Info, u
     }
     /*when decoding a new PNG image, make sure all parameters created after previous decoding are reset*/
     let mut info_png = Info::new();
-    if &inp[0..8] != &[137, 80, 78, 71, 13, 10, 26, 10] {
+    if inp[0..8] != [137, 80, 78, 71, 13, 10, 26, 10] {
         /*error: the first 8 bytes are not the correct PNG signature*/
         return Err(Error(28));
     }
@@ -3279,7 +3279,7 @@ fn add_unknown_chunks(out: &mut ucvector, mut inchunk: &[u8]) -> Result<(), Erro
     Ok(())
 }
 
-pub const LODEPNG_VERSION_STRING: &'static [u8] = b"20161127\0";
+pub const LODEPNG_VERSION_STRING: &[u8] = b"20161127\0";
 
 pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result<ucvector, Error> {
     let w = w as usize;
@@ -3349,7 +3349,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
         if t.to_bytes().len() > 79 {
             return Err(Error(66));
         }
-        if t.to_bytes().len() < 1 {
+        if t.to_bytes().is_empty() {
             return Err(Error(67));
         }
         if state.encoder.text_compression != 0 {
@@ -3372,7 +3372,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
         if k.as_bytes().len() > 79 {
             return Err(Error(66));
         }
-        if k.as_bytes().len() < 1 {
+        if k.as_bytes().is_empty() {
             return Err(Error(67));
         }
         add_chunk_itxt(&mut outv, state.encoder.text_compression != 0, k, l, t, s, &state.encoder.zlibsettings)?;
@@ -3662,7 +3662,7 @@ fn longest_match(a: &[u8], b: &[u8]) -> usize {
             return i;
         }
     }
-    return len;
+    len
 }
 
 /*
