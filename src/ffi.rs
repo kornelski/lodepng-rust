@@ -6,6 +6,7 @@ use huffman;
 use std::ptr;
 use std::mem;
 use std::slice;
+use std::fmt;
 use std::os::raw::*;
 use std::ffi::CStr;
 use std::path::*;
@@ -117,7 +118,7 @@ pub type custom_compress_callback =   Option<unsafe extern "C" fn(arg1: &mut *mu
 pub type custom_decompress_callback = Option<unsafe extern "C" fn(arg1: *mut *mut c_uchar, arg2: *mut usize, arg3: *const c_uchar, arg4: usize, arg5: *const DecompressSettings) -> c_uint>;
 
 #[repr(C)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DecompressSettings {
     pub(crate) ignore_adler32: c_uint,
     pub(crate) custom_zlib: custom_decompress_callback,
@@ -165,6 +166,7 @@ pub struct Time {
 
 /// Information about the PNG image, except pixels, width and height
 #[repr(C)]
+#[derive(Debug)]
 pub struct Info {
     /// compression method of the original file. Always 0.
     pub compression_method: c_uint,
@@ -240,7 +242,7 @@ pub struct Info {
 
 /// Settings for the decoder. This contains settings for the PNG and the Zlib decoder, but not the `Info` settings from the `Info` structs.
 #[repr(C)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DecoderSettings {
     /// in here is the setting to ignore Adler32 checksums
     pub zlibsettings: DecompressSettings,
@@ -270,7 +272,7 @@ pub enum FilterStrategy {
 }
 
 #[repr(C)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EncoderSettings {
     /// settings for the zlib encoder, such as window size, ...
     pub zlibsettings: CompressSettings,
@@ -302,7 +304,7 @@ pub struct EncoderSettings {
 
 /// The settings, state and information for extended encoding and decoding
 #[repr(C)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct State {
     pub decoder: DecoderSettings,
     pub encoder: EncoderSettings,
@@ -334,6 +336,18 @@ pub struct ColorProfile {
     pub palette: [::RGBA; 256],
     /// bits per channel (not for palette). 1,2 or 4 for greyscale only. 16 if 16-bit per channel required.
     pub bits: c_uint,
+}
+
+impl fmt::Debug for ColorProfile {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("ColorProfile")
+    }
+}
+
+impl fmt::Debug for CompressSettings {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("CompressSettings")
+    }
 }
 
 #[no_mangle]
