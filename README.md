@@ -73,3 +73,8 @@ let icc_data = state.info_png().get_icc();
 * `auto_convert` is a boolean
 * `bitdepth` has a getter/setter
 * There is no C any more!
+
+## Origin of Rust version
+
+This codebase is derived from [C LodePNG](https://lodev.org/lodepng/) by Lode Vandevenne. It has been converted to Rust using [Citrus C to Rust converter](https://gitlab.com/citrus-rs/citrus) and manual refactorings.
+
