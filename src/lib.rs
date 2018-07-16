@@ -452,6 +452,160 @@ impl Clone for Info {
     }
 }
 
+#[derive(Clone, Debug, Default)]
+/// Make an image with custom settings
+pub struct Encoder {
+    state: State,
+}
+
+impl Encoder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    #[inline]
+    pub fn set_auto_convert(&mut self, mode: bool) {
+        self.state.set_auto_convert(mode);
+    }
+
+    #[inline]
+    pub fn set_filter_strategy(&mut self, mode: FilterStrategy, palette_filter_zero: bool) {
+        self.state.set_filter_strategy(mode, palette_filter_zero);
+    }
+
+    #[inline]
+    pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
+        self.state.set_custom_zlib(callback, context);
+    }
+
+    #[inline]
+    pub unsafe fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
+        self.state.set_custom_deflate(callback, context);
+    }
+
+    #[inline]
+    pub fn info_raw(&self) -> &ColorMode {
+        self.state.info_raw()
+    }
+
+    #[inline]
+    /// Color mode of the source bytes to be encoded
+    pub fn info_raw_mut(&mut self) -> &mut ColorMode {
+        self.state.info_raw_mut()
+    }
+
+    #[inline]
+    pub fn info_png(&self) -> &Info {
+        self.state.info_png()
+    }
+
+    #[inline]
+    /// Color mode of the file to be created
+    pub fn info_png_mut(&mut self) -> &mut Info {
+        self.state.info_png_mut()
+    }
+
+    #[inline]
+    pub fn encode<PixelType: Copy>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+        self.state.encode(image, w, h)
+    }
+
+    #[inline]
+    pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+        self.state.encode_file(filepath, image, w, h)
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+/// Read an image with custom settings
+pub struct Decoder {
+    state: State,
+}
+
+impl Decoder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    #[inline]
+    pub fn info_raw(&self) -> &ColorMode {
+        self.state.info_raw()
+    }
+
+    #[inline]
+    /// Preferred color mode for decoding
+    pub fn info_raw_mut(&mut self) -> &mut ColorMode {
+        self.state.info_raw_mut()
+    }
+
+    #[inline]
+    /// Actual color mode of the decoded image or inspected file
+    pub fn info_png(&self) -> &Info {
+        self.state.info_png()
+    }
+
+    #[inline]
+    pub fn info_png_mut(&mut self) -> &mut Info {
+        self.state.info_png_mut()
+    }
+
+    /// whether to convert the PNG to the color type you want. Default: yes
+    pub fn color_convert(&mut self, true_or_false: bool) {
+        self.state.color_convert(true_or_false);
+    }
+
+    /// if false but remember_unknown_chunks is true, they're stored in the unknown chunks.
+    pub fn read_text_chunks(&mut self, true_or_false: bool) {
+        self.state.read_text_chunks(true_or_false);
+    }
+
+    /// store all bytes from unknown chunks in the `Info` (off by default, useful for a png editor)
+    pub fn remember_unknown_chunks(&mut self, true_or_false: bool) {
+        self.state.remember_unknown_chunks(true_or_false);
+    }
+
+    /// Decompress ICC profile from iCCP chunk
+    pub fn get_icc(&self) -> Result<Vec<u8>, Error> {
+        self.state.get_icc()
+    }
+
+    /// Load PNG from buffer using State's settings
+    ///
+    ///  ```no_run
+    ///  # use lodepng::*; let mut state = State::new();
+    ///  # let slice = [0u8]; #[allow(unused_variables)] fn do_stuff<T>(_buf: T) {}
+    ///
+    ///  state.info_raw_mut().colortype = ColorType::RGBA;
+    ///  match state.decode(&slice) {
+    ///      Ok(Image::RGBA(with_alpha)) => do_stuff(with_alpha),
+    ///      _ => panic!("¯\\_(ツ)_/¯")
+    ///  }
+    ///  ```
+    #[inline]
+    pub fn decode<Bytes: AsRef<[u8]>>(&mut self, input: Bytes) -> Result<Image, Error> {
+        self.state.decode(input)
+    }
+
+    pub fn decode_file<P: AsRef<Path>>(&mut self, filepath: P) -> Result<Image, Error> {
+        self.state.decode_file(filepath)
+    }
+
+    /// Updates `info_png`. Returns (width, height)
+    pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
+        self.state.inspect(input)
+    }
+
+    pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_decompress_callback, context: *const c_void) {
+        self.state.decoder.zlibsettings.custom_zlib = callback;
+        self.state.decoder.zlibsettings.custom_context = context;
+    }
+
+    pub unsafe fn set_custom_inflate(&mut self, callback: ffi::custom_decompress_callback, context: *const c_void) {
+        self.state.decoder.zlibsettings.custom_inflate = callback;
+        self.state.decoder.zlibsettings.custom_context = context;
+    }
+}
+
 impl State {
     pub fn new() -> Self {
         Self::default()
@@ -555,7 +709,7 @@ impl State {
         self.decode(&load_file(filepath)?)
     }
 
-    /// Returns (width, height)
+    /// Updates `info_png`. Returns (width, height)
     pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
         let (info, w, h) = rustimpl::lodepng_inspect(&self.decoder, input)?;
         self.info_png = info;
