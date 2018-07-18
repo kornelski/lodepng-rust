@@ -18,6 +18,7 @@ use super::*;
 use ffi::ColorProfile;
 use ffi::State;
 use huffman::HuffmanTree;
+use ChunkPosition;
 
 pub use ucvec::*;
 pub use rgb::RGBA8 as RGBA;
@@ -482,19 +483,18 @@ pub(crate) unsafe fn string_cleanup(out: &mut *mut c_char) {
     *out = ptr::null_mut();
 }
 
-pub(crate) fn string_copy(inp: &CStr) -> *mut c_char {
-    string_copy_slice(inp.to_bytes())
-}
-
-pub(crate) fn string_copy_slice(inp: &[u8]) -> *mut c_char {
+pub(crate) fn string_copy(inp: &[u8]) -> Result<*mut c_char, Error> {
     let insize = inp.len();
     unsafe {
         let out = lodepng_malloc(insize + 1) as *mut c_char;
+        if out.is_null() {
+            return Err(Error(83));
+        }
         for i in 0..insize {
             *out.offset(i as isize) = inp[i] as c_char;
         }
         *out.offset(insize as isize) = 0;
-        out
+        Ok(out)
     }
 }
 
@@ -529,44 +529,46 @@ pub(crate) fn text_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
     dest.text_strings = ptr::null_mut();
     dest.text_num = 0;
     for (k, v) in source.text_keys_cstr() {
-        dest.push_text(string_copy(k), string_copy(v))?;
+        dest.push_text(k.to_bytes(), v.to_bytes())?;
     }
     Ok(())
 }
 
-unsafe fn realloc_push<T>(array: &mut *mut T, len: usize, new: T) -> Result<(), Error> {
-    *array = lodepng_realloc((*array) as *mut _, (len + 1) * mem::size_of::<T>()) as *mut _;
-    *array.offset(len as isize) = new;
+unsafe fn realloc_extend(array: &mut *mut *mut i8, len: usize) -> Result<(), Error> {
+    *array = lodepng_realloc((*array) as *mut _, (len + 1) * mem::size_of::<*mut i8>()) as *mut _;
+    if array.is_null() {
+        return Err(Error(83));
+    }
+    *array.offset(len as isize) = ptr::null_mut();
     Ok(())
 }
 
-
-use ChunkPosition;
-
 impl Info {
 
-    pub(crate) fn push_itext(&mut self, key: *mut c_char, langtag: *mut c_char, transkey: *mut c_char, str: *mut c_char) -> Result<(), Error> {
-        assert!(!key.is_null());
-        assert!(!langtag.is_null());
-        assert!(!transkey.is_null());
-        assert!(!str.is_null());
+    pub(crate) fn push_itext(&mut self, key: &[u8], langtag: &[u8], transkey: &[u8], str: &[u8]) -> Result<(), Error> {
         unsafe {
-            realloc_push(&mut self.itext_keys, self.itext_num, key)?;
-            realloc_push(&mut self.itext_langtags, self.itext_num, langtag)?;
-            realloc_push(&mut self.itext_transkeys, self.itext_num, transkey)?;
-            realloc_push(&mut self.itext_strings, self.itext_num, str)?;
+            realloc_extend(&mut self.itext_keys, self.itext_num)?;
+            realloc_extend(&mut self.itext_langtags, self.itext_num)?;
+            realloc_extend(&mut self.itext_transkeys, self.itext_num)?;
+            realloc_extend(&mut self.itext_strings, self.itext_num)?;
+            let n = self.itext_num as isize;
             self.itext_num += 1;
+            *self.itext_keys.offset(n) = string_copy(key)?;
+            *self.itext_langtags.offset(n) = string_copy(langtag)?;
+            *self.itext_transkeys.offset(n) = string_copy(transkey)?;
+            *self.itext_strings.offset(n) = string_copy(str)?;
         }
         Ok(())
     }
 
-    pub(crate) fn push_text(&mut self, k: *mut c_char, v: *mut c_char) -> Result<(), Error> {
-        assert!(!k.is_null());
-        assert!(!v.is_null());
+    pub(crate) fn push_text(&mut self, k: &[u8], v: &[u8]) -> Result<(), Error> {
         unsafe {
-            realloc_push(&mut self.text_keys, self.text_num, k)?;
-            realloc_push(&mut self.text_strings, self.text_num, v)?;
+            realloc_extend(&mut self.text_keys, self.text_num)?;
+            realloc_extend(&mut self.text_strings, self.text_num)?;
+            let n = self.text_num as isize;
             self.text_num += 1;
+            *self.text_keys.offset(n) = string_copy(k)?;
+            *self.text_strings.offset(n) = string_copy(v)?;
         }
         Ok(())
     }
@@ -595,10 +597,6 @@ impl Info {
     }
 }
 
-pub fn lodepng_add_text(info: &mut Info, key: &CStr, str: &CStr) -> Result<(), Error> {
-    info.push_text(string_copy(key), string_copy(str))
-}
-
 pub(crate) fn itext_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
     dest.itext_keys = ptr::null_mut();
     dest.itext_langtags = ptr::null_mut();
@@ -606,16 +604,12 @@ pub(crate) fn itext_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
     dest.itext_strings = ptr::null_mut();
     dest.itext_num = 0;
     for (k,l,t,s) in source.itext_keys() {
-        dest.push_itext(string_copy_slice(k.as_bytes()),
-            string_copy_slice(l.as_bytes()),
-            string_copy_slice(t.as_bytes()),
-            string_copy_slice(s.as_bytes()))?;
+        dest.push_itext(k.as_bytes(),
+            l.as_bytes(),
+            t.as_bytes(),
+            s.as_bytes())?;
     }
     Ok(())
-}
-
-pub fn lodepng_add_itext(info: &mut Info, key: &CStr, langtag: &CStr, transkey: &CStr, str: &CStr) -> Result<(), Error> {
-    info.push_itext(string_copy(key), string_copy(langtag), string_copy(transkey), string_copy(str))
 }
 
 fn add_color_bits(out: &mut [u8], index: usize, bits: u32, mut inp: u32) {
@@ -1206,7 +1200,7 @@ fn read_chunk_text(info: &mut Info, data: &[u8]) -> Result<(), Error> {
     }
     /*even though it's not allowed by the standard, no error is thrown if
         there's no null termination char, if the text is empty*/
-    info.push_text(string_copy_slice(keyword), string_copy_slice(str))
+    info.push_text(keyword, str)
 }
 
 /*compressed text chunk (zTXt)*/
@@ -1232,7 +1226,7 @@ fn read_chunk_ztxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u
     }
     let inl = &data[string2_begin..];
     let decoded = zlib_decompress(inl, zlibsettings)?;
-    info.push_text(string_copy_slice(key), string_copy_slice(decoded.slice()))?;
+    info.push_text(key, decoded.slice())?;
     Ok(())
 }
 
@@ -1264,13 +1258,14 @@ fn read_chunk_itxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u
     let (langtag, data) = split_at_nul(&data[2..]);
     let (transkey, data) = split_at_nul(data);
 
+    let decoded;
     let rest = if compressed_flag != 0 {
-        let decoded = zlib_decompress(data, zlibsettings)?;
-        string_copy_slice(decoded.slice())
+        decoded = zlib_decompress(data, zlibsettings)?;
+        decoded.slice()
     } else {
-        string_copy_slice(data)
+        data
     };
-    info.push_itext(string_copy_slice(key), string_copy_slice(langtag), string_copy_slice(transkey), rest)?;
+    info.push_itext(key, langtag, transkey, rest)?;
     Ok(())
 }
 

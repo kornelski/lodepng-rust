@@ -486,9 +486,9 @@ pub unsafe extern "C" fn lodepng_clear_text(info: &mut Info) {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_add_text(info: &mut Info, key: *const c_char, str: *const c_char) -> Error {
-    let k = CStr::from_ptr(key);
-    let s = CStr::from_ptr(str);
-    lode_error!(rustimpl::lodepng_add_text(info, k, s))
+    let k = lode_try!(CStr::from_ptr(key).to_str().map_err(|_| Error(89)));
+    let s = lode_try!(CStr::from_ptr(str).to_str().map_err(|_| Error(89)));
+    lode_error!(info.add_text(k, s))
 }
 
 #[no_mangle]
@@ -502,7 +502,7 @@ pub unsafe extern "C" fn lodepng_add_itext(info: &mut Info, key: *const c_char, 
     let l = CStr::from_ptr(langtag);
     let t = CStr::from_ptr(transkey);
     let s = CStr::from_ptr(str);
-    lode_error!(rustimpl::lodepng_add_itext(info, k, l, t, s))
+    lode_error!(info.push_itext(k.to_bytes(), l.to_bytes(), t.to_bytes(), s.to_bytes()))
 }
 
 #[no_mangle]

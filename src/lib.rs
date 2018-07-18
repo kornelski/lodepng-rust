@@ -318,7 +318,7 @@ impl Info {
 
     /// push back both texts at once
     pub fn add_text(&mut self, key: &str, str: &str) -> Result<(), Error> {
-        self.push_text(string_copy_slice(key.as_bytes()), string_copy_slice(str.as_bytes()))
+        self.push_text(key.as_bytes(), str.as_bytes())
     }
 
     /// use this to clear the itexts again after you filled them in
@@ -345,10 +345,10 @@ impl Info {
     /// push back the 4 texts of 1 chunk at once
     pub fn add_itext(&mut self, key: &str, langtag: &str, transkey: &str, text: &str) -> Result<(), Error> {
         self.push_itext(
-            string_copy_slice(key.as_bytes()),
-            string_copy_slice(langtag.as_bytes()),
-            string_copy_slice(transkey.as_bytes()),
-            string_copy_slice(text.as_bytes()),
+            key.as_bytes(),
+            langtag.as_bytes(),
+            transkey.as_bytes(),
+            text.as_bytes(),
         )
     }
 
