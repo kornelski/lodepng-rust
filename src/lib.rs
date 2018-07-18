@@ -313,7 +313,6 @@ impl Info {
             lodepng_free(self.text_keys as *mut _);
             lodepng_free(self.text_strings as *mut _);
             self.text_num = 0;
-            self.itext_num = 0;
         }
     }
 
