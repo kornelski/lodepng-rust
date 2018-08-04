@@ -507,9 +507,9 @@ pub unsafe extern "C" fn lodepng_add_itext(info: &mut Info, key: *const c_char, 
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_create(out: &mut *mut u8, outsize: &mut usize, length: c_uint, type_: *const [u8; 4], data: *const u8) -> Error {
-    let mut v = ucvector::from_raw(out, *outsize);
+    let mut v = vec_from_raw(*out, *outsize);
     let err = lode_error!(rustimpl::add_chunk(&mut v, type_.as_ref().unwrap(), slice::from_raw_parts(data, length as usize)));
-    let (data, size) = v.into_raw();
+    let (data, size) = lode_try!(vec_into_raw(v));
     *out = data;
     *outsize = size;
     err
@@ -583,12 +583,12 @@ pub unsafe extern "C" fn lodepng_chunk_generate_crc(chunk: *mut u8) {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_append(out: &mut *mut u8, outsize: &mut usize, chunk: *const u8) -> Error {
-    let mut v = ucvector::from_raw(out, *outsize);
-    let err = lode_error!(rustimpl::chunk_append(&mut v, slice::from_raw_parts(chunk, 0x7FFF_FFFF)));
-    let (data, size) = v.into_raw();
+    let mut v = vec_from_raw(*out, *outsize);
+    rustimpl::chunk_append(&mut v, slice::from_raw_parts(chunk, 0x7FFF_FFFF));
+    let (data, size) = lode_try!(vec_into_raw(v));
     *out = data;
     *outsize = size;
-    err
+    Error(0)
 }
 
 #[no_mangle]
@@ -635,9 +635,9 @@ pub unsafe extern "C" fn zlib_decompress(out: &mut *mut u8, outsize: &mut usize,
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, settings: &CompressSettings) -> Error {
-    let mut v = ucvector::from_raw(out, *outsize);
+    let mut v = vec_from_raw(*out, *outsize);
     let err = lode_error!(rustimpl::lodepng_zlib_compress(&mut v, slice::from_raw_parts(inp, insize), settings));
-    let (data, size) = v.into_raw();
+    let (data, size) = lode_try!(vec_into_raw(v));
     *out = data;
     *outsize = size;
     err
@@ -711,7 +711,7 @@ pub unsafe extern "C" fn lodepng_decode(out: &mut *mut u8, w_out: &mut c_uint, h
     let (v, w, h) = lode_try_state!(state.error, rustimpl::lodepng_decode(state, slice::from_raw_parts(inp, insize)));
     *w_out = w as u32;
     *h_out = h as u32;
-    let (data, _) = v.into_raw();
+    let (data, _) = lode_try!(vec_into_raw(v));
     *out = data;
     Error(0)
 }
@@ -725,7 +725,7 @@ pub unsafe extern "C" fn lodepng_decode_memory(out: &mut *mut u8, w_out: &mut c_
     let (v, w, h) = lode_try!(rustimpl::lodepng_decode_memory(slice::from_raw_parts(inp, insize), colortype, bitdepth));
     *w_out = w as u32;
     *h_out = h as u32;
-    let (data, _) = v.into_raw();
+    let (data, _) = lode_try!(vec_into_raw(v));
     *out = data;
     Error(0)
 }
@@ -746,7 +746,7 @@ pub unsafe extern "C" fn lodepng_decode_file(out: &mut *mut u8, w_out: &mut c_ui
     let (v, w, h) = lode_try!(rustimpl::lodepng_decode_file(&c_path(filename), colortype, bitdepth));
     *w_out = w as u32;
     *h_out = h as u32;
-    let (data, _) = v.into_raw();
+    let (data, _) = lode_try!(vec_into_raw(v));
     *out = data;
     Error(0)
 }
@@ -786,7 +786,7 @@ pub unsafe extern "C" fn lodepng_encode(out: &mut *mut u8, outsize: &mut usize, 
     *out = ptr::null_mut();
     *outsize = 0;
     let res = lode_try_state!(state.error, rustimpl::lodepng_encode(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, state));
-    let (data, size) = res.into_raw();
+    let (data, size) = lode_try!(vec_into_raw(res));
     *out = data;
     *outsize = size;
     Error(0)
@@ -864,18 +864,17 @@ unsafe fn c_path(filename: *const c_char) -> PathBuf {
     tmp.to_string_lossy().to_string().into()
 }
 
-unsafe fn to_vec(out: &mut *mut u8, outsize: &mut usize, result: Result<ucvector, Error>) -> Error {
-    match result {
-        Ok(v) => {
-            let (data, size) = v.into_raw();
+unsafe fn to_vec(out: &mut *mut u8, outsize: &mut usize, result: Result<Vec<u8>, Error>) -> Error {
+    match result.and_then(vec_into_raw) {
+        Ok((data, len)) => {
             *out = data;
-            *outsize = size;
+            *outsize = len;
             Error(0)
         },
-        Err(e) => {
+        Err(err) => {
             *out = ptr::null_mut();
             *outsize = 0;
-            e
+            err
         },
     }
 }

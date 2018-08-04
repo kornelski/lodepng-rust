@@ -20,7 +20,6 @@ use ffi::State;
 use huffman::HuffmanTree;
 use ChunkPosition;
 
-pub use ucvec::*;
 pub use rgb::RGBA8 as RGBA;
 use std::collections::HashMap;
 use std::ffi::CStr;
@@ -32,6 +31,23 @@ use std::os::raw::*;
 use std::path::*;
 use std::ptr;
 use std::slice;
+
+pub(crate) unsafe fn vec_from_raw(data: *mut u8, len: usize) -> Vec<u8> {
+    slice::from_raw_parts_mut(data, len).to_owned()
+}
+
+pub(crate) fn vec_into_raw(v: Vec<u8>) -> Result<(*mut u8, usize), Error> {
+    unsafe {
+        let len = v.len();
+        let data = lodepng_malloc(len) as *mut u8;
+        if data.is_null() {
+            Err(Error(83))
+        } else {
+            slice::from_raw_parts_mut(data, len).clone_from_slice(&v);
+            Ok((data, len))
+        }
+    }
+}
 
 pub(crate) fn lodepng_malloc(size: usize) -> *mut c_void {
     unsafe {
@@ -48,7 +64,7 @@ pub(crate) unsafe fn lodepng_free(ptr: *mut c_void) {
 }
 
 /*8 bytes PNG signature, aka the magic bytes*/
-fn write_signature(out: &mut ucvector) {
+fn write_signature(out: &mut Vec<u8>) {
     out.push(137u8);
     out.push(80u8);
     out.push(78u8);
@@ -434,7 +450,7 @@ fn paeth_predictor(a: i16, b: i16, c: i16) -> u8 {
 
 pub fn lodepng_encode_file(filename: &Path, image: &[u8], w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> Result<(), Error> {
     let v = lodepng_encode_memory(image, w, h, colortype, bitdepth)?;
-    lodepng_save_file(v.slice(), filename)
+    lodepng_save_file(&v, filename)
 }
 
 pub(crate) fn lodepng_get_bpp_lct(colortype: ColorType, bitdepth: u32) -> u32 {
@@ -520,8 +536,8 @@ fn add32bit_int(buffer: &mut Vec<u8>, value: u32) {
 }
 
 #[inline]
-fn lodepng_add32bit_int(buffer: &mut ucvector, value: u32) {
-    add32bit_int(&mut buffer.inner, value);
+fn lodepng_add32bit_int(buffer: &mut Vec<u8>, value: u32) {
+    add32bit_int(buffer, value);
 }
 
 pub(crate) fn text_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
@@ -576,9 +592,9 @@ impl Info {
     fn push_unknown_chunk(&mut self, critical_pos: ChunkPosition, chunk: &[u8]) -> Result<(), Error> {
         let set = critical_pos as usize;
         unsafe {
-            let mut tmp = ucvector::from_raw(&mut self.unknown_chunks_data[set], self.unknown_chunks_size[set]);
-            chunk_append(&mut tmp, chunk)?;
-            let (data, size) = tmp.into_raw();
+            let mut tmp = vec_from_raw(self.unknown_chunks_data[set], self.unknown_chunks_size[set]);
+            chunk_append(&mut tmp, chunk);
+            let (data, size) = vec_into_raw(tmp)?;
             self.unknown_chunks_data[set] = data;
             self.unknown_chunks_size[set] = size;
         }
@@ -1230,7 +1246,7 @@ fn read_chunk_ztxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u
     }
     let inl = &data[string2_begin..];
     let decoded = zlib_decompress(inl, zlibsettings)?;
-    info.push_text(key, decoded.slice())?;
+    info.push_text(key, &decoded)?;
     Ok(())
 }
 
@@ -1265,7 +1281,7 @@ fn read_chunk_itxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u
     let decoded;
     let rest = if compressed_flag != 0 {
         decoded = zlib_decompress(data, zlibsettings)?;
-        decoded.slice()
+        &decoded[..]
     } else {
         data
     };
@@ -1301,17 +1317,17 @@ fn read_chunk_phys(info: &mut Info, data: &[u8]) -> Result<(), Error> {
 }
 
 
-fn add_chunk_idat(out: &mut ucvector, data: &[u8], zlibsettings: &CompressSettings) -> Result<(), Error> {
+fn add_chunk_idat(out: &mut Vec<u8>, data: &[u8], zlibsettings: &CompressSettings) -> Result<(), Error> {
     let zlib = zlib_compress(data, zlibsettings)?;
-    add_chunk(out, b"IDAT", zlib.slice())?;
+    add_chunk(out, b"IDAT", &zlib)?;
     Ok(())
 }
 
-fn add_chunk_iend(out: &mut ucvector) -> Result<(), Error> {
+fn add_chunk_iend(out: &mut Vec<u8>) -> Result<(), Error> {
     add_chunk(out, b"IEND", &[])
 }
 
-fn add_chunk_text(out: &mut ucvector, keyword: &CStr, textstring: &CStr) -> Result<(), Error> {
+fn add_chunk_text(out: &mut Vec<u8>, keyword: &CStr, textstring: &CStr) -> Result<(), Error> {
     if keyword.to_bytes().is_empty() || keyword.to_bytes().len() > 79 {
         return Err(Error(89));
     }
@@ -1320,7 +1336,7 @@ fn add_chunk_text(out: &mut ucvector, keyword: &CStr, textstring: &CStr) -> Resu
     add_chunk(out, b"tEXt", &text)
 }
 
-fn add_chunk_ztxt(out: &mut ucvector, keyword: &CStr, textstring: &CStr, zlibsettings: &CompressSettings) -> Result<(), Error> {
+fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &CStr, textstring: &CStr, zlibsettings: &CompressSettings) -> Result<(), Error> {
     if keyword.to_bytes().is_empty() || keyword.to_bytes().len() > 79 {
         return Err(Error(89));
     }
@@ -1328,13 +1344,13 @@ fn add_chunk_ztxt(out: &mut ucvector, keyword: &CStr, textstring: &CStr, zlibset
     data.push(0u8);
     let textstring = textstring.to_bytes();
     let v = zlib_compress(textstring, zlibsettings)?;
-    data.extend_from_slice(v.slice());
+    data.extend_from_slice(&v);
     add_chunk(out, b"zTXt", &data)?;
     Ok(())
 }
 
 fn add_chunk_itxt(
-    out: &mut ucvector, compressed: bool, keyword: &str, langtag: &str, transkey: &str, textstring: &str, zlibsettings: &CompressSettings,
+    out: &mut Vec<u8>, compressed: bool, keyword: &str, langtag: &str, transkey: &str, textstring: &str, zlibsettings: &CompressSettings,
 ) -> Result<(), Error> {
     let k_len = keyword.len();
     if k_len < 1 || k_len > 79 {
@@ -1348,7 +1364,7 @@ fn add_chunk_itxt(
     data.extend_from_slice(transkey.as_bytes()); data.push(0);
     if compressed {
         let compressed_data = zlib_compress(textstring.as_bytes(), zlibsettings)?;
-        data.extend_from_slice(compressed_data.slice());
+        data.extend_from_slice(&compressed_data);
     } else {
         data.extend_from_slice(textstring.as_bytes());
     }
@@ -1356,7 +1372,7 @@ fn add_chunk_itxt(
 }
 
 
-fn add_chunk_bkgd(out: &mut ucvector, info: &Info) -> Result<(), Error> {
+fn add_chunk_bkgd(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
     let mut bkgd = Vec::new();
     if info.color.colortype == ColorType::GREY || info.color.colortype == ColorType::GREY_ALPHA {
         bkgd.push((info.background_r >> 8) as u8);
@@ -1374,7 +1390,7 @@ fn add_chunk_bkgd(out: &mut ucvector, info: &Info) -> Result<(), Error> {
     add_chunk(out, b"bKGD", &bkgd)
 }
 
-fn add_chunk_ihdr(out: &mut ucvector, w: usize, h: usize, colortype: ColorType, bitdepth: usize, interlace_method: u8) -> Result<(), Error> {
+fn add_chunk_ihdr(out: &mut Vec<u8>, w: usize, h: usize, colortype: ColorType, bitdepth: usize, interlace_method: u8) -> Result<(), Error> {
     let mut header = Vec::new();
     add32bit_int(&mut header, w as u32);
     add32bit_int(&mut header, h as u32);
@@ -1386,7 +1402,7 @@ fn add_chunk_ihdr(out: &mut ucvector, w: usize, h: usize, colortype: ColorType, 
     add_chunk(out, b"IHDR", &header)
 }
 
-fn add_chunk_trns(out: &mut ucvector, info: &ColorMode) -> Result<(), Error> {
+fn add_chunk_trns(out: &mut Vec<u8>, info: &ColorMode) -> Result<(), Error> {
     let mut trns = Vec::new();
     if info.colortype == ColorType::PALETTE {
         let palette = info.palette();
@@ -1422,7 +1438,7 @@ fn add_chunk_trns(out: &mut ucvector, info: &ColorMode) -> Result<(), Error> {
     add_chunk(out, b"tRNS", &trns)
 }
 
-fn add_chunk_plte(out: &mut ucvector, info: &ColorMode) -> Result<(), Error> {
+fn add_chunk_plte(out: &mut Vec<u8>, info: &ColorMode) -> Result<(), Error> {
     let mut plte = Vec::new();
     for p in info.palette() {
         plte.push(p.r);
@@ -1432,7 +1448,7 @@ fn add_chunk_plte(out: &mut ucvector, info: &ColorMode) -> Result<(), Error> {
     add_chunk(out, b"PLTE", &plte)
 }
 
-fn add_chunk_time(out: &mut ucvector, time: &Time) -> Result<(), Error> {
+fn add_chunk_time(out: &mut Vec<u8>, time: &Time) -> Result<(), Error> {
     let data = [
         (time.year >> 8) as u8,
         (time.year & 255) as u8,
@@ -1445,7 +1461,7 @@ fn add_chunk_time(out: &mut ucvector, time: &Time) -> Result<(), Error> {
     add_chunk(out, b"tIME", &data)
 }
 
-fn add_chunk_phys(out: &mut ucvector, info: &Info) -> Result<(), Error> {
+fn add_chunk_phys(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
     let mut data = Vec::new();
     add32bit_int(&mut data, info.phys_x);
     add32bit_int(&mut data, info.phys_y);
@@ -1455,7 +1471,7 @@ fn add_chunk_phys(out: &mut ucvector, info: &Info) -> Result<(), Error> {
 
 
 /*chunk_name must be string of 4 characters*/
-pub(crate) fn add_chunk(out: &mut ucvector, type_: &[u8; 4], data: &[u8]) -> Result<(), Error> {
+pub(crate) fn add_chunk(out: &mut Vec<u8>, type_: &[u8; 4], data: &[u8]) -> Result<(), Error> {
     let length = data.len() as usize;
     if length > (1 << 31) {
         return Err(Error(77));
@@ -1465,12 +1481,12 @@ pub(crate) fn add_chunk(out: &mut ucvector, type_: &[u8; 4], data: &[u8]) -> Res
     /*1: length*/
     lodepng_add32bit_int(out, length as u32);
     /*2: chunk name (4 letters)*/
-    out.extend_from_slice(&type_[..])?;
+    out.extend_from_slice(&type_[..]);
     /*3: the data*/
-    out.extend_from_slice(data)?;
+    out.extend_from_slice(data);
     /*4: CRC (of the chunkname characters and the data)*/
     lodepng_add32bit_int(out, 0);
-    lodepng_chunk_generate_crc(&mut out.slice_mut()[previous_length..]);
+    lodepng_chunk_generate_crc(&mut out[previous_length..]);
     Ok(())
 }
 
@@ -1671,9 +1687,9 @@ pub fn lodepng_chunk_generate_crc(chunk: &mut [u8]) {
     lodepng_set32bit_int(&mut chunk[8 + length..], crc);
 }
 
-pub(crate) fn chunk_append(out: &mut ucvector, chunk: &[u8]) -> Result<(), Error> {
+pub(crate) fn chunk_append(out: &mut Vec<u8>, chunk: &[u8]) {
     let total_chunk_length = lodepng_chunk_length(chunk) as usize + 12;
-    out.extend_from_slice(&chunk[0..total_chunk_length])
+    out.extend_from_slice(&chunk[0..total_chunk_length]);
 }
 
 /* ////////////////////////////////////////////////////////////////////////// */
@@ -1720,28 +1736,28 @@ pub fn lodepng_color_mode_equal(a: &ColorMode, b: &ColorMode) -> bool {
 
 const MAX_SUPPORTED_DEFLATE_LENGTH: usize = 258;
 /*bitlen is the size in bits of the code*/
-fn add_huffman_symbol(bp: &mut usize, compressed: &mut ucvector, code: u32, bitlen: u32) {
+fn add_huffman_symbol(bp: &mut usize, compressed: &mut Vec<u8>, code: u32, bitlen: u32) {
     add_bits_to_stream_reversed(bp, compressed, code, bitlen as usize);
 }
 
-fn add_bits_to_stream_reversed(bitpointer: &mut usize, bitstream: &mut ucvector, value: u32, nbits: usize) {
+fn add_bits_to_stream_reversed(bitpointer: &mut usize, bitstream: &mut Vec<u8>, value: u32, nbits: usize) {
     for i in 0..nbits {
         if ((*bitpointer) & 7) == 0 {
             bitstream.push(0u8);
         }
         let end = bitstream.len() - 1;
-        bitstream.slice_mut()[end] |= (((value >> (nbits - 1 - i)) & 1) as u8) << ((*bitpointer) & 7);
+        bitstream[end] |= (((value >> (nbits - 1 - i)) & 1) as u8) << ((*bitpointer) & 7);
         *bitpointer += 1;
     }
 }
 
-fn add_bits_to_stream(bitpointer: &mut usize, bitstream: &mut ucvector, value: u32, nbits: usize) {
+fn add_bits_to_stream(bitpointer: &mut usize, bitstream: &mut Vec<u8>, value: u32, nbits: usize) {
     for i in 0..nbits {
         if ((*bitpointer) & 7) == 0 {
             bitstream.push(0u8);
         }
         let end = bitstream.len() - 1;
-        bitstream.slice_mut()[end] |= (((value >> i) & 1) as u8) << ((*bitpointer) & 7);
+        bitstream[end] |= (((value >> i) & 1) as u8) << ((*bitpointer) & 7);
         *bitpointer += 1;
     }
 }
@@ -1783,7 +1799,7 @@ pub const NUM_DEFLATE_CODE_SYMBOLS: usize = 288;
 pub const FIRST_LENGTH_CODE_INDEX: u32 = 257;
 pub const LAST_LENGTH_CODE_INDEX: u32 = 285;
 
-fn inflate_huffman_block(out: &mut ucvector, inp: &[u8], bp: &mut usize, pos: &mut usize, btype: u32) -> Result<(), Error> {
+fn inflate_huffman_block(out: &mut Vec<u8>, inp: &[u8], bp: &mut usize, pos: &mut usize, btype: u32) -> Result<(), Error> {
     let (ref mut tree_ll, ref mut tree_d) = if btype == 1 {
         get_tree_inflate_fixed()?
     } else {
@@ -1827,10 +1843,10 @@ fn inflate_huffman_block(out: &mut ucvector, inp: &[u8], bp: &mut usize, pos: &m
                 }
                 let mut backward = start - distance;
                 unsafe {
-                    out.inner.reserve(length);
-                    out.inner.set_len((*pos) + length);
+                    out.reserve(length);
+                    out.set_len((*pos) + length);
                 }
-                let out_data = out.slice_mut();
+                let out_data = &mut out[..];
                 if distance < length {
                     for _ in 0..length {
                         out_data[*pos] = out_data[backward];
@@ -1858,7 +1874,7 @@ fn inflate_huffman_block(out: &mut ucvector, inp: &[u8], bp: &mut usize, pos: &m
     Ok(())
 }
 
-fn inflate_no_compression(out: &mut ucvector, inp: &[u8], bp: &mut usize, pos: &mut usize) -> Result<(), Error> {
+fn inflate_no_compression(out: &mut Vec<u8>, inp: &[u8], bp: &mut usize, pos: &mut usize) -> Result<(), Error> {
     /*go to first boundary of byte*/
     while ((*bp) & 7) != 0 {
         (*bp) += 1; /*byte position*/
@@ -1880,7 +1896,7 @@ fn inflate_no_compression(out: &mut ucvector, inp: &[u8], bp: &mut usize, pos: &
     if p + len > inp.len() {
         return Err(Error(23)); /*error: reading outside of in buffer*/
     }
-    out.extend_from_slice(&inp[p..p + len])?;
+    out.extend_from_slice(&inp[p..p + len]);
     p += len;
     (*pos) += len;
     (*bp) = p * 8;
@@ -2037,8 +2053,8 @@ fn generate_fixed_lit_len_tree() -> Result<HuffmanTree, Error> {
 /* ////////////////////////////////////////////////////////////////////////// */
 
 
-pub(crate) fn lodepng_inflatev(inp: &[u8], _settings: &DecompressSettings) -> Result<ucvector, Error> {
-    let mut out = ucvector::new();
+pub(crate) fn lodepng_inflatev(inp: &[u8], _settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
+    let mut out = Vec::new();
     /*bit pointer in the "in" data, current byte is bp >> 3, current bit is bp & 0x7 (from lsb to msb of the byte)*/
     let mut bp = 0; /*byte position in the out buffer*/
     let mut bfinal = 0; /*error, bit pointer will jump past memory*/
@@ -2064,13 +2080,13 @@ pub(crate) fn lodepng_inflatev(inp: &[u8], _settings: &DecompressSettings) -> Re
     Ok(out)
 }
 
-fn inflate(inp: &[u8], settings: &DecompressSettings) -> Result<ucvector, Error> {
+fn inflate(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
     if let Some(cb) = settings.custom_inflate {
         unsafe {
             let mut outdata = ptr::null_mut();
             let mut outsize = 0;
             Error((cb)(&mut outdata, &mut outsize, inp.as_ptr(), inp.len(), settings)).to_result()?;
-            Ok(ucvector::from_raw(&mut outdata, outsize))
+            Ok(vec_from_raw(outdata, outsize))
         }
     } else {
         lodepng_inflatev(inp, settings)
@@ -2186,12 +2202,12 @@ fn update_hash_chain(hash: &mut Hash, wpos: u32, hashval: u32, numzeros: u16) {
     hash.headz[numzeros as usize] = wpos as i32;
 }
 
-fn deflate_no_compression(data: &[u8]) -> Result<ucvector, Error> {
+fn deflate_no_compression(data: &[u8]) -> Result<Vec<u8>, Error> {
     /*non compressed deflate block data: 1 bit BFINAL,2 bits BTYPE,(5 bits): it jumps to start of next byte,
       2 bytes LEN, 2 bytes nlen, LEN bytes literal DATA*/
     let numdeflateblocks = (data.len() + 65534) / 65535;
     let mut datapos = 0;
-    let mut out = ucvector::new();
+    let mut out = Vec::new();
     for i in 0..numdeflateblocks {
         let bfinal = (i == numdeflateblocks - 1) as usize;
         let btype = 0;
@@ -2218,7 +2234,7 @@ write the lz77-encoded data, which has lit, len and dist codes, to compressed st
 tree_ll: the tree for lit and len codes.
 tree_d: the tree for distance codes.
 */
-fn write_lz77_data(bp: &mut usize, out: &mut ucvector, lz77_encoded: &[u32], tree_ll: &HuffmanTree, tree_d: &HuffmanTree) {
+fn write_lz77_data(bp: &mut usize, out: &mut Vec<u8>, lz77_encoded: &[u32], tree_ll: &HuffmanTree, tree_d: &HuffmanTree) {
     let mut i = 0; /*for a length code, 3 more things have to be added*/
     while i != lz77_encoded.len() {
         let val = lz77_encoded[i as usize];
@@ -2244,7 +2260,7 @@ fn write_lz77_data(bp: &mut usize, out: &mut ucvector, lz77_encoded: &[u32], tre
 
 
 fn deflate_dynamic(
-    out: &mut ucvector,
+    out: &mut Vec<u8>,
     bp: &mut usize,
     hash: &mut Hash,
     data: &[u8],
@@ -2374,21 +2390,21 @@ fn deflate_dynamic(
     if ((*bp) & 7) == 0 {
         out.push(0); /*first bit of BTYPE "dynamic"*/
     } /*second bit of BTYPE "dynamic"*/
-    *out.last_mut() |= ((bfinal as u32) << ((*bp as u32) & 7)) as u8; /*write the HLIT, HDIST and HCLEN values*/
+    *out.last_mut().unwrap() |= ((bfinal as u32) << ((*bp as u32) & 7)) as u8; /*write the HLIT, HDIST and HCLEN values*/
     (*bp) += 1; /*trim zeroes for HCLEN. HLIT and HDIST were already trimmed at tree creation*/
     /*write the code lenghts of the code length alphabet*/
 
     if ((*bp) & 7) == 0 {
         out.push(0); /*write the lenghts of the lit/len AND the dist alphabet*/
     } /*extra bits of repeat codes*/
-    *out.last_mut() |= (0 << ((*bp as u32) & 7)) as u8; /*write the compressed data symbols*/
+    *out.last_mut().unwrap() |= (0 << ((*bp as u32) & 7)) as u8; /*write the compressed data symbols*/
     (*bp) += 1; /*error: the length of the end code 256 must be larger than 0*/
     /*write the end code*/
 
     if ((*bp) & 7) == 0 {
         out.push(0); /*end of error-while*/
     }
-    *out.last_mut() |= (1 << ((*bp as u32) & 7)) as u8;
+    *out.last_mut().unwrap() |= (1 << ((*bp as u32) & 7)) as u8;
     (*bp) += 1;
 
     let hlit = (numcodes_ll - 257) as u32;
@@ -2426,7 +2442,7 @@ fn deflate_dynamic(
     Ok(())
 }
 
-fn deflate_fixed(out: &mut ucvector, bp: &mut usize, hash: &mut Hash, data: &[u8], datapos: usize, dataend: usize, settings: &CompressSettings, bfinal: u32) -> Result<(), Error> {
+fn deflate_fixed(out: &mut Vec<u8>, bp: &mut usize, hash: &mut Hash, data: &[u8], datapos: usize, dataend: usize, settings: &CompressSettings, bfinal: u32) -> Result<(), Error> {
     let tree_ll = generate_fixed_lit_len_tree()?;
     let tree_d = generate_fixed_distance_tree()?;
 
@@ -2434,19 +2450,19 @@ fn deflate_fixed(out: &mut ucvector, bp: &mut usize, hash: &mut Hash, data: &[u8
         out.push(0);
     }
     let end = out.len() - 1;
-    out.slice_mut()[end] |= (bfinal << ((*bp as u32) & 7)) as u8;
+    out[end] |= (bfinal << ((*bp as u32) & 7)) as u8;
     (*bp) += 1;
     if ((*bp) & 7) == 0 {
         out.push(0);
     }
     let end = out.len() - 1;
-    out.slice_mut()[end] |= (1 << ((*bp as u32) & 7)) as u8;
+    out[end] |= (1 << ((*bp as u32) & 7)) as u8;
     (*bp) += 1;
     if ((*bp) & 7) == 0 {
         out.push(0);
     }
     let end = out.len() - 1;
-    out.slice_mut()[end] |= (0 << ((*bp as u32) & 7)) as u8;
+    out[end] |= (0 << ((*bp as u32) & 7)) as u8;
     (*bp) += 1;
     if settings.use_lz77 != 0 {
         let lz77_encoded = encode_lz77(
@@ -2469,7 +2485,7 @@ fn deflate_fixed(out: &mut ucvector, bp: &mut usize, hash: &mut Hash, data: &[u8
     Ok(())
 }
 
-pub(crate) fn lodepng_deflatev(inp: &[u8], settings: &CompressSettings) -> Result<ucvector, Error> {
+pub(crate) fn lodepng_deflatev(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
     let mut blocksize: usize;
     let mut bp = 0;
 
@@ -2493,7 +2509,7 @@ pub(crate) fn lodepng_deflatev(inp: &[u8], settings: &CompressSettings) -> Resul
         numdeflateblocks = 1;
     }
     let mut hash = Hash::new(settings.windowsize as usize)?;
-    let mut out = ucvector::new();
+    let mut out = Vec::new();
     for i in 0..numdeflateblocks {
         let final_ = numdeflateblocks - 1 == i;
         let start = i * blocksize;
@@ -2508,13 +2524,13 @@ pub(crate) fn lodepng_deflatev(inp: &[u8], settings: &CompressSettings) -> Resul
     Ok(out)
 }
 
-fn deflate(inp: &[u8], settings: &CompressSettings) -> Result<ucvector, Error> {
+fn deflate(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
     if let Some(cb) = settings.custom_deflate {
         unsafe {
             let mut outdata = ptr::null_mut();
             let mut outsize = 0;
             Error((cb)(&mut outdata, &mut outsize, inp.as_ptr(), inp.len(), settings)).to_result()?;
-            Ok(ucvector::from_raw(&mut outdata, outsize))
+            Ok(vec_from_raw(outdata, outsize))
         }
     } else {
         lodepng_deflatev(inp, settings)
@@ -2548,7 +2564,7 @@ fn adler32(data: &[u8]) -> u32 {
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / Zlib                                                                   / */
 /* ////////////////////////////////////////////////////////////////////////// */
-pub fn lodepng_zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<ucvector, Error> {
+pub fn lodepng_zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
     if inp.len() < 2 {
         return Err(Error(53));
     }
@@ -2572,7 +2588,7 @@ pub fn lodepng_zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Res
     let out = inflate(&inp[2..], settings)?;
     if (! cfg!(fuzzing)) && settings.ignore_adler32 == 0 {
         let adler32_val = lodepng_read32bit_int(&inp[(inp.len() - 4)..]);
-        let checksum = adler32(out.slice());
+        let checksum = adler32(&out);
         /*error, adler checksum not correct, data must be corrupted*/
         if checksum != adler32_val {
             return Err(Error(58));
@@ -2581,13 +2597,13 @@ pub fn lodepng_zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Res
     Ok(out)
 }
 
-pub fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<ucvector, Error> {
+pub fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
     if let Some(cb) = settings.custom_zlib {
         unsafe {
             let mut outdata = ptr::null_mut();
             let mut outsize = 0;
             Error((cb)(&mut outdata, &mut outsize, inp.as_ptr(), inp.len(), settings)).to_result()?;
-            Ok(ucvector::from_raw(&mut outdata, outsize))
+            Ok(vec_from_raw(outdata, outsize))
         }
     } else {
         lodepng_zlib_decompress(inp, settings)
@@ -2595,7 +2611,7 @@ pub fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<ucve
 }
 
 
-pub fn lodepng_zlib_compress(outv: &mut ucvector, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
+pub fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
     /*initially, *out must be NULL and outsize 0, if you just give some random *out
       that's pointing to a non allocated buffer, this'll crash*/
     /*zlib data: 1 byte CMF (cm+cinfo), 1 byte FLG, deflate data, 4 byte adler32_val checksum of the Decompressed data*/
@@ -2606,29 +2622,27 @@ pub fn lodepng_zlib_compress(outv: &mut ucvector, inp: &[u8], settings: &Compres
     let mut cmfflg = 256 * cmf + fdict * 32 + flevel * 64;
     let fcheck = 31 - cmfflg % 31;
     cmfflg += fcheck;
-    /*ucvector-controlled version of the output buffer, for dynamic array*/
+    /*Vec<u8>-controlled version of the output buffer, for dynamic array*/
     outv.push((cmfflg >> 8) as u8);
     outv.push((cmfflg & 255) as u8);
     let deflated = deflate(inp, settings)?;
     let adler32_val = adler32(inp);
-    for &b in deflated.slice() {
-        outv.push(b);
-    }
+    outv.extend_from_slice(&deflated);
     lodepng_add32bit_int(outv, adler32_val);
     Ok(())
 }
 
 /* compress using the default or custom zlib function */
-pub fn zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<ucvector, Error> {
+pub fn zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
     if let Some(cb) = settings.custom_zlib {
         unsafe {
             let mut outdata = ptr::null_mut();
             let mut outsize = 0;
             Error((cb)(&mut outdata, &mut outsize, inp.as_ptr(), inp.len(), settings)).to_result()?;
-            Ok(ucvector::from_raw(&mut outdata, outsize))
+            Ok(vec_from_raw(outdata, outsize))
         }
     } else {
-        let mut out = ucvector::new();
+        let mut out = Vec::new();
         lodepng_zlib_compress(&mut out, inp, settings)?;
         Ok(out)
     }
@@ -3090,7 +3104,7 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8]) -> Result<(Info, u
 }
 
 /*read a PNG, the result will be in the same color type as the PNG (hence "generic")*/
-fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(ucvector, usize, usize), Error> {
+fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usize), Error> {
     let mut found_iend = false; /*the data from idat chunks*/
     /*for unknown chunk order*/
     let mut unknown = false;
@@ -3199,14 +3213,14 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(ucvector, usize, usi
         /*decompressed size doesn't match prediction*/
         return Err(Error(91));
     }
-    let mut out = ucvector::new();
+    let mut out = Vec::new();
     out.resize(state.info_png.color.raw_size(w as u32, h as u32), 0);
-    postprocess_scanlines(out.slice_mut(), scanlines.slice_mut(), w, h, &state.info_png)?;
+    postprocess_scanlines(&mut out, &mut scanlines, w, h, &state.info_png)?;
     Ok((out, w, h))
 }
 
 
-pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(ucvector, usize, usize), Error> {
+pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usize), Error> {
     let (decoded, w, h) = decode_generic(state, inp)?;
 
     if state.decoder.color_convert == 0 || lodepng_color_mode_equal(&state.info_raw, &state.info_png.color) {
@@ -3223,24 +3237,24 @@ pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(ucvector, usize,
         if !(state.info_raw.colortype == ColorType::RGB || state.info_raw.colortype == ColorType::RGBA) && (state.info_raw.bitdepth() != 8) {
             return Err(Error(56)); /*unsupported color mode conversion*/
         }
-        let mut out = ucvector::new();
+        let mut out = Vec::new();
         out.resize(state.info_raw.raw_size(w as u32, h as u32), 0);
-        lodepng_convert(out.slice_mut(), decoded.slice(), &state.info_raw, &state.info_png.color, w as u32, h as u32)?;
+        lodepng_convert(&mut out, &decoded, &state.info_raw, &state.info_png.color, w as u32, h as u32)?;
         Ok((out, w, h))
     }
 }
 
 
-pub fn lodepng_decode_memory(inp: &[u8], colortype: ColorType, bitdepth: u32) -> Result<(ucvector, usize, usize), Error> {
+pub fn lodepng_decode_memory(inp: &[u8], colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
     let mut state = State::new();
     state.info_raw.colortype = colortype;
     state.info_raw.set_bitdepth(bitdepth);
     lodepng_decode(&mut state, inp)
 }
 
-pub fn lodepng_decode_file(filename: &Path, colortype: ColorType, bitdepth: u32) -> Result<(ucvector, usize, usize), Error> {
+pub fn lodepng_decode_file(filename: &Path, colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
     let buf = lodepng_load_file(filename)?;
-    lodepng_decode_memory(buf.slice(), colortype, bitdepth)
+    lodepng_decode_memory(&buf, colortype, bitdepth)
 }
 
 
@@ -3253,9 +3267,8 @@ pub fn lodepng_buffer_file(out: &mut [u8], filename: &Path) -> Result<(), Error>
     Ok(())
 }
 
-pub fn lodepng_load_file(filename: &Path) -> Result<ucvector, Error> {
-    let data = fs::read(filename).map_err(|_| Error(78))?;
-    Ok(ucvector::from_vec(data))
+pub fn lodepng_load_file(filename: &Path) -> Result<Vec<u8>, Error> {
+    fs::read(filename).map_err(|_| Error(78))
 }
 
 /*write given buffer to the file, overwriting the file, it doesn't append to it.*/
@@ -3265,9 +3278,9 @@ pub fn lodepng_save_file(buffer: &[u8], filename: &Path) -> Result<(), Error> {
         .map_err(|_| Error(79))
 }
 
-fn add_unknown_chunks(out: &mut ucvector, mut inchunk: &[u8]) -> Result<(), Error> {
+fn add_unknown_chunks(out: &mut Vec<u8>, mut inchunk: &[u8]) -> Result<(), Error> {
     while !inchunk.is_empty() {
-        chunk_append(out, inchunk)?;
+        chunk_append(out, inchunk);
         inchunk = lodepng_chunk_next(inchunk);
     }
     Ok(())
@@ -3275,7 +3288,7 @@ fn add_unknown_chunks(out: &mut ucvector, mut inchunk: &[u8]) -> Result<(), Erro
 
 pub const LODEPNG_VERSION_STRING: &[u8] = b"20161127\0";
 
-pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result<ucvector, Error> {
+pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result<Vec<u8>, Error> {
     let w = w as usize;
     let h = h as usize;
 
@@ -3307,7 +3320,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
         pre_process_scanlines(image, w, h, &info, &state.encoder)?
     };
 
-    let mut outv = ucvector::new();
+    let mut outv = Vec::new();
     write_signature(&mut outv);
 
     add_chunk_ihdr(&mut outv, w, h, info.color.colortype, info.color.bitdepth() as usize, info.interlace_method as u8)?;
@@ -3599,7 +3612,7 @@ pub fn lodepng_filesize(filename: &Path) -> Option<u64> {
     fs::metadata(filename).map(|m| m.len()).ok()
 }
 
-pub fn lodepng_encode_memory(image: &[u8], w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> Result<ucvector, Error> {
+pub fn lodepng_encode_memory(image: &[u8], w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> Result<Vec<u8>, Error> {
     let mut state = State::new();
     state.info_raw.colortype = colortype;
     state.info_raw.set_bitdepth(bitdepth);

@@ -13,7 +13,6 @@ use rustimpl::*;
 
 mod error;
 pub use error::*;
-mod ucvec;
 mod huffman;
 mod iter;
 use iter::*;
@@ -355,9 +354,9 @@ impl Info {
     pub fn append_chunk(&mut self, position: ChunkPosition, chunk: ChunkRef) -> Result<(), Error> {
         let set = position as usize;
         unsafe {
-            let mut tmp = ucvector::from_raw(&mut self.unknown_chunks_data[set], self.unknown_chunks_size[set]);
-            chunk_append(&mut tmp, chunk.data)?;
-            let (data, size) = tmp.into_raw();
+            let mut tmp = slice::from_raw_parts_mut(self.unknown_chunks_data[set], self.unknown_chunks_size[set]).to_owned();
+            chunk_append(&mut tmp, chunk.data);
+            let (data, size) = vec_into_raw(tmp)?;
             self.unknown_chunks_data[set] = data;
             self.unknown_chunks_size[set] = size;
         }
@@ -709,7 +708,7 @@ impl State {
         let input = input.as_ref();
         unsafe {
             let (v, w, h) = rustimpl::lodepng_decode(self, input)?;
-            let (data, _) = v.into_raw();
+            let (data, _) = vec_into_raw(v)?;
             Ok(new_bitmap(data, w, h, self.info_raw.colortype, self.info_raw.bitdepth))
         }
     }
@@ -727,7 +726,7 @@ impl State {
 
     pub fn encode<PixelType: Copy>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         let image = buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth)?;
-        Ok(rustimpl::lodepng_encode(image, w as c_uint, h as c_uint, self)?.into_vec())
+        Ok(rustimpl::lodepng_encode(image, w as c_uint, h as c_uint, self)?)
     }
 
     pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
@@ -868,7 +867,7 @@ pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bit
     unsafe {
         assert!(bitdepth > 0 && bitdepth <= 16);
         let (v, w, h) = rustimpl::lodepng_decode_memory(input, colortype, bitdepth)?;
-        let (data, _) = v.into_raw();
+        let (data, _) = vec_into_raw(v)?;
         Ok(new_bitmap(data, w, h, colortype, bitdepth))
     }
 }
@@ -958,7 +957,7 @@ fn buffer_for_type<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, col
 /// * `bitdepth`: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.
 pub fn encode_memory<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
     let image = buffer_for_type(image, w, h, colortype, bitdepth)?;
-    Ok(rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)?.into_vec())
+    Ok(rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)?)
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
@@ -1064,19 +1063,19 @@ impl<'a> ChunkRefMut<'a> {
 /// The data is output in the format of the zlib specification.
 #[doc(hidden)]
 pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    let mut v = ucvector::new();
+    let mut v = Vec::new();
     rustimpl::lodepng_zlib_compress(&mut v, input, settings)?;
-    Ok(v.into_vec())
+    Ok(v)
 }
 
 fn zlib_decompress(input: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
-    Ok(rustimpl::lodepng_zlib_decompress(input, settings)?.into_vec())
+    Ok(rustimpl::lodepng_zlib_decompress(input, settings)?)
 }
 
 /// Compress a buffer with deflate. See RFC 1951.
 #[doc(hidden)]
 pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    Ok(rustimpl::lodepng_deflatev(input, settings)?.into_vec())
+    Ok(rustimpl::lodepng_deflatev(input, settings)?)
 }
 
 impl CompressSettings {
