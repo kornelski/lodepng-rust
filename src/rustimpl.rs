@@ -6,7 +6,7 @@
 #![cfg_attr(feature = "cargo-clippy", allow(new_without_default))]
 #![cfg_attr(feature = "cargo-clippy", allow(verbose_bit_mask))]
 #![cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
-#![cfg_attr(feature = "cargo-clippy", allow(toplevel_ref_arg))]
+#![cfg_attr(feature = "cargo-clippy", allow(trivially_copy_pass_by_ref))]
 #![cfg_attr(feature = "cargo-clippy", allow(type_complexity))]
 #![cfg_attr(feature = "cargo-clippy", allow(if_same_then_else))]
 #![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
@@ -681,7 +681,7 @@ fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTr
             if mode.bitdepth() == 8 {
                 out[i] = index as u8;
             } else {
-                add_color_bits(out, i, mode.bitdepth(), index as u32);
+                add_color_bits(out, i, mode.bitdepth(), u32::from(index));
             };
         },
         ColorType::GREY_ALPHA => {
@@ -768,7 +768,7 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8,u8,u8,u8
         ColorType::GREY => {
             if mode.bitdepth() == 8 {
                 let t = inp[i];
-                let a = if mode.key() == Some((t as u16, t as u16, t as u16)) {
+                let a = if mode.key() == Some((u16::from(t), u16::from(t), u16::from(t))) {
                     0
                 } else {
                     255
@@ -801,7 +801,7 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8,u8,u8,u8
             let r = inp[i * 3 + 0];
             let g = inp[i * 3 + 1];
             let b = inp[i * 3 + 2];
-            let a = if mode.key() == Some((r as u16, g as u16, b as u16)) {
+            let a = if mode.key() == Some((u16::from(r), u16::from(g), u16::from(b))) {
                 0
             } else {
                 255
@@ -860,7 +860,7 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8,u8,u8,u8
             let b = inp[i * 3 + 0];
             let g = inp[i * 3 + 1];
             let r = inp[i * 3 + 2];
-            let a = if mode.key() == Some((r as u16, g as u16, b as u16)) {
+            let a = if mode.key() == Some((u16::from(r), u16::from(g), u16::from(b))) {
                 0
             } else {
                 255
@@ -871,7 +871,7 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8,u8,u8,u8
             let b = inp[i * 4 + 0];
             let g = inp[i * 4 + 1];
             let r = inp[i * 4 + 2];
-            let a = if mode.key() == Some((r as u16, g as u16, b as u16)) {
+            let a = if mode.key() == Some((u16::from(r), u16::from(g), u16::from(b))) {
                 0
             } else {
                 255
@@ -3732,7 +3732,7 @@ fn encode_lz77(
         update_hash_chain(hash, wpos, hashval, numzeros as u16);
         let mut length = 0;
         let mut offset: u32 = 0;
-        let mut hashpos = hash.chain[wpos as usize] as u32;
+        let mut hashpos = u32::from(hash.chain[wpos as usize]);
         let lastptr = in_.len().min(pos + MAX_SUPPORTED_DEFLATE_LENGTH) as u32;
         let mut prev_offset = 0;
         for _ in 0..maxchainlength {
@@ -3772,12 +3772,12 @@ fn encode_lz77(
                 break;
             }
             if numzeros >= 3 && length > numzeros {
-                hashpos = hash.chainz[hashpos as usize] as u32;
+                hashpos = u32::from(hash.chainz[hashpos as usize]);
                 if hash.zeros[hashpos as usize] as u32 != numzeros {
                     break;
                 };
             } else {
-                hashpos = hash.chain[hashpos as usize] as u32;
+                hashpos = u32::from(hash.chain[hashpos as usize]);
                 /*outdated hash value, happens if particular value was not encountered in whole last window*/
                 if hash.val[hashpos as usize] as u32 != hashval {
                     break; /*try the next byte*/

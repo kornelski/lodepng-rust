@@ -152,16 +152,14 @@ pub(crate) fn huffman_code_lengths(frequencies: &[u32], maxbitlen: u32) -> Resul
     if (1 << maxbitlen) < numcodes {
         return Err(Error(80));
     }
-    let mut leaves = vec![];
-    for i in 0..numcodes {
-        if frequencies[i] > 0 {
-            leaves.push(BPMNode {
-                weight: frequencies[i] as i32,
-                index: i as u32,
-                tail: None,
-            });
-        };
-    }
+    let mut leaves: Vec<_> = frequencies.iter()
+        .cloned().enumerate()
+        .filter(|(_, f)| *f > 0)
+        .map(|(i, f)| BPMNode {
+            weight: f as i32,
+            index: i as u32,
+            tail: None,
+        }).collect();
     let mut lengths = vec![0; numcodes];
     /*ensure at least two present symbols. There should be at least one symbol
       according to RFC 1951 section 3.2.7. Some decoders incorrectly require two. To
