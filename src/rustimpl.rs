@@ -503,6 +503,7 @@ fn lodepng_read32bit_int(buffer: &[u8]) -> u32 {
     ((buffer[0] as u32) << 24) | ((buffer[1] as u32) << 16) | ((buffer[2] as u32) << 8) | buffer[3] as u32
 }
 
+#[inline(always)]
 fn lodepng_set32bit_int(buffer: &mut [u8], value: u32) {
     buffer[0] = ((value >> 24) & 255) as u8;
     buffer[1] = ((value >> 16) & 255) as u8;
@@ -510,6 +511,7 @@ fn lodepng_set32bit_int(buffer: &mut [u8], value: u32) {
     buffer[3] = ((value) & 255) as u8;
 }
 
+#[inline(always)]
 fn add32bit_int(buffer: &mut Vec<u8>, value: u32) {
     buffer.push(((value >> 24) & 255) as u8);
     buffer.push(((value >> 16) & 255) as u8);
@@ -631,6 +633,7 @@ fn add_color_bits(out: &mut [u8], index: usize, bits: u32, mut inp: u32) {
 
 pub type ColorTree = HashMap<(u8,u8,u8,u8), u16>;
 
+#[inline(always)]
 fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTree, /*for palette*/ r: u8, g: u8, b: u8, a: u8) -> Result<(), Error> {
     match mode.colortype {
         ColorType::GREY => {
@@ -704,6 +707,7 @@ fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTr
 }
 
 /*put a pixel, given its RGBA16 color, into image of any color 16-bitdepth type*/
+#[inline(always)]
 fn rgba16_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, r: u16, g: u16, b: u16, a: u16) {
     match mode.colortype {
         ColorType::GREY => {
@@ -1060,6 +1064,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], numpixels: usize, has_alpha: bool, 
 }
 /*Get RGBA16 color of pixel with index i (y * width + x) from the raw image with
 given color type, but the given color type must be 16-bit itself.*/
+#[inline(always)]
 fn get_pixel_color_rgba16(inp: &[u8], i: usize, mode: &ColorMode) -> (u16,u16,u16,u16) {
     match mode.colortype {
         ColorType::GREY => {
@@ -1100,6 +1105,7 @@ fn get_pixel_color_rgba16(inp: &[u8], i: usize, mode: &ColorMode) -> (u16,u16,u1
     }
 }
 
+#[inline(always)]
 fn read_bits_from_reversed_stream(bitpointer: &mut usize, bitstream: &[u8], nbits: usize) -> u32 {
     let mut result = 0;
     for _ in 0..nbits {
@@ -1561,6 +1567,7 @@ fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: usize)
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / Reading and writing single bits and bytes from/to stream for LodePNG   / */
 /* ////////////////////////////////////////////////////////////////////////// */
+#[inline(always)]
 fn read_bit_from_reversed_stream(bitpointer: &mut usize, bitstream: &[u8]) -> u8 {
     let result = ((bitstream[(*bitpointer) >> 3] >> (7 - ((*bitpointer) & 7))) & 1) as u8;
     *bitpointer += 1;
