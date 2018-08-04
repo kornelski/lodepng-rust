@@ -521,9 +521,7 @@ fn add32bit_int(buffer: &mut Vec<u8>, value: u32) {
 
 #[inline]
 fn lodepng_add32bit_int(buffer: &mut ucvector, value: u32) {
-    let n = buffer.len();
-    buffer.resize(n + 4).unwrap();
-    lodepng_set32bit_int(&mut buffer.slice_mut()[n..], value);
+    add32bit_int(&mut buffer.inner, value);
 }
 
 pub(crate) fn text_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
@@ -1828,7 +1826,10 @@ fn inflate_huffman_block(out: &mut ucvector, inp: &[u8], bp: &mut usize, pos: &m
                     return Err(Error(52));
                 }
                 let mut backward = start - distance;
-                out.resize((*pos) + length)?;
+                unsafe {
+                    out.inner.reserve(length);
+                    out.inner.set_len((*pos) + length);
+                }
                 let out_data = out.slice_mut();
                 if distance < length {
                     for _ in 0..length {
@@ -3199,10 +3200,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(ucvector, usize, usi
         return Err(Error(91));
     }
     let mut out = ucvector::new();
-    out.resize(state.info_png.color.raw_size(w as u32, h as u32))?;
-    for i in out.slice_mut() {
-        *i = 0;
-    }
+    out.resize(state.info_png.color.raw_size(w as u32, h as u32), 0);
     postprocess_scanlines(out.slice_mut(), scanlines.slice_mut(), w, h, &state.info_png)?;
     Ok((out, w, h))
 }
@@ -3226,7 +3224,7 @@ pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(ucvector, usize,
             return Err(Error(56)); /*unsupported color mode conversion*/
         }
         let mut out = ucvector::new();
-        out.resize(state.info_raw.raw_size(w as u32, h as u32))?;
+        out.resize(state.info_raw.raw_size(w as u32, h as u32), 0);
         lodepng_convert(out.slice_mut(), decoded.slice(), &state.info_raw, &state.info_png.color, w as u32, h as u32)?;
         Ok((out, w, h))
     }
@@ -3256,14 +3254,8 @@ pub fn lodepng_buffer_file(out: &mut [u8], filename: &Path) -> Result<(), Error>
 }
 
 pub fn lodepng_load_file(filename: &Path) -> Result<ucvector, Error> {
-    let size = match fs::metadata(filename) {
-        Ok(m) => m.len() as usize,
-        Err(_) => return Err(Error(83)),
-    };
-    let mut v = ucvector::new();
-    v.resize(size)?;
-    lodepng_buffer_file(v.slice_mut(), filename)?;
-    Ok(v)
+    let data = fs::read(filename).map_err(|_| Error(78))?;
+    Ok(ucvector::from_vec(data))
 }
 
 /*write given buffer to the file, overwriting the file, it doesn't append to it.*/
