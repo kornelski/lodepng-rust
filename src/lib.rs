@@ -473,11 +473,19 @@ impl Encoder {
     }
 
     #[inline]
+    /// Compress using another zlib implementation. It's gzip header + deflate + adler32 checksum.
+    ///
+    /// The callback returns 0 on success.
+    /// The callback MUST allocate memory using `libc::malloc`
     pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.state.set_custom_zlib(callback, context);
     }
 
     #[inline]
+    /// Compress using another deflate implementation. It's just deflate, without headers or checksum.
+    ///
+    /// The callback returns 0 on success.
+    /// The callback MUST allocate memory using `libc::malloc`
     pub unsafe fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.state.set_custom_deflate(callback, context);
     }
@@ -619,11 +627,13 @@ impl State {
         self.encoder.filter_palette_zero = if palette_filter_zero {1} else {0};
     }
 
+    /// See `Encoder'
     pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.encoder.zlibsettings.custom_zlib = callback;
         self.encoder.zlibsettings.custom_context = context;
     }
 
+    /// See `Encoder'
     pub unsafe fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.encoder.zlibsettings.custom_deflate = callback;
         self.encoder.zlibsettings.custom_context = context;
