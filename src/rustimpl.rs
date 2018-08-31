@@ -550,8 +550,8 @@ pub(crate) fn text_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
     Ok(())
 }
 
-unsafe fn realloc_extend(array: &mut *mut *mut i8, len: usize) -> Result<(), Error> {
-    *array = lodepng_realloc((*array) as *mut _, (len + 1) * mem::size_of::<*mut i8>()) as *mut _;
+unsafe fn realloc_extend(array: &mut *mut *mut c_char, len: usize) -> Result<(), Error> {
+    *array = lodepng_realloc((*array) as *mut _, (len + 1) * mem::size_of::<*mut c_char>()) as *mut _;
     if array.is_null() {
         return Err(Error(83));
     }
