@@ -154,7 +154,7 @@ pub(crate) fn huffman_code_lengths(frequencies: &[u32], maxbitlen: u32) -> Resul
     }
     let mut leaves: Vec<_> = frequencies.iter()
         .cloned().enumerate()
-        .filter(|(_, f)| *f > 0)
+        .filter(|&(_, f)| f > 0)
         .map(|(i, f)| BPMNode {
             weight: f as i32,
             index: i as u32,

@@ -3268,13 +3268,12 @@ pub fn lodepng_buffer_file(out: &mut [u8], filename: &Path) -> Result<(), Error>
 }
 
 pub fn lodepng_load_file(filename: &Path) -> Result<Vec<u8>, Error> {
-    fs::read(filename).map_err(|_| Error(78))
+    fs::read(filename).map_err(|_| Error(78)) // Requires Rust 1.28. If you see an error here, upgrade your Rust.
 }
 
 /*write given buffer to the file, overwriting the file, it doesn't append to it.*/
 pub fn lodepng_save_file(buffer: &[u8], filename: &Path) -> Result<(), Error> {
-    fs::File::create(filename)
-        .and_then(|mut f| f.write_all(buffer))
+    fs::write(filename, buffer) // Requires Rust 1.28. If you see an error here, upgrade your Rust.
         .map_err(|_| Error(79))
 }
 
