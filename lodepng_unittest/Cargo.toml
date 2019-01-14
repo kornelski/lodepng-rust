@@ -12,5 +12,5 @@ path = ".."
 
 [dev-dependencies]
 glob = "0.2.11"
-png = "0.13.1"
+png = "0.14.0"
 rgb = "0.8.6"
