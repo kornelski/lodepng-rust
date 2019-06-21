@@ -3620,6 +3620,15 @@ pub fn lodepng_encode_memory(image: &[u8], w: u32, h: u32, colortype: ColorType,
     lodepng_encode(image, w, h, &mut state)
 }
 
+//Same as above, but with external state object for more flexibility
+pub fn lodepng_encode_memory_state(image: &[u8], w: u32, h: u32, colortype: ColorType, bitdepth: u32, state: &mut State) -> Result<Vec<u8>, Error> {
+    state.info_raw.colortype = colortype;
+    state.info_raw.set_bitdepth(bitdepth);
+    state.info_png.color.colortype = colortype;
+    state.info_png.color.set_bitdepth(bitdepth);
+    lodepng_encode(image, w, h, state)
+}
+
 impl EncoderSettings {
     unsafe fn predefined_filters(&self, len: usize) -> Result<&[u8], Error> {
         if self.predefined_filters.is_null() {

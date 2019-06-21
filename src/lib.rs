@@ -960,6 +960,12 @@ pub fn encode_memory<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, c
     Ok(rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)?)
 }
 
+//Same as above, but with external state object for more flexibility
+pub fn encode_memory_state<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint, state: &mut State) -> Result<Vec<u8>, Error> {
+    let image = buffer_for_type(image, w, h, colortype, bitdepth)?;
+    Ok(rustimpl::lodepng_encode_memory_state(image, w as u32, h as u32, colortype, bitdepth, state)?)
+}
+
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
 pub fn encode32<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGBA, 8)
