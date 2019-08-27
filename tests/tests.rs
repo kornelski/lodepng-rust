@@ -2,7 +2,7 @@ extern crate lodepng;
 extern crate rgb;
 use lodepng::*;
 
-fn encode<T: Copy>(pixels: &[T], in_type: ColorType, out_type: ColorType) -> Result<Vec<u8>, Error> {
+fn encode<T: Copy + 'static>(pixels: &[T], in_type: ColorType, out_type: ColorType) -> Result<Vec<u8>, Error> {
     let mut state = State::new();
     state.set_auto_convert(true);
     state.info_raw.colortype = in_type;

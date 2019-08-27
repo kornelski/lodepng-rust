@@ -512,12 +512,12 @@ impl Encoder {
     }
 
     #[inline]
-    pub fn encode<PixelType: Copy>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+    pub fn encode<PixelType: Copy + 'static>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         self.state.encode(image, w, h)
     }
 
     #[inline]
-    pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+    pub fn encode_file<PixelType: Copy + 'static, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         self.state.encode_file(filepath, image, w, h)
     }
 }
@@ -724,12 +724,12 @@ impl State {
         Ok((w, h))
     }
 
-    pub fn encode<PixelType: Copy>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+    pub fn encode<PixelType: Copy + 'static>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         let image = buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth)?;
         Ok(rustimpl::lodepng_encode(image, w as c_uint, h as c_uint, self)?)
     }
 
-    pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+    pub fn encode_file<PixelType: Copy + 'static, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = self.encode(image, w, h)?;
         save_file(filepath, buf.as_ref())
     }
@@ -783,7 +783,7 @@ pub struct ChunkRef<'a> {
 }
 
 /// Low-level representation of an image
-pub struct Bitmap<PixelType: Copy> {
+pub struct Bitmap<PixelType: Copy + 'static> {
     /// Raw bitmap memory. Layout depends on color mode and bitdepth used to create it.
     ///
     /// * For RGB/RGBA images one element is one pixel.
@@ -805,7 +805,7 @@ impl<T: Copy> Bitmap<T> {
     }
 }
 
-impl<PixelType: Copy> fmt::Debug for Bitmap<PixelType> {
+impl<PixelType: Copy + 'static> fmt::Debug for Bitmap<PixelType> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{{} × {} Bitmap}}", self.width, self.height)
     }
@@ -925,7 +925,7 @@ pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Err
     }
 }
 
-fn buffer_for_type<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> Result<&[u8], Error> {
+fn buffer_for_type<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> Result<&[u8], Error> {
     let bytes_per_pixel = bitdepth as usize/8;
     assert!(mem::size_of::<PixelType>() <= 4*bytes_per_pixel, "Implausibly large {}-byte pixel data type", mem::size_of::<PixelType>());
 
@@ -955,18 +955,18 @@ fn buffer_for_type<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, col
 /// * `h`: height of the raw pixel data in pixels.
 /// * `colortype`: the color type of the raw input image. See `ColorType`.
 /// * `bitdepth`: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.
-pub fn encode_memory<PixelType: Copy>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
+pub fn encode_memory<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
     let image = buffer_for_type(image, w, h, colortype, bitdepth)?;
     Ok(rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)?)
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
-pub fn encode32<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+pub fn encode32<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
-pub fn encode24<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+pub fn encode24<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGB, 8)
 }
 
@@ -974,18 +974,18 @@ pub fn encode24<PixelType: Copy>(image: &[PixelType], w: usize, h: usize) -> Res
 /// Same as the other encode functions, but instead takes a file path as output.
 ///
 /// NOTE: This overwrites existing files without warning!
-pub fn encode_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
+pub fn encode_file<PixelType: Copy + 'static, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = encode_memory(image, w, h, colortype, bitdepth)?;
     save_file(filepath, encoded.as_ref())
 }
 
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
-pub fn encode32_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode32_file<PixelType: Copy + 'static, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
-pub fn encode24_file<PixelType: Copy, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode24_file<PixelType: Copy + 'static, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGB, 8)
 }
 
