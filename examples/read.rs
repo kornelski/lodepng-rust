@@ -1,4 +1,3 @@
-extern crate lodepng;
 
 fn main() {
     match lodepng::decode32_file("tests/test.png") {

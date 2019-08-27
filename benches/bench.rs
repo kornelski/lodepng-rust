@@ -1,6 +1,5 @@
 #![feature(test)]
 extern crate test;
-extern crate lodepng;
 
 #[bench]
 fn encode(bencher: &mut test::Bencher) {

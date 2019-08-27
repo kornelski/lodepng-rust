@@ -1,21 +1,19 @@
 
-extern crate libc;
-extern crate rgb;
 
-use rustimpl::lodepng_free;
-use rustimpl::lodepng_malloc;
+use crate::rustimpl::lodepng_free;
+use crate::rustimpl::lodepng_malloc;
 
 #[allow(non_camel_case_types)]
 pub mod ffi;
 
 mod rustimpl;
-use rustimpl::*;
+use crate::rustimpl::*;
 
 mod error;
-pub use error::*;
+pub use crate::error::*;
 mod huffman;
 mod iter;
-use iter::*;
+use crate::iter::*;
 
 pub use rgb::RGB;
 pub use rgb::RGBA8 as RGBA;
@@ -33,18 +31,18 @@ use std::path::Path;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
 
-pub use ffi::State;
-pub use ffi::ColorType;
-pub use ffi::CompressSettings;
-pub use ffi::DecompressSettings;
-pub use ffi::Time;
-pub use ffi::DecoderSettings;
-pub use ffi::FilterStrategy;
-pub use ffi::EncoderSettings;
-pub use ffi::Error;
+pub use crate::ffi::State;
+pub use crate::ffi::ColorType;
+pub use crate::ffi::CompressSettings;
+pub use crate::ffi::DecompressSettings;
+pub use crate::ffi::Time;
+pub use crate::ffi::DecoderSettings;
+pub use crate::ffi::FilterStrategy;
+pub use crate::ffi::EncoderSettings;
+pub use crate::ffi::Error;
 
-pub use ffi::Info;
-pub use ffi::ColorMode;
+pub use crate::ffi::Info;
+pub use crate::ffi::ColorMode;
 
 #[doc(hidden)] #[deprecated(note="use `ColorType::GREY` instead")] pub const LCT_GREY: ColorType = ColorType::GREY;
 #[doc(hidden)] #[deprecated(note="use `ColorType::RGB` instead")] pub const LCT_RGB: ColorType = ColorType::RGB;
@@ -282,7 +280,7 @@ impl Info {
         }
     }
 
-    pub fn text_keys_cstr(&self) -> TextKeysCStrIter {
+    pub fn text_keys_cstr(&self) -> TextKeysCStrIter<'_> {
         TextKeysCStrIter {
             k: self.text_keys,
             v: self.text_strings,
@@ -291,7 +289,7 @@ impl Info {
         }
     }
 
-    pub fn itext_keys(&self) -> ITextKeysIter {
+    pub fn itext_keys(&self) -> ITextKeysIter<'_> {
         ITextKeysIter {
             k: self.itext_keys,
             l: self.itext_langtags,
@@ -351,7 +349,7 @@ impl Info {
         )
     }
 
-    pub fn append_chunk(&mut self, position: ChunkPosition, chunk: ChunkRef) -> Result<(), Error> {
+    pub fn append_chunk(&mut self, position: ChunkPosition, chunk: ChunkRef<'_>) -> Result<(), Error> {
         let set = position as usize;
         unsafe {
             let mut tmp = slice::from_raw_parts_mut(self.unknown_chunks_data[set], self.unknown_chunks_size[set]).to_owned();
@@ -379,7 +377,7 @@ impl Info {
         }
     }
 
-    pub fn get<Name: AsRef<[u8]>>(&self, index: Name) -> Option<ChunkRef> {
+    pub fn get<Name: AsRef<[u8]>>(&self, index: Name) -> Option<ChunkRef<'_>> {
         let index = index.as_ref();
         self.unknown_chunks(ChunkPosition::IHDR)
             .chain(self.unknown_chunks(ChunkPosition::PLTE))
@@ -387,7 +385,7 @@ impl Info {
             .find(|c| c.is_type(index))
     }
 
-    pub fn unknown_chunks(&self, position: ChunkPosition) -> ChunksIter {
+    pub fn unknown_chunks(&self, position: ChunkPosition) -> ChunksIter<'_> {
         ChunksIter {
             data: unsafe {
                 slice::from_raw_parts(
@@ -806,7 +804,7 @@ impl<T: Copy> Bitmap<T> {
 }
 
 impl<PixelType: Copy + 'static> fmt::Debug for Bitmap<PixelType> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{{} × {} Bitmap}}", self.width, self.height)
     }
 }
@@ -817,7 +815,7 @@ fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> usi
 
 unsafe fn vec_from_malloced<T>(ptr: *mut T, elts: usize) -> Vec<T> where T: Copy {
     let v = Vec::from(std::slice::from_raw_parts(ptr, elts));
-    self::libc::free(ptr as *mut _);
+    libc::free(ptr as *mut _);
     v
 }
 

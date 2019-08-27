@@ -1,4 +1,3 @@
-extern crate lodepng;
 use std::path::Path;
 
 fn main() {

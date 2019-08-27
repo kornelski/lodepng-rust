@@ -3,7 +3,7 @@ use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::os::raw::c_char;
 use super::ChunkRef;
-use rustimpl;
+use crate::rustimpl;
 
 pub struct TextKeysCStrIter<'a> {
     pub(crate) k: *mut *mut c_char,

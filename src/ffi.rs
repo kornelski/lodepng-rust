@@ -1,8 +1,8 @@
 #![cfg_attr(feature = "cargo-clippy", allow(needless_borrow))]
 #![allow(non_upper_case_globals)]
 
-use rustimpl::*;
-use huffman;
+use crate::rustimpl::*;
+use crate::huffman;
 use std::ptr;
 use std::mem;
 use std::slice;
@@ -11,7 +11,7 @@ use std::os::raw::*;
 use std::ffi::CStr;
 use std::path::*;
 
-use rustimpl;
+use crate::rustimpl;
 
 macro_rules! lode_error {
     ($e:expr) => {
@@ -333,19 +333,19 @@ pub struct ColorProfile {
     /// amount of colors, up to 257. Not valid if bits == 16.
     pub numcolors: c_uint,
     /// Remembers up to the first 256 RGBA colors, in no particular order
-    pub palette: [::RGBA; 256],
+    pub palette: [crate::RGBA; 256],
     /// bits per channel (not for palette). 1,2 or 4 for greyscale only. 16 if 16-bit per channel required.
     pub bits: c_uint,
 }
 
 impl fmt::Debug for ColorProfile {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("ColorProfile")
     }
 }
 
 impl fmt::Debug for CompressSettings {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("CompressSettings")
     }
 }

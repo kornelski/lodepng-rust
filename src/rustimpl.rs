@@ -12,13 +12,12 @@
 #![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 #![cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
 
-extern crate libc;
 
 use super::*;
-use ffi::ColorProfile;
-use ffi::State;
-use huffman::HuffmanTree;
-use ChunkPosition;
+use crate::ffi::ColorProfile;
+use crate::ffi::State;
+use crate::huffman::HuffmanTree;
+use crate::ChunkPosition;
 
 pub use rgb::RGBA8 as RGBA;
 use std::collections::HashMap;
@@ -83,7 +82,7 @@ enum PaletteTranslucency {
 }
 
 /*
-palette must have 4 * palettesize bytes allocated, and given in format RGBARGBARGBARGBA...
+palette must have 4 * palettesize bytes allocated, and given in format RGBARGBARGBARGBA…
 returns 0 if the palette is opaque,
 returns 1 if the palette has a single color with alpha 0 ==> color key
 returns 2 if the palette is semi-translucent.
@@ -1808,11 +1807,11 @@ fn inflate_huffman_block(out: &mut Vec<u8>, inp: &[u8], bp: &mut usize, pos: &mu
     };
     loop {
         match tree_ll.decode_symbol(inp, bp) {
-            Some(code_ll @ 0...255) => {
+            Some(code_ll @ 0..=255) => {
                 out.push(code_ll as u8);
                 (*pos) += 1;
             },
-            Some(code_ll @ FIRST_LENGTH_CODE_INDEX...LAST_LENGTH_CODE_INDEX) => {
+            Some(code_ll @ FIRST_LENGTH_CODE_INDEX..=LAST_LENGTH_CODE_INDEX) => {
                 let numextrabits_d; /*part 2: get extra bits and add the value of that to length*/
                 let mut length: usize = LENGTHBASE[(code_ll - FIRST_LENGTH_CODE_INDEX) as usize] as usize;
                 let numextrabits_l = LENGTHEXTRA[(code_ll - FIRST_LENGTH_CODE_INDEX) as usize] as usize;
@@ -1927,7 +1926,7 @@ fn get_tree_inflate_dynamic(inp: &[u8], bp: &mut usize) -> Result<(HuffmanTree, 
     while i < hlit + hdist {
         /*repeat previous*/
         match tree_cl.decode_symbol(inp, bp) {
-            Some(code @ 0...15) => {
+            Some(code @ 0..=15) => {
                 if i < hlit {
                     bitlen_ll[i] = code; /*read in the 2 bits that indicate repeat length (3-6)*/
                 } else {
@@ -3404,7 +3403,7 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
         1 => 2,
         2 => 4,
         4 => 16,
-        5...8 => 256,
+        5..=8 => 256,
         _ => 257,
     };
 
@@ -3540,7 +3539,7 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
 
 /*Automatically chooses color type that gives smallest amount of bits in the
 output image, e.g. grey if there are only greyscale pixels, palette if there
-are less than 256 colors, ...
+are less than 256 colors, …
 Updates values of mode with a potentially smaller color model. mode_out should
 contain the user chosen color model, but will be overwritten with the new chosen one.*/
 pub fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &ColorMode) -> Result<ColorMode, Error> {

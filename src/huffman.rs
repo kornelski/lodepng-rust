@@ -1,4 +1,4 @@
-use ffi::Error;
+use crate::ffi::Error;
 use std::mem;
 use std::rc::Rc;
 

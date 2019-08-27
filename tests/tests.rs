@@ -1,5 +1,4 @@
-extern crate lodepng;
-extern crate rgb;
+
 use lodepng::*;
 
 fn encode<T: Copy + 'static>(pixels: &[T], in_type: ColorType, out_type: ColorType) -> Result<Vec<u8>, Error> {

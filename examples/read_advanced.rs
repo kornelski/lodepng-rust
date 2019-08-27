@@ -1,5 +1,4 @@
-extern crate lodepng;
-extern crate rgb;
+
 use rgb::*;
 use std::path::Path;
 

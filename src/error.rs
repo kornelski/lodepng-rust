@@ -2,7 +2,7 @@ use std;
 use std::error;
 use std::fmt;
 use std::io;
-use ffi::Error;
+use crate::ffi::Error;
 
 impl Error {
     /// Returns an English description of the numerical error code.
@@ -26,13 +26,13 @@ impl From<Error> for Result<(), Error> {
 }
 
 impl fmt::Debug for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ({})", self.as_str(), self.0)
     }
 }
 
 impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
     }
 }
