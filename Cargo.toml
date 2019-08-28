@@ -3,7 +3,7 @@ authors = ["Kornel <kornel@geekhood.net>", "Lode Vandevenne <lvandeve@gmail.com>
 categories = ["multimedia::encoding", "multimedia::images"]
 description = "Reading and writing PNG files without system dependencies. Pure Rust port of LodePNG."
 documentation = "https://docs.rs/lodepng"
-homepage = "https://crates.rs/crates/lodepng"
+homepage = "https://lib.rs/crates/lodepng"
 include = ["src/**/*", "COPYRIGHT", "README.md", "Cargo.toml"]
 keywords = ["PNG","lodepng","encoder","decoder"]
 license = "BSD-3-Clause"
@@ -23,20 +23,11 @@ rgb = "0.8.17"
 [workspace]
 members = ["lodepng_unittest"]
 
-[[example]]
-name = "read"
-
-[[example]]
-name = "write"
-
-[[example]]
-name = "passthrough"
-
-[[example]]
-name = "read_advanced"
-
 [profile.test]
 opt-level = 2
 
 [profile.dev]
 opt-level = 2
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
