@@ -1,16 +1,16 @@
-# [Rust](https://www.rust-lang.org) version of [LodePNG](http://lodev.org/lodepng)
+# [Rust](https://www.rust-lang.org) version of [LodePNG](https://lodev.org/lodepng)
 
 This is a pure Rust PNG image decoder and encoder. Allows easy reading and writing of PNG files without any system dependencies.
 
-The easiest way to use LodePNG is to include the [lodepng crate](https://crates.io/crates/lodepng).
+The easiest way to use LodePNG is to include the [lodepng crate](https://lib.rs/crates/lodepng).
 To do so, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-lodepng = "2.0.0"
+lodepng = "2.5.0"
 ```
 
-See [API reference](https://docs.rs/lodepng/) for details. Requires Rust 1.21 or later.
+See [API reference](https://docs.rs/lodepng/) for details. Requires Rust 1.42 or later.
 
 ### Loading image example
 
@@ -20,9 +20,9 @@ let image = lodepng::decode32_file("in.png")?;
 
 returns image of type `lodepng::Bitmap<lodepng::RGBA<u8>>` with fields `.width`, `.height`, and `.buffer` (the buffer is a `Vec`).
 
-The RGB/RGBA pixel types are from the [RGB crate](https://crates.io/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting. But if you want to read the image buffer as bunch of raw bytes, ignoring the RGB(A) pixel structure, use:
+The RGB/RGBA pixel types are from the [RGB crate](https://lib.rs/crates/rgb), which you can import separately to use the same pixel struct throughout the program, without casting. But if you want to read the image buffer as bunch of raw bytes, ignoring the RGB(A) pixel structure, use:
 
-```rust
+```toml
 [dependencies]
 rgb = "0.8"
 ```
