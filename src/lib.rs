@@ -124,7 +124,8 @@ impl ColorMode {
         self.key_defined = 0;
     }
 
-    pub(crate) fn set_key(&mut self, r: u16, g: u16, b: u16) {
+    /// `tRNS` chunk
+    pub fn set_key(&mut self, r: u16, g: u16, b: u16) {
         self.key_defined = 1;
         self.key_r = c_uint::from(r);
         self.key_g = c_uint::from(g);
@@ -715,7 +716,7 @@ impl State {
 
     /// Updates `info_png`. Returns (width, height)
     pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
-        let (info, w, h) = rustimpl::lodepng_inspect(&self.decoder, input)?;
+        let (info, w, h) = rustimpl::lodepng_inspect(&self.decoder, input, true)?;
         self.info_png = info;
         Ok((w, h))
     }

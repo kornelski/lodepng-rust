@@ -69,6 +69,27 @@ fn bgra() {
 }
 
 #[test]
+fn rgb_with_trns_inspect() {
+    let mut state = Encoder::new();
+    state.info_raw_mut().colortype = ColorType::RGB;
+    state.info_raw_mut().set_key(0,0,0);
+    state.info_png_mut().color.colortype = ColorType::RGB;
+    state.info_png_mut().color.set_key(0,0,0);
+    state.set_auto_convert(false);
+    let png_data = state.encode(&[1u8,2,3,0,0,0], 2, 1).unwrap();
+
+    let mut decoder = lodepng::Decoder::new();
+    decoder.decode(&png_data).unwrap();
+    assert_eq!(decoder.info_png().color.colortype, ColorType::RGB);
+    assert!(decoder.info_png().color.can_have_alpha());
+
+    let mut decoder = lodepng::Decoder::new();
+    decoder.inspect(&png_data).unwrap();
+    assert_eq!(decoder.info_png().color.colortype, ColorType::RGB);
+    assert!(decoder.info_png().color.can_have_alpha());
+}
+
+#[test]
 fn text_chunks() {
     let mut s = State::new();
     s.encoder.text_compression = 0;

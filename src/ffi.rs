@@ -708,7 +708,7 @@ pub unsafe extern "C" fn lodepng_inspect(w_out: &mut c_uint, h_out: &mut c_uint,
     if inp.is_null() {
         return Error(48);
     }
-    let (info, w, h) = lode_try_state!(state.error, rustimpl::lodepng_inspect(&state.decoder, slice::from_raw_parts(inp, insize)));
+    let (info, w, h) = lode_try_state!(state.error, rustimpl::lodepng_inspect(&state.decoder, slice::from_raw_parts(inp, insize), false));
     state.info_png = info;
     *w_out = w as c_uint;
     *h_out = h as c_uint;

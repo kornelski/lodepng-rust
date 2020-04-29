@@ -2973,7 +2973,7 @@ fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: usize) {
 /* / PNG Decoder                                                            / */
 /* ////////////////////////////////////////////////////////////////////////// */
 /*read the information from the header and store it in the Info. return value is error*/
-pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8]) -> Result<(Info, usize, usize), Error> {
+pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool) -> Result<(Info, usize, usize), Error> {
     if inp.len() < 33 {
         /*error: the data length is smaller than the length of a PNG header*/
         return Err(Error(27));
@@ -2984,7 +2984,8 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8]) -> Result<(Info, u
         /*error: the first 8 bytes are not the correct PNG signature*/
         return Err(Error(28));
     }
-    let ihdr = ChunkRef::new(&inp[8..])?;
+    let mut chunks = ChunksIterFallible {data: &inp[8..]};
+    let ihdr = chunks.next().ok_or(Error(28))??;
     if &ihdr.name() != b"IHDR" {
         /*error: it doesn't start with a IHDR chunk!*/
         return Err(Error(29));
@@ -3015,12 +3016,8 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8]) -> Result<(Info, u
     if w == 0 || h == 0 {
         return Err(Error(93));
     }
-    if decoder.ignore_crc == 0 {
-        let crc = lodepng_read32bit_int(&inp[29..]);
-        let checksum = lodepng_crc32(&inp[12..(12 + 17)]);
-        if crc != checksum {
-            return Err(Error(57));
-        };
+    if decoder.ignore_crc == 0 && !ihdr.check_crc() {
+        return Err(Error(57));
     }
     if info_png.compression_method != 0 {
         /*error: only compression method 0 is allowed in the specification*/
@@ -3034,6 +3031,24 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8]) -> Result<(Info, u
         /*error: only interlace methods 0 and 1 exist in the specification*/
         return Err(Error(34));
     }
+    if read_chunks {
+        for ch in chunks {
+            let ch = ch?;
+            match &ch.name() {
+                b"IDAT" | b"IEND" => break,
+                b"PLTE" => {
+                    read_chunk_plte(&mut info_png.color, ch.data())?;
+                },
+                b"tRNS" => {
+                    read_chunk_trns(&mut info_png.color, ch.data())?;
+                },
+                b"bKGD" => {
+                    read_chunk_bkgd(&mut info_png, ch.data())?;
+                },
+                _ => {},
+            }
+        }
+    }
     check_png_color_validity(info_png.color.colortype, info_png.color.bitdepth())?;
     Ok((info_png, w, h))
 }
@@ -3045,7 +3060,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     let mut unknown = false;
     let mut critical_pos = ChunkPosition::IHDR;
     /*provide some proper output values if error will happen*/
-    let (info, w, h) = lodepng_inspect(&state.decoder, inp)?;
+    let (info, w, h) = lodepng_inspect(&state.decoder, inp, false)?;
     state.info_png = info;
 
     /*reads header and resets other parameters in state->info_png*/
