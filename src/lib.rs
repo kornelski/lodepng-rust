@@ -1003,42 +1003,83 @@ pub fn auto_choose_color(mode_out: &mut ColorMode, image: &[u8], w: usize, h: us
 }
 
 impl<'a> ChunkRef<'a> {
-    pub(crate) fn new(data: &'a [u8]) -> Self {
-        Self {data}
+    pub(crate) unsafe fn from_ptr(data: *const u8) -> Result<Self, Error> {
+        let head = std::slice::from_raw_parts(data, 4);
+        let len = lodepng_chunk_length(head);
+        let chunk = std::slice::from_raw_parts(data, len + 12);
+        Self::new(chunk)
+    }
+
+    pub(crate) fn new(data: &'a [u8]) -> Result<Self, Error> {
+        if data.len() < 12 {
+            return Err(Error(30));
+        }
+        let len = lodepng_chunk_length(data);
+        /*error: chunk length larger than the max PNG chunk size*/
+        if len > (1 << 31) {
+            return Err(Error(63));
+        }
+        if data.len() < len + 12 {
+            return Err(Error(64));
+        }
+
+        Ok(Self {
+            data
+        })
     }
 
     pub fn len(&self) -> usize {
         rustimpl::lodepng_chunk_length(self.data)
     }
 
+    /// Chunk type, e.g. `tRNS`
     pub fn name(&self) -> [u8; 4] {
         let mut tmp = [0; 4];
-        tmp.copy_from_slice(rustimpl::lodepng_chunk_type(self.data));
+        tmp.copy_from_slice(&self.data[4..8]);
         tmp
     }
 
+    /// True if `name()` equals this arg
     pub fn is_type<C: AsRef<[u8]>>(&self, name: C) -> bool {
-        rustimpl::lodepng_chunk_type(self.data) == name.as_ref()
+        self.name() == name.as_ref()
     }
 
     pub fn is_ancillary(&self) -> bool {
-        rustimpl::lodepng_chunk_ancillary(self.data)
+        (self.data[4] & 32) != 0
     }
 
     pub fn is_private(&self) -> bool {
-        rustimpl::lodepng_chunk_private(self.data)
+        (self.data[6] & 32) != 0
     }
 
     pub fn is_safe_to_copy(&self) -> bool {
-        rustimpl::lodepng_chunk_safetocopy(self.data)
+        (self.data[7] & 32) != 0
     }
 
     pub fn data(&self) -> &[u8] {
-        rustimpl::lodepng_chunk_data(self.data).unwrap()
+        let len = self.len();
+        &self.data[8..8 + len]
     }
 
+    #[cfg(not(fuzzing))]
     pub fn check_crc(&self) -> bool {
-        rustimpl::lodepng_chunk_check_crc(&*self.data)
+        let length = self.len();
+        /*the CRC is taken of the data and the 4 chunk type letters, not the length*/
+        let crc = rustimpl::lodepng_read32bit_int(&self.data[length + 8..]);
+        let checksum = self.crc();
+        crc == checksum
+    }
+
+    #[inline]
+    pub fn crc(&self) -> u32 {
+        let length = self.len();
+        lodepng_crc32(&self.data[4..length + 8])
+    }
+
+    #[cfg(fuzzing)]
+    /// Disable crc32 checks so that random data from fuzzer gets actually parsed
+    pub fn check_crc(&self) -> bool {
+        true
     }
 }
 
@@ -1048,7 +1089,8 @@ pub struct ChunkRefMut<'a> {
 
 impl<'a> ChunkRefMut<'a> {
     pub fn data_mut(&mut self) -> &mut [u8] {
-        rustimpl::lodepng_chunk_data_mut(self.data).unwrap()
+        let len = ChunkRef::new(self.data).unwrap().len();
+        &mut self.data[8..8 + len]
     }
 
     pub fn generate_crc(&mut self) {

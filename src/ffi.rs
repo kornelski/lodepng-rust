@@ -1,6 +1,7 @@
 #![cfg_attr(feature = "cargo-clippy", allow(needless_borrow))]
 #![allow(non_upper_case_globals)]
 
+use crate::ChunkRef;
 use crate::rustimpl::*;
 use crate::huffman;
 use std::ptr;
@@ -531,58 +532,61 @@ pub unsafe extern "C" fn lodepng_chunk_length(chunk: *const u8) -> c_uint {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_type(type_: &mut [u8; 5], chunk: *const u8) {
-    let t = rustimpl::lodepng_chunk_type(slice::from_raw_parts(chunk, 8));
-    type_[0..4].clone_from_slice(t);
+    let ch = ChunkRef::from_ptr(chunk).unwrap();
+    let t = ch.name();
+    type_[0..4].clone_from_slice(&t);
     type_[4] = 0;
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_chunk_type_equals(chunk: *const u8, ty: &mut [u8; 4]) -> u8 {
-    if ty.iter().any(|&t| t == 0) {
+pub unsafe extern "C" fn lodepng_chunk_type_equals(chunk: *const u8, name: &[u8; 4]) -> u8 {
+    if name.iter().any(|&t| t == 0) {
         return 0;
     }
-    (ty == rustimpl::lodepng_chunk_type(slice::from_raw_parts(chunk, 8))) as u8
+    let ch = ChunkRef::from_ptr(chunk).unwrap();
+    (name == &ch.name()) as u8
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_data_const(chunk: *const u8) -> *const u8 {
-    let chunk = slice::from_raw_parts(chunk, 0x7FFF_FFFF);
-    rustimpl::lodepng_chunk_data(chunk).unwrap().as_ptr()
+    ChunkRef::from_ptr(chunk).unwrap().data().as_ptr()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_next(chunk: *mut u8) -> *mut u8 {
-    rustimpl::lodepng_chunk_next_mut(slice::from_raw_parts_mut(chunk, 0x7FFF_FFFF)).as_mut_ptr()
+    let len = lodepng_chunk_length(chunk) as usize;
+    chunk.add(len + 12)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_next_const(chunk: *const u8) -> *const u8 {
-    rustimpl::lodepng_chunk_next(slice::from_raw_parts(chunk, 0x7FFF_FFFF)).as_ptr()
+    let len = lodepng_chunk_length(chunk) as usize;
+    chunk.add(len + 12)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_ancillary(chunk: *const u8) -> u8 {
-    rustimpl::lodepng_chunk_ancillary(slice::from_raw_parts(chunk, 0x7FFF_FFFF)) as u8
+    ChunkRef::from_ptr(chunk).unwrap().is_ancillary() as u8
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_private(chunk: *const u8) -> u8 {
-    rustimpl::lodepng_chunk_private(slice::from_raw_parts(chunk, 0x7FFF_FFFF)) as u8
+    ChunkRef::from_ptr(chunk).unwrap().is_private() as u8
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_safetocopy(chunk: *const u8) -> u8 {
-    rustimpl::lodepng_chunk_safetocopy(slice::from_raw_parts(chunk, 0x7FFF_FFFF)) as u8
+    ChunkRef::from_ptr(chunk).unwrap().is_safe_to_copy() as u8
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_chunk_data(chunk: *mut u8) -> *mut u8 {
-    rustimpl::lodepng_chunk_data_mut(slice::from_raw_parts_mut(chunk, 0x7FFF_FFFF)).unwrap().as_mut_ptr()
+pub unsafe extern "C" fn lodepng_chunk_data(chunk_data: *mut u8) -> *mut u8 {
+    chunk_data.add(8)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_check_crc(chunk: *const u8) -> c_uint {
-    if rustimpl::lodepng_chunk_check_crc(slice::from_raw_parts(chunk, 0x7FFF_FFFF)) {0} else {1}
+    ChunkRef::from_ptr(chunk).unwrap().check_crc() as c_uint
 }
 
 #[no_mangle]

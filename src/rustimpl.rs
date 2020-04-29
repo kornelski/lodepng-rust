@@ -514,7 +514,7 @@ pub(crate) fn string_copy(inp: &[u8]) -> Result<*mut c_char, Error> {
 }
 
 #[inline]
-fn lodepng_read32bit_int(buffer: &[u8]) -> u32 {
+pub(crate) fn lodepng_read32bit_int(buffer: &[u8]) -> u32 {
     ((buffer[0] as u32) << 24) | ((buffer[1] as u32) << 16) | ((buffer[2] as u32) << 8) | buffer[3] as u32
 }
 
@@ -1609,38 +1609,9 @@ fn set_bit_of_reversed_stream(bitpointer: &mut usize, bitstream: &mut [u8], bit:
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / PNG chunks                                                             / */
 /* ////////////////////////////////////////////////////////////////////////// */
+#[inline]
 pub fn lodepng_chunk_length(chunk: &[u8]) -> usize {
     lodepng_read32bit_int(chunk) as usize
-}
-
-pub fn lodepng_chunk_type(chunk: &[u8]) -> &[u8] {
-    &chunk[4..8]
-}
-
-pub(crate) fn lodepng_chunk_data(chunk: &[u8]) -> Result<&[u8], Error> {
-    let len = lodepng_chunk_length(chunk) as usize;
-    /*error: chunk length larger than the max PNG chunk size*/
-    if len > (1 << 31) {
-        return Err(Error(63));
-    }
-    if chunk.len() < len + 12 {
-        return Err(Error(64));
-    }
-
-    Ok(&chunk[8..8 + len])
-}
-
-pub(crate) fn lodepng_chunk_data_mut(chunk: &mut [u8]) -> Result<&mut [u8], Error> {
-    let len = lodepng_chunk_length(chunk) as usize;
-    /*error: chunk length larger than the max PNG chunk size*/
-    if len > (1 << 31) {
-        return Err(Error(63));
-    }
-    if chunk.len() < len + 12 {
-        return Err(Error(64));
-    }
-
-    Ok(&mut chunk[8..8 + len])
 }
 
 pub(crate) fn lodepng_chunk_next(chunk: &[u8]) -> &[u8] {
@@ -1648,41 +1619,10 @@ pub(crate) fn lodepng_chunk_next(chunk: &[u8]) -> &[u8] {
     &chunk[total_chunk_length..]
 }
 
-pub(crate) fn lodepng_chunk_next_mut(chunk: &mut [u8]) -> &mut [u8] {
-    let total_chunk_length = lodepng_chunk_length(chunk) as usize + 12;
-    &mut chunk[total_chunk_length..]
-}
-
-pub fn lodepng_chunk_ancillary(chunk: &[u8]) -> bool {
-    (chunk[4] & 32) != 0
-}
-
-pub fn lodepng_chunk_private(chunk: &[u8]) -> bool {
-    (chunk[6] & 32) != 0
-}
-
-pub fn lodepng_chunk_safetocopy(chunk: &[u8]) -> bool {
-    (chunk[7] & 32) != 0
-}
-
-
-#[cfg(not(fuzzing))]
-pub fn lodepng_chunk_check_crc(chunk: &[u8]) -> bool {
-    let length = lodepng_chunk_length(chunk) as usize;
-    /*the CRC is taken of the data and the 4 chunk type letters, not the length*/
-    let crc = lodepng_read32bit_int(&chunk[length + 8..]);
-    let checksum = lodepng_crc32(&chunk[4..length + 8]);
-    crc == checksum
-}
-
-#[cfg(fuzzing)]
-pub fn lodepng_chunk_check_crc(chunk: &[u8]) -> bool {
-    true // Disable crc32 checks so that random data from fuzzer gets actually parsed
-}
-
 pub fn lodepng_chunk_generate_crc(chunk: &mut [u8]) {
-    let length = lodepng_chunk_length(chunk) as usize;
-    let crc = lodepng_crc32(&chunk[4..length + 8]);
+    let ch = ChunkRef::new(chunk).unwrap();
+    let length = ch.len();
+    let crc = ch.crc();
     lodepng_set32bit_int(&mut chunk[8 + length..], crc);
 }
 
@@ -3049,13 +2989,14 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8]) -> Result<(Info, u
         /*error: the first 8 bytes are not the correct PNG signature*/
         return Err(Error(28));
     }
-    if lodepng_chunk_length(&inp[8..]) != 13 {
-        /*error: header size must be 13 bytes*/
-        return Err(Error(94));
-    }
-    if lodepng_chunk_type(&inp[8..]) != b"IHDR" {
+    let ihdr = ChunkRef::new(&inp[8..])?;
+    if &ihdr.name() != b"IHDR" {
         /*error: it doesn't start with a IHDR chunk!*/
         return Err(Error(29));
+    }
+    if ihdr.len() != 13 {
+        /*error: header size must be 13 bytes*/
+        return Err(Error(94));
     }
     /*read the values given in the header*/
     let w = lodepng_read32bit_int(&inp[16..]) as usize;
@@ -3129,12 +3070,10 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     /*loop through the chunks, ignoring unknown chunks and stopping at IEND chunk.
       IDAT data is put at the start of the in buffer*/
     while !found_iend {
-        if chunk.len() < 12 {
-            return Err(Error(30));
-        }
+        let ch = ChunkRef::new(chunk)?;
         /*length of the data of the chunk, excluding the length bytes, chunk type and CRC bytes*/
-        let data = lodepng_chunk_data(chunk)?;
-        match lodepng_chunk_type(chunk) {
+        let data = ch.data();
+        match &ch.name() {
             b"IDAT" => {
                 idat.extend_from_slice(data);
                 critical_pos = ChunkPosition::IDAT;
@@ -3168,7 +3107,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
                 read_chunk_phys(&mut state.info_png, data)?;
             },
             _ => {
-                if !lodepng_chunk_ancillary(chunk) {
+                if !ch.is_ancillary() {
                     return Err(Error(69));
                 }
                 unknown = true;
@@ -3177,7 +3116,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
                 }
             },
         };
-        if state.decoder.ignore_crc == 0 && !unknown && !lodepng_chunk_check_crc(chunk) {
+        if state.decoder.ignore_crc == 0 && !unknown && !ch.check_crc() {
             return Err(Error(57));
         }
         if !found_iend {
