@@ -1614,11 +1614,6 @@ pub fn lodepng_chunk_length(chunk: &[u8]) -> usize {
     lodepng_read32bit_int(chunk) as usize
 }
 
-pub(crate) fn lodepng_chunk_next(chunk: &[u8]) -> &[u8] {
-    let total_chunk_length = lodepng_chunk_length(chunk) as usize + 12;
-    &chunk[total_chunk_length..]
-}
-
 pub fn lodepng_chunk_generate_crc(chunk: &mut [u8]) {
     let ch = ChunkRef::new(chunk).unwrap();
     let length = ch.len();
@@ -3066,11 +3061,13 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
         return Err(Error(92)); /*first byte of the first chunk after the header*/
     }
     let mut idat = Vec::new();
-    let mut chunk = &inp[33..];
+    let chunks = ChunksIterFallible {
+        data: &inp[33..],
+    };
     /*loop through the chunks, ignoring unknown chunks and stopping at IEND chunk.
       IDAT data is put at the start of the in buffer*/
-    while !found_iend {
-        let ch = ChunkRef::new(chunk)?;
+    for ch in chunks {
+        let ch = ch?;
         /*length of the data of the chunk, excluding the length bytes, chunk type and CRC bytes*/
         let data = ch.data();
         match &ch.name() {
@@ -3112,15 +3109,15 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
                 }
                 unknown = true;
                 if state.decoder.remember_unknown_chunks != 0 {
-                    state.info_png.push_unknown_chunk(critical_pos, chunk)?;
+                    state.info_png.push_unknown_chunk(critical_pos, ch.whole_chunk_data())?;
                 }
             },
         };
         if state.decoder.ignore_crc == 0 && !unknown && !ch.check_crc() {
             return Err(Error(57));
         }
-        if !found_iend {
-            chunk = lodepng_chunk_next(chunk);
+        if found_iend {
+            break;
         }
     }
     /*predict output size, to allocate exact size for output buffer to avoid more dynamic allocation.
@@ -3215,10 +3212,10 @@ pub fn lodepng_save_file(buffer: &[u8], filename: &Path) -> Result<(), Error> {
         .map_err(|_| Error(79))
 }
 
-fn add_unknown_chunks(out: &mut Vec<u8>, mut inchunk: &[u8]) -> Result<(), Error> {
-    while !inchunk.is_empty() {
-        chunk_append(out, inchunk);
-        inchunk = lodepng_chunk_next(inchunk);
+fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
+    let chunks = ChunksIterFallible {data};
+    for ch in chunks {
+        chunk_append(out, ch?.whole_chunk_data());
     }
     Ok(())
 }

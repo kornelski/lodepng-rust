@@ -3,7 +3,7 @@ use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::os::raw::c_char;
 use super::ChunkRef;
-use crate::rustimpl;
+use crate::Error;
 
 pub struct TextKeysCStrIter<'a> {
     pub(crate) k: *mut *mut c_char,
@@ -76,23 +76,42 @@ fn cstr_to_str(s: &CStr) -> &str {
 }
 
 pub struct ChunksIter<'a> {
-    pub(crate) data: &'a [u8],
+    pub(crate) iter: ChunksIterFallible<'a>,
+}
+
+impl<'a> ChunksIter<'a> {
+    pub fn new(data: &'a [u8]) -> Self {
+        Self {
+            iter: ChunksIterFallible {
+                data
+            }
+        }
+    }
 }
 
 impl<'a> Iterator for ChunksIter<'a> {
     type Item = ChunkRef<'a>;
     fn next(&mut self) -> Option<Self::Item> {
-        let header_len = 12;
-        if self.data.len() < header_len {
-            return None;
-        }
+        self.iter.next().and_then(|item| item.ok())
+    }
+}
 
-        let len = rustimpl::lodepng_chunk_length(self.data);
-        if self.data.len() < len + header_len {
+pub struct ChunksIterFallible<'a> {
+    pub(crate) data: &'a [u8],
+}
+
+impl<'a> Iterator for ChunksIterFallible<'a> {
+    type Item = Result<ChunkRef<'a>, Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.data.is_empty() {
             return None;
         }
-        let c = ChunkRef::new(&self.data[0..len + header_len]).ok()?;
-        self.data = rustimpl::lodepng_chunk_next(self.data);
-        Some(c)
+        let ch = match ChunkRef::new(self.data) {
+            Ok(ch) => ch,
+            Err(e) => return Some(Err(e)),
+        };
+        self.data = &self.data[ch.len() + 12..];
+        Some(Ok(ch))
     }
 }

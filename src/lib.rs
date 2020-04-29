@@ -386,13 +386,11 @@ impl Info {
     }
 
     pub fn unknown_chunks(&self, position: ChunkPosition) -> ChunksIter<'_> {
-        ChunksIter {
-            data: unsafe {
+        ChunksIter::new(unsafe {
                 slice::from_raw_parts(
                     self.unknown_chunks_data[position as usize],
                     self.unknown_chunks_size[position as usize])
-            }
-        }
+        })
     }
 
 
@@ -774,12 +772,6 @@ pub enum ChunkPosition {
     IDAT = 2,
 }
 
-/// Reference to a chunk
-#[derive(Copy, Clone)]
-pub struct ChunkRef<'a> {
-    data: &'a [u8],
-}
-
 /// Low-level representation of an image
 pub struct Bitmap<PixelType: Copy + 'static> {
     /// Raw bitmap memory. Layout depends on color mode and bitdepth used to create it.
@@ -1002,7 +994,14 @@ pub fn auto_choose_color(mode_out: &mut ColorMode, image: &[u8], w: usize, h: us
     Ok(())
 }
 
+/// Reference to a chunk
+#[derive(Copy, Clone)]
+pub struct ChunkRef<'a> {
+    data: &'a [u8],
+}
+
 impl<'a> ChunkRef<'a> {
+    #[inline]
     pub(crate) unsafe fn from_ptr(data: *const u8) -> Result<Self, Error> {
         let head = std::slice::from_raw_parts(data, 4);
         let len = lodepng_chunk_length(head);
@@ -1019,20 +1018,22 @@ impl<'a> ChunkRef<'a> {
         if len > (1 << 31) {
             return Err(Error(63));
         }
-        if data.len() < len + 12 {
+        if data.len() - 12 < len {
             return Err(Error(64));
         }
 
         Ok(Self {
-            data
+            data: &data[0..len + 12],
         })
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
-        rustimpl::lodepng_chunk_length(self.data)
+        lodepng_chunk_length(self.data)
     }
 
     /// Chunk type, e.g. `tRNS`
+    #[inline]
     pub fn name(&self) -> [u8; 4] {
         let mut tmp = [0; 4];
         tmp.copy_from_slice(&self.data[4..8]);
@@ -1040,22 +1041,27 @@ impl<'a> ChunkRef<'a> {
     }
 
     /// True if `name()` equals this arg
+    #[inline]
     pub fn is_type<C: AsRef<[u8]>>(&self, name: C) -> bool {
         self.name() == name.as_ref()
     }
 
+    #[inline]
     pub fn is_ancillary(&self) -> bool {
         (self.data[4] & 32) != 0
     }
 
+    #[inline]
     pub fn is_private(&self) -> bool {
         (self.data[6] & 32) != 0
     }
 
+    #[inline]
     pub fn is_safe_to_copy(&self) -> bool {
         (self.data[7] & 32) != 0
     }
 
+    #[inline]
     pub fn data(&self) -> &[u8] {
         let len = self.len();
         &self.data[8..8 + len]
@@ -1078,8 +1084,15 @@ impl<'a> ChunkRef<'a> {
 
     #[cfg(fuzzing)]
     /// Disable crc32 checks so that random data from fuzzer gets actually parsed
+    #[inline]
     pub fn check_crc(&self) -> bool {
         true
+    }
+
+    /// header + data + crc
+    #[inline]
+    pub(crate) fn whole_chunk_data(&self) -> &[u8] {
+        self.data
     }
 }
 
