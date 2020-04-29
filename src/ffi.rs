@@ -340,7 +340,16 @@ pub struct ColorProfile {
 
 impl fmt::Debug for ColorProfile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("ColorProfile")
+        f.debug_struct("ColorProfile")
+            .field("colored", &self.colored)
+            .field("key", &self.key)
+            .field("key_r", &self.key_r)
+            .field("key_g", &self.key_g)
+            .field("key_b", &self.key_b)
+            .field("alpha", &self.alpha)
+            .field("numcolors", &self.numcolors)
+            .field("bits", &self.bits)
+            .finish()
     }
 }
 
