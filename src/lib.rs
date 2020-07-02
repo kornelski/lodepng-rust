@@ -481,8 +481,9 @@ impl Encoder {
     /// The callback MUST allocate memory using `libc::malloc`
     #[inline]
     #[allow(deprecated)]
-    pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
-        self.state.set_custom_zlib(callback, context);
+    pub fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
+        self.state.encoder.zlibsettings.custom_zlib = callback;
+        self.state.encoder.zlibsettings.custom_context = context;
     }
 
     /// Compress using another deflate implementation. It's just deflate, without headers or checksum.
@@ -491,8 +492,9 @@ impl Encoder {
     /// The callback MUST allocate memory using `libc::malloc`
     #[inline]
     #[allow(deprecated)]
-    pub unsafe fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
-        self.state.set_custom_deflate(callback, context);
+    pub fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
+        self.state.encoder.zlibsettings.custom_deflate = callback;
+        self.state.encoder.zlibsettings.custom_context = context;
     }
 
     #[inline]
@@ -619,12 +621,16 @@ impl Decoder {
         self.state.inspect(input)
     }
 
-    pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_decompress_callback, context: *const c_void) {
+    /// use custom zlib decoder instead of built in one
+    pub fn set_custom_zlib(&mut self, callback: ffi::custom_decompress_callback, context: *const c_void) {
         self.state.decoder.zlibsettings.custom_zlib = callback;
         self.state.decoder.zlibsettings.custom_context = context;
     }
 
-    pub unsafe fn set_custom_inflate(&mut self, callback: ffi::custom_decompress_callback, context: *const c_void) {
+    /// use custom deflate decoder instead of built in one.
+    ///
+    /// If custom_zlib is used, custom_inflate is ignored since only the built in zlib function will call custom_inflate
+    pub fn set_custom_inflate(&mut self, callback: ffi::custom_decompress_callback, context: *const c_void) {
         self.state.decoder.zlibsettings.custom_inflate = callback;
         self.state.decoder.zlibsettings.custom_context = context;
     }
@@ -648,14 +654,14 @@ impl State {
 
     /// See `Encoder'
     #[deprecated(note = "Use Encoder type instead of State")]
-    pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
+    pub fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.encoder.zlibsettings.custom_zlib = callback;
         self.encoder.zlibsettings.custom_context = context;
     }
 
     /// See `Encoder'
     #[deprecated(note = "Use Encoder type instead of State")]
-    pub unsafe fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
+    pub fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.encoder.zlibsettings.custom_deflate = callback;
         self.encoder.zlibsettings.custom_context = context;
     }
@@ -1187,11 +1193,11 @@ impl Default for CompressSettings {
     fn default() -> Self {
         Self {
             btype: 2,
-            use_lz77: 1,
-            windowsize: DEFAULT_WINDOWSIZE as u32,
+            use_lz77: true,
+            windowsize: DEFAULT_WINDOWSIZE as _,
             minmatch: 3,
             nicematch: 128,
-            lazymatching: 1,
+            lazymatching: true,
             custom_zlib: None,
             custom_deflate: None,
             custom_context: ptr::null_mut(),
@@ -1208,7 +1214,7 @@ impl DecompressSettings {
 impl Default for DecompressSettings {
     fn default() -> Self {
         Self {
-            ignore_adler32: 0,
+            ignore_adler32: false,
             custom_zlib: None,
             custom_inflate: None,
             custom_context: ptr::null_mut(),
@@ -1346,5 +1352,17 @@ mod test {
 
         let data = s.get_icc().unwrap();
         assert_eq!("appl".as_bytes(), &data[4..8]);
+    }
+
+    #[test]
+    fn custom_zlib() {
+        let mut d = Decoder::new();
+        fn custom(inp: &[u8], _: &mut dyn std::io::Write, settings: &DecompressSettings) -> Result<(), Error> {
+            assert_eq!(12, inp.len());
+            assert_eq!(settings.custom_context, 123 as *const _);
+            Err(Error::new(1))
+        }
+        d.set_custom_zlib(Some(custom), 123 as *const _);
+        assert!(d.decode_file("tests/profile.png").is_err());
     }
 }

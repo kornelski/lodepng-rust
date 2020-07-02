@@ -11,6 +11,7 @@ use std::fmt;
 use std::os::raw::*;
 use std::ffi::CStr;
 use std::path::*;
+use std::io;
 
 use crate::rustimpl;
 
@@ -115,34 +116,45 @@ pub struct ColorMode {
     pub(crate) key_b: c_uint,
 }
 
-pub type custom_compress_callback =   Option<unsafe extern "C" fn(arg1: &mut *mut c_uchar, arg2: &mut usize, arg3: *const c_uchar, arg4: usize, arg5: *const CompressSettings) -> c_uint>;
-pub type custom_decompress_callback = Option<unsafe extern "C" fn(arg1: *mut *mut c_uchar, arg2: *mut usize, arg3: *const c_uchar, arg4: usize, arg5: *const DecompressSettings) -> c_uint>;
+pub type custom_compress_callback =   Option<fn(input: &[u8], output: &mut dyn io::Write, context: &CompressSettings) -> Result<(), Error>>;
+pub type custom_decompress_callback = Option<fn(input: &[u8], output: &mut dyn io::Write, context: &DecompressSettings) -> Result<(), Error>>;
 
 #[repr(C)]
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct DecompressSettings {
-    pub(crate) ignore_adler32: c_uint,
+    pub(crate) ignore_adler32: bool,
     pub(crate) custom_zlib: custom_decompress_callback,
     pub(crate) custom_inflate: custom_decompress_callback,
     pub(crate) custom_context: *const c_void,
+}
+
+impl fmt::Debug for DecompressSettings {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = f.debug_struct("DecompressSettings");
+        s.field("ignore_adler32", &self.ignore_adler32);
+        s.field("custom_zlib", &self.custom_zlib.is_some());
+        s.field("custom_inflate", &self.custom_inflate.is_some());
+        s.field("custom_context", &self.custom_context);
+        s.finish()
+    }
 }
 
 /// Settings for zlib compression. Tweaking these settings tweaks the balance between speed and compression ratio.
 #[repr(C)]
 #[derive(Clone)]
 pub struct CompressSettings {
-    /// the block type for LZ (0, 1, 2 or 3, see zlib standard). Should be 2 for proper compression.
-    pub btype: c_uint,
-    /// whether or not to use LZ77. Should be 1 for proper compression.
-    pub use_lz77: c_uint,
     /// must be a power of two <= 32768. higher compresses more but is slower. Typical value: 2048.
-    pub windowsize: c_uint,
+    pub windowsize: u32,
     /// mininum lz77 length. 3 is normally best, 6 can be better for some PNGs. Default: 0
-    pub minmatch: c_uint,
+    pub minmatch: u16,
     /// stop searching if >= this length found. Set to 258 for best compression. Default: 128
-    pub nicematch: c_uint,
+    pub nicematch: u16,
+    /// the block type for LZ (0, 1, 2 or 3, see zlib standard). Should be 2 for proper compression.
+    pub btype: u8,
+    /// whether or not to use LZ77. Should be 1 for proper compression.
+    pub use_lz77: bool,
     /// use lazy matching: better compression but a bit slower. Default: true
-    pub lazymatching: c_uint,
+    pub lazymatching: bool,
     /// use custom zlib encoder instead of built in one (default: None)
     pub custom_zlib: custom_compress_callback,
     /// use custom deflate encoder instead of built in one (default: null)
@@ -356,7 +368,17 @@ impl fmt::Debug for ColorProfile {
 
 impl fmt::Debug for CompressSettings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("CompressSettings")
+        let mut s = f.debug_struct("CompressSettings");
+        s.field("btype", &self.btype);
+        s.field("use_lz77", &self.use_lz77);
+        s.field("windowsize", &self.windowsize);
+        s.field("minmatch", &self.minmatch);
+        s.field("nicematch", &self.nicematch);
+        s.field("lazymatching", &self.lazymatching);
+        s.field("custom_zlib", &self.custom_zlib.is_some());
+        s.field("custom_deflate", &self.custom_deflate.is_some());
+        s.field("custom_context", &self.custom_context);
+        s.finish()
     }
 }
 
@@ -844,11 +866,11 @@ pub unsafe extern "C" fn lodepng_color_profile_init(prof: *mut ColorProfile) {
 #[no_mangle]
 pub static lodepng_default_compress_settings: CompressSettings = CompressSettings {
     btype: 2,
-    use_lz77: 1,
-    windowsize: DEFAULT_WINDOWSIZE as u32,
+    use_lz77: true,
+    windowsize: DEFAULT_WINDOWSIZE as _,
     minmatch: 3,
     nicematch: 128,
-    lazymatching: 1,
+    lazymatching: true,
     custom_zlib: None,
     custom_deflate: None,
     custom_context: 0usize as *mut _,
@@ -856,7 +878,7 @@ pub static lodepng_default_compress_settings: CompressSettings = CompressSetting
 
 #[no_mangle]
 pub static lodepng_default_decompress_settings: DecompressSettings = DecompressSettings {
-    ignore_adler32: 0,
+    ignore_adler32: false,
     custom_zlib: None,
     custom_inflate: None,
     custom_context: 0usize as *mut _,

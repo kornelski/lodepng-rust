@@ -2016,12 +2016,9 @@ pub(crate) fn lodepng_inflatev(inp: &[u8], _settings: &DecompressSettings) -> Re
 
 fn inflate(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
     if let Some(cb) = settings.custom_inflate {
-        unsafe {
-            let mut outdata = ptr::null_mut();
-            let mut outsize = 0;
-            Error((cb)(&mut outdata, &mut outsize, inp.as_ptr(), inp.len(), settings)).to_result()?;
-            Ok(vec_from_raw(outdata, outsize))
-        }
+        let mut out = Vec::with_capacity(inp.len() * 3/2);
+        (cb)(inp, &mut out, settings)?;
+        Ok(out)
     } else {
         lodepng_inflatev(inp, settings)
     }
@@ -2206,8 +2203,8 @@ fn deflate_dynamic(
     let datasize = dataend - datapos;
 
     let data = &data[0..dataend]; // not datasize. Truncating the length is important.
-    let lz77_encoded = if settings.use_lz77 != 0 {
-        encode_lz77(hash, data, datapos, settings.windowsize, settings.minmatch, settings.nicematch, settings.lazymatching != 0)?
+    let lz77_encoded = if settings.use_lz77 {
+        encode_lz77(hash, data, datapos, settings.windowsize, settings.minmatch, settings.nicematch, settings.lazymatching)?
     } else {
         let mut t = Vec::with_capacity(datasize);
         for &d in &data[datapos..dataend] {
@@ -2395,7 +2392,7 @@ fn deflate_fixed(out: &mut Vec<u8>, bp: &mut usize, hash: &mut Hash, data: &[u8]
     let end = out.len() - 1;
     out[end] |= (0 << ((*bp as u32) & 7)) as u8;
     (*bp) += 1;
-    if settings.use_lz77 != 0 {
+    if settings.use_lz77 {
         let lz77_encoded = encode_lz77(
             hash,
             data,
@@ -2403,7 +2400,7 @@ fn deflate_fixed(out: &mut Vec<u8>, bp: &mut usize, hash: &mut Hash, data: &[u8]
             settings.windowsize,
             settings.minmatch,
             settings.nicematch,
-            settings.lazymatching != 0,
+            settings.lazymatching,
         )?;
         write_lz77_data(bp, out, &lz77_encoded, &tree_ll, &tree_d);
     } else {
@@ -2457,12 +2454,9 @@ pub(crate) fn lodepng_deflatev(inp: &[u8], settings: &CompressSettings) -> Resul
 
 fn deflate(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
     if let Some(cb) = settings.custom_deflate {
-        unsafe {
-            let mut outdata = ptr::null_mut();
-            let mut outsize = 0;
-            Error((cb)(&mut outdata, &mut outsize, inp.as_ptr(), inp.len(), settings)).to_result()?;
-            Ok(vec_from_raw(outdata, outsize))
-        }
+        let mut out = Vec::with_capacity(inp.len() * 3/2);
+        (cb)(inp, &mut out, settings)?;
+        Ok(out)
     } else {
         lodepng_deflatev(inp, settings)
     }
@@ -2517,7 +2511,7 @@ pub fn lodepng_zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Res
         return Err(Error(26));
     }
     let out = inflate(&inp[2..], settings)?;
-    if (! cfg!(fuzzing)) && settings.ignore_adler32 == 0 {
+    if (! cfg!(fuzzing)) && settings.ignore_adler32 == false {
         let adler32_val = lodepng_read32bit_int(&inp[(inp.len() - 4)..]);
         let checksum = adler32(&out);
         /*error, adler checksum not correct, data must be corrupted*/
@@ -2530,12 +2524,9 @@ pub fn lodepng_zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Res
 
 pub fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
     if let Some(cb) = settings.custom_zlib {
-        unsafe {
-            let mut outdata = ptr::null_mut();
-            let mut outsize = 0;
-            Error((cb)(&mut outdata, &mut outsize, inp.as_ptr(), inp.len(), settings)).to_result()?;
-            Ok(vec_from_raw(outdata, outsize))
-        }
+        let mut out = Vec::with_capacity(inp.len()*3/2);
+        (cb)(inp, &mut out, settings)?;
+        Ok(out)
     } else {
         lodepng_zlib_decompress(inp, settings)
     }
@@ -2567,12 +2558,8 @@ pub fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &Compress
 pub fn zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
     let mut out = Vec::with_capacity(inp.len()/2);
     if let Some(cb) = settings.custom_zlib {
-        unsafe {
-            let mut outdata = ptr::null_mut();
-            let mut outsize = 0;
-            Error((cb)(&mut outdata, &mut outsize, inp.as_ptr(), inp.len(), settings)).to_result()?;
-            Ok(vec_from_raw(outdata, outsize))
-        }
+        (cb)(inp, &mut out, settings)?;
+        Ok(out)
     } else {
         lodepng_zlib_compress(&mut out, inp, settings)?;
         Ok(out)
@@ -3630,12 +3617,12 @@ fn encode_lz77(
     in_: &[u8],
     inpos: usize,
     windowsize: u32,
-    minmatch: u32,
-    nicematch: u32,
+    minmatch: u16,
+    nicematch: u16,
     lazymatching: bool,
 ) -> Result<Vec<u32>, Error> {
-    let mut out = Vec::new();
-    let nicematch = (nicematch).min(MAX_SUPPORTED_DEFLATE_LENGTH as u32);
+    let mut out = Vec::with_capacity(in_.len()/2);
+    let nicematch = (nicematch as u32).min(MAX_SUPPORTED_DEFLATE_LENGTH as u32);
     /*for large window lengths, assume the user wants no compression loss. Otherwise, max hash chain length speedup.*/
     let maxchainlength = if windowsize >= 8192 {
         windowsize
@@ -3756,7 +3743,7 @@ fn encode_lz77(
         if length >= 3 && offset > windowsize {
             return Err(Error(86));
         }
-        if length < 3 || length < minmatch || (length == 3 && offset > 4096) {
+        if length < 3 || length < minmatch as u32 || (length == 3 && offset > 4096) {
             /*compensate for the fact that longer offsets have more extra bits, a
                   length of only 3 may be not worth it then*/
             out.push(in_[pos] as u32);
