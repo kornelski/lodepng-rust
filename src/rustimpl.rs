@@ -40,7 +40,7 @@ pub(crate) fn vec_into_raw(v: Vec<u8>) -> Result<(*mut u8, usize), Error> {
         let len = v.len();
         let data = lodepng_malloc(len) as *mut u8;
         if data.is_null() {
-            Err(Error(83))
+            Err(Error::new(83))
         } else {
             slice::from_raw_parts_mut(data, len).clone_from_slice(&v);
             Ok((data, len))
@@ -219,7 +219,7 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
         settings.filter_strategy
     };
     if bpp == 0 {
-        return Err(Error(31));
+        return Err(Error::new(31));
     }
     match strategy {
         FilterStrategy::ZERO => for y in 0..h {
@@ -503,7 +503,7 @@ pub(crate) fn string_copy(inp: &[u8]) -> Result<*mut c_char, Error> {
     unsafe {
         let out = lodepng_malloc(insize + 1) as *mut c_char;
         if out.is_null() {
-            return Err(Error(83));
+            return Err(Error::new(83));
         }
         for i in 0..insize {
             *out.offset(i as isize) = inp[i] as c_char;
@@ -552,7 +552,7 @@ pub(crate) fn text_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
 unsafe fn realloc_extend(array: &mut *mut *mut c_char, len: usize) -> Result<(), Error> {
     *array = lodepng_realloc((*array) as *mut _, (len + 1) * mem::size_of::<*mut c_char>()) as *mut _;
     if array.is_null() {
-        return Err(Error(83));
+        return Err(Error::new(83));
     }
     *array.offset(len as isize) = ptr::null_mut();
     Ok(())
@@ -676,7 +676,7 @@ fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTr
             out[i * 6 + 5] = b;
         },
         ColorType::PALETTE => {
-            let index = *tree.get(&(r, g, b, a)).ok_or(Error(82))?;
+            let index = *tree.get(&(r, g, b, a)).ok_or(Error::new(82))?;
             if mode.bitdepth() == 8 {
                 out[i] = index as u8;
             } else {
@@ -713,7 +713,7 @@ fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTr
         ColorType::BGRA |
         ColorType::BGR |
         ColorType::BGRX => {
-            return Err(Error(31));
+            return Err(Error::new(31));
         },
     };
     Ok(())
@@ -1146,20 +1146,20 @@ fn read_chunk_trns(color: &mut ColorMode, data: &[u8]) -> Result<(), Error> {
     if color.colortype == ColorType::PALETTE {
         let pal = color.palette_mut();
         if data.len() > pal.len() {
-            return Err(Error(38));
+            return Err(Error::new(38));
         }
         for (i, &d) in data.iter().enumerate() {
             pal[i].a = d;
         }
     } else if color.colortype == ColorType::GREY {
         if data.len() != 2 {
-            return Err(Error(30));
+            return Err(Error::new(30));
         }
         let t = 256 * data[0] as u16 + data[1] as u16;
         color.set_key(t, t, t);
     } else if color.colortype == ColorType::RGB {
         if data.len() != 6 {
-            return Err(Error(41));
+            return Err(Error::new(41));
         }
         color.set_key(
             256 * data[0] as u16 + data[1] as u16,
@@ -1167,7 +1167,7 @@ fn read_chunk_trns(color: &mut ColorMode, data: &[u8]) -> Result<(), Error> {
             256 * data[4] as u16 + data[5] as u16,
         );
     } else {
-        return Err(Error(42));
+        return Err(Error::new(42));
     }
     Ok(())
 }
@@ -1178,7 +1178,7 @@ fn read_chunk_bkgd(info: &mut Info, data: &[u8]) -> Result<(), Error> {
     if info.color.colortype == ColorType::PALETTE {
         /*error: this chunk must be 1 byte for indexed color image*/
         if chunk_length != 1 {
-            return Err(Error(43)); /*error: this chunk must be 2 bytes for greyscale image*/
+            return Err(Error::new(43)); /*error: this chunk must be 2 bytes for greyscale image*/
         } /*error: this chunk must be 6 bytes for greyscale image*/
         info.background_defined = 1; /* OK */
         info.background_r = {
@@ -1190,7 +1190,7 @@ fn read_chunk_bkgd(info: &mut Info, data: &[u8]) -> Result<(), Error> {
         };
     } else if info.color.colortype == ColorType::GREY || info.color.colortype == ColorType::GREY_ALPHA {
         if chunk_length != 2 {
-            return Err(Error(44));
+            return Err(Error::new(44));
         }
         info.background_defined = 1;
         info.background_r = {
@@ -1202,7 +1202,7 @@ fn read_chunk_bkgd(info: &mut Info, data: &[u8]) -> Result<(), Error> {
         };
     } else if info.color.colortype == ColorType::RGB || info.color.colortype == ColorType::RGBA {
         if chunk_length != 6 {
-            return Err(Error(45));
+            return Err(Error::new(45));
         }
         info.background_defined = 1;
         info.background_r = 256 * data[0] as u32 + data[1] as u32;
@@ -1215,7 +1215,7 @@ fn read_chunk_bkgd(info: &mut Info, data: &[u8]) -> Result<(), Error> {
 fn read_chunk_text(info: &mut Info, data: &[u8]) -> Result<(), Error> {
     let (keyword, str) = split_at_nul(data);
     if keyword.is_empty() || keyword.len() > 79 {
-        return Err(Error(89));
+        return Err(Error::new(89));
     }
     /*even though it's not allowed by the standard, no error is thrown if
         there's no null termination char, if the text is empty*/
@@ -1229,19 +1229,19 @@ fn read_chunk_ztxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u
         length += 1
     }
     if length + 2 >= data.len() {
-        return Err(Error(75));
+        return Err(Error::new(75));
     }
     if length < 1 || length > 79 {
-        return Err(Error(89));
+        return Err(Error::new(89));
     }
     let key = &data[0..length];
     if data[length + 1] != 0 {
-        return Err(Error(72));
+        return Err(Error::new(72));
     }
     /*the 0 byte indicating compression must be 0*/
     let string2_begin = length + 2; /*no null termination, corrupt?*/
     if string2_begin > data.len() {
-        return Err(Error(75)); /*will fail if zlib error, e.g. if length is too small*/
+        return Err(Error::new(75)); /*will fail if zlib error, e.g. if length is too small*/
     }
     let inl = &data[string2_begin..];
     let decoded = zlib_decompress(inl, zlibsettings)?;
@@ -1260,19 +1260,19 @@ fn read_chunk_itxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u
         it'd still fail with other error checks below if it's too short. This just gives a different error code.*/
     if data.len() < 5 {
         /*iTXt chunk too short*/
-        return Err(Error(30));
+        return Err(Error::new(30));
     }
 
     let (key, data) = split_at_nul(data);
     if key.is_empty() || key.len() > 79 {
-        return Err(Error(89));
+        return Err(Error::new(89));
     }
     if data.len() < 2 {
-        return Err(Error(75));
+        return Err(Error::new(75));
     }
     let compressed_flag = data[0];
     if data[1] != 0 {
-        return Err(Error(72));
+        return Err(Error::new(72));
     }
     let (langtag, data) = split_at_nul(&data[2..]);
     let (transkey, data) = split_at_nul(data);
@@ -1291,7 +1291,7 @@ fn read_chunk_itxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u
 fn read_chunk_time(info: &mut Info, data: &[u8]) -> Result<(), Error> {
     let chunk_length = data.len();
     if chunk_length != 7 {
-        return Err(Error(73));
+        return Err(Error::new(73));
     }
     info.time_defined = 1;
     info.time.year = 256 * data[0] as u32 + data[1] as u32;
@@ -1306,7 +1306,7 @@ fn read_chunk_time(info: &mut Info, data: &[u8]) -> Result<(), Error> {
 fn read_chunk_phys(info: &mut Info, data: &[u8]) -> Result<(), Error> {
     let chunk_length = data.len();
     if chunk_length != 9 {
-        return Err(Error(74));
+        return Err(Error::new(74));
     }
     info.phys_defined = 1;
     info.phys_x = 16777216 * data[0] as u32 + 65536 * data[1] as u32 + 256 * data[2] as u32 + data[3] as u32;
@@ -1328,7 +1328,7 @@ fn add_chunk_iend(out: &mut Vec<u8>) -> Result<(), Error> {
 
 fn add_chunk_text(out: &mut Vec<u8>, keyword: &CStr, textstring: &CStr) -> Result<(), Error> {
     if keyword.to_bytes().is_empty() || keyword.to_bytes().len() > 79 {
-        return Err(Error(89));
+        return Err(Error::new(89));
     }
     let mut text = Vec::from(keyword.to_bytes_with_nul());
     text.extend_from_slice(textstring.to_bytes());
@@ -1337,7 +1337,7 @@ fn add_chunk_text(out: &mut Vec<u8>, keyword: &CStr, textstring: &CStr) -> Resul
 
 fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &CStr, textstring: &CStr, zlibsettings: &CompressSettings) -> Result<(), Error> {
     if keyword.to_bytes().is_empty() || keyword.to_bytes().len() > 79 {
-        return Err(Error(89));
+        return Err(Error::new(89));
     }
     let mut data = Vec::from(keyword.to_bytes_with_nul());
     data.push(0u8);
@@ -1353,7 +1353,7 @@ fn add_chunk_itxt(
 ) -> Result<(), Error> {
     let k_len = keyword.len();
     if k_len < 1 || k_len > 79 {
-        return Err(Error(89));
+        return Err(Error::new(89));
     }
     let mut data = Vec::with_capacity(2048);
     data.extend_from_slice(keyword.as_bytes()); data.push(0);
@@ -1473,7 +1473,7 @@ fn add_chunk_phys(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
 pub(crate) fn add_chunk(out: &mut Vec<u8>, type_: &[u8; 4], data: &[u8]) -> Result<(), Error> {
     let length = data.len() as usize;
     if length > (1 << 31) {
-        return Err(Error(77));
+        return Err(Error::new(77));
     }
     let previous_length = out.len();
     out.reserve(length + 12);
@@ -1633,16 +1633,16 @@ fn check_png_color_validity(colortype: ColorType, bd: u32) -> Result<(), Error> 
     /*allowed color type / bits combination*/
     match colortype {
         ColorType::GREY => if !(bd == 1 || bd == 2 || bd == 4 || bd == 8 || bd == 16) {
-            return Err(Error(37));
+            return Err(Error::new(37));
         },
         ColorType::PALETTE => if !(bd == 1 || bd == 2 || bd == 4 || bd == 8) {
-            return Err(Error(37));
+            return Err(Error::new(37));
         },
         ColorType::RGB | ColorType::GREY_ALPHA | ColorType::RGBA => if !(bd == 8 || bd == 16) {
-            return Err(Error(37));
+            return Err(Error::new(37));
         },
         _ => {
-            return Err(Error(31))
+            return Err(Error::new(31))
         },
     }
     Ok(())
@@ -1752,28 +1752,28 @@ fn inflate_huffman_block(out: &mut Vec<u8>, inp: &[u8], bp: &mut usize, pos: &mu
                 let numextrabits_l = LENGTHEXTRA[(code_ll - FIRST_LENGTH_CODE_INDEX) as usize] as usize;
                 let inbitlength = inp.len() * 8;
                 if (*bp + numextrabits_l) > inbitlength {
-                    return Err(Error(51));
+                    return Err(Error::new(51));
                 }
                 /*error, bit pointer will jump past memory*/
                 length += read_bits_from_stream(bp, inp, numextrabits_l) as usize; /*part 3: get distance code*/
                 /*return error code 10 or 11 depending on the situation that happened in decode_symbol
                               (10=no endcode, 11=wrong jump outside of tree)*/
-                let code_d = tree_d.decode_symbol(inp, bp).ok_or_else(|| Error(if (*bp) > inp.len() * 8 { 10 } else { 11 }))?;
+                let code_d = tree_d.decode_symbol(inp, bp).ok_or_else(|| Error::new(if (*bp) > inp.len() * 8 { 10 } else { 11 }))?;
                 if code_d > 29 {
                     /*error: invalid distance code (30-31 are never used)*/
-                    return Err(Error(18)); /*part 4: get extra bits from distance*/
+                    return Err(Error::new(18)); /*part 4: get extra bits from distance*/
                 }
                 let mut distance = DISTANCEBASE[code_d as usize] as usize;
                 numextrabits_d = DISTANCEEXTRA[code_d as usize] as usize;
                 let inbitlength = inp.len() * 8;
                 if (*bp + numextrabits_d) > inbitlength {
-                    return Err(Error(51));
+                    return Err(Error::new(51));
                 }
                 /*error, bit pointer will jump past memory*/
                 distance += read_bits_from_stream(bp, inp, numextrabits_d) as usize; /*part 5: fill in all the out[n] values based on the length and dist*/
                 let start = *pos; /*too long backward distance*/
                 if distance > start {
-                    return Err(Error(52));
+                    return Err(Error::new(52));
                 }
                 let mut backward = start - distance;
                 unsafe {
@@ -1801,7 +1801,7 @@ fn inflate_huffman_block(out: &mut Vec<u8>, inp: &[u8], bp: &mut usize, pos: &mu
             _ => {
                 /*return error code 10 or 11 depending on the situation that happened in decode_symbol
                       (10=no endcode, 11=wrong jump outside of tree)*/
-                return Err(Error(if (*bp) > inp.len() * 8 { 10 } else { 11 }));
+                return Err(Error::new(if (*bp) > inp.len() * 8 { 10 } else { 11 }));
             },
         }
     }
@@ -1816,7 +1816,7 @@ fn inflate_no_compression(out: &mut Vec<u8>, inp: &[u8], bp: &mut usize, pos: &m
     let mut p = (*bp) / 8;
     /*read LEN (2 bytes) and nlen (2 bytes)*/
     if p + 4 >= inp.len() {
-        return Err(Error(52)); /*error, bit pointer will jump past memory*/
+        return Err(Error::new(52)); /*error, bit pointer will jump past memory*/
     }
     let len = inp[p] as usize + 256 * inp[p + 1] as usize;
     p += 2;
@@ -1824,11 +1824,11 @@ fn inflate_no_compression(out: &mut Vec<u8>, inp: &[u8], bp: &mut usize, pos: &m
     p += 2;
     /*check if 16-bit nlen is really the one's complement of len*/
     if len + nlen != 65535 {
-        return Err(Error(21)); /*error: nlen is not one's complement of len*/
+        return Err(Error::new(21)); /*error: nlen is not one's complement of len*/
     }
     /*read the literal data: len bytes are now stored in the out buffer*/
     if p + len > inp.len() {
-        return Err(Error(23)); /*error: reading outside of in buffer*/
+        return Err(Error::new(23)); /*error: reading outside of in buffer*/
     }
     out.extend_from_slice(&inp[p..p + len]);
     p += len;
@@ -1839,13 +1839,13 @@ fn inflate_no_compression(out: &mut Vec<u8>, inp: &[u8], bp: &mut usize, pos: &m
 
 fn get_tree_inflate_dynamic(inp: &[u8], bp: &mut usize) -> Result<(HuffmanTree, HuffmanTree), Error> {
     if (*bp) + 14 > (inp.len() << 3) {
-        return Err(Error(49));
+        return Err(Error::new(49));
     }
     let hlit = (read_bits_from_stream(bp, inp, 5) + 257) as usize;
     let hdist = (read_bits_from_stream(bp, inp, 5) + 1) as usize;
     let hclen = (read_bits_from_stream(bp, inp, 4) + 4) as usize;
     if (*bp) + hclen as usize * 3 > (inp.len() << 3) {
-        return Err(Error(50));
+        return Err(Error::new(50));
     }
     let mut bitlen_cl = vec![0; NUM_CODE_LENGTH_CODES];
     for &clcl in CLCL_ORDER.iter().take(hclen) {
@@ -1874,12 +1874,12 @@ fn get_tree_inflate_dynamic(inp: &[u8], bp: &mut usize) -> Result<(HuffmanTree, 
                 let value; /*error: i is larger than the amount of codes*/
                 if i == 0 {
                     /*read in the bits that indicate repeat length*/
-                    return Err(Error(54)); /*repeat "0" 3-10 times*/
+                    return Err(Error::new(54)); /*repeat "0" 3-10 times*/
                 } /*error, bit pointer jumps past memory*/
                 let inbitlength = inp.len() * 8;
                 if (*bp + 2) > inbitlength {
                     /*error: i is larger than the amount of codes*/
-                    return Err(Error(50)); /*repeat this value in the next lengths*/
+                    return Err(Error::new(50)); /*repeat this value in the next lengths*/
                 } /*repeat "0" 11-138 times*/
                 replength += read_bits_from_stream(bp, inp, 2); /*read in the bits that indicate repeat length*/
                 if i < hlit + 1 {
@@ -1890,7 +1890,7 @@ fn get_tree_inflate_dynamic(inp: &[u8], bp: &mut usize) -> Result<(HuffmanTree, 
                 let mut n = 0; /*if(code == (unsigned)(-1))*/
                 while n < replength {
                     if i >= hlit + hdist {
-                        return Err(Error(13));
+                        return Err(Error::new(13));
                     }
                     if i < hlit {
                         bitlen_ll[i] = value;
@@ -1905,13 +1905,13 @@ fn get_tree_inflate_dynamic(inp: &[u8], bp: &mut usize) -> Result<(HuffmanTree, 
                 let mut replength = 3;
                 let inbitlength = inp.len() * 8;
                 if (*bp + 3) > inbitlength {
-                    return Err(Error(50));
+                    return Err(Error::new(50));
                 }
                 replength += read_bits_from_stream(bp, inp, 3);
                 let mut n = 0;
                 while n < replength {
                     if i >= hlit + hdist {
-                        return Err(Error(14));
+                        return Err(Error::new(14));
                     }
                     if i < hlit {
                         bitlen_ll[i] = 0;
@@ -1926,13 +1926,13 @@ fn get_tree_inflate_dynamic(inp: &[u8], bp: &mut usize) -> Result<(HuffmanTree, 
                 let mut replength = 11;
                 let inbitlength = inp.len() * 8;
                 if (*bp + 7) > inbitlength {
-                    return Err(Error(50));
+                    return Err(Error::new(50));
                 }
                 replength += read_bits_from_stream(bp, inp, 7);
                 let mut n = 0;
                 while n < replength {
                     if i >= hlit + hdist {
-                        return Err(Error(15));
+                        return Err(Error::new(15));
                     }
                     if i < hlit {
                         bitlen_ll[i] = 0;
@@ -1944,7 +1944,7 @@ fn get_tree_inflate_dynamic(inp: &[u8], bp: &mut usize) -> Result<(HuffmanTree, 
                 }
             },
             Some(_) => {
-                return Err(Error({
+                return Err(Error::new({
                     /*return error code 10 or 11 depending on the situation that happened in huffman_decode_symbol
                           (10=no endcode, 11=wrong jump outside of tree)*/
                     let inbitlength = inp.len() * 8;
@@ -1956,12 +1956,12 @@ fn get_tree_inflate_dynamic(inp: &[u8], bp: &mut usize) -> Result<(HuffmanTree, 
                 }));
             },
             _ => {
-                return Err(Error(16));
+                return Err(Error::new(16));
             },
         };
     }
     if bitlen_ll[256] == 0 {
-        return Err(Error(64));
+        return Err(Error::new(64));
     }
     /*the length of the end code 256 must be larger than 0*/
     /*now we've finally got HLIT and HDIST, so generate the code trees, and the function is done*/
@@ -1996,13 +1996,13 @@ pub(crate) fn lodepng_inflatev(inp: &[u8], _settings: &DecompressSettings) -> Re
     while bfinal == 0 {
         let mut btype: u32;
         if bp + 2 >= inp.len() * 8 {
-            return Err(Error(52));
+            return Err(Error::new(52));
         }
         bfinal = read_bit_from_stream(&mut bp, inp);
         btype = 1 * read_bit_from_stream(&mut bp, inp) as u32;
         btype += 2 * read_bit_from_stream(&mut bp, inp) as u32;
         if btype == 3 {
-            return Err(Error(20));
+            return Err(Error::new(20));
         } else if btype == 0 {
             /*no compression*/
             inflate_no_compression(&mut out, inp, &mut bp, &mut pos)?;
@@ -2364,7 +2364,7 @@ fn deflate_dynamic(
     }
     write_lz77_data(bp, out, &lz77_encoded, &tree_ll, &tree_d);
     if tree_ll.length(256) == 0 {
-        return Err(Error(64));
+        return Err(Error::new(64));
     }
     add_huffman_symbol(bp, out, tree_ll.code(256), tree_ll.length(256));
     Ok(())
@@ -2418,7 +2418,7 @@ pub(crate) fn lodepng_deflatev(inp: &[u8], settings: &CompressSettings) -> Resul
     let mut bp = 0;
 
     if settings.btype > 2 {
-        return Err(Error(61));
+        return Err(Error::new(61));
     } else if settings.btype == 0 {
         return deflate_no_compression(inp);
     } else if settings.btype == 1 {
@@ -2491,24 +2491,24 @@ fn adler32(data: &[u8]) -> u32 {
 /* ////////////////////////////////////////////////////////////////////////// */
 pub fn lodepng_zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
     if inp.len() < 2 {
-        return Err(Error(53));
+        return Err(Error::new(53));
     }
     /*read information from zlib header*/
     if (inp[0] as u32 * 256 + inp[1] as u32) % 31 != 0 {
         /*error: 256 * in[0] + in[1] must be a multiple of 31, the FCHECK value is supposed to be made that way*/
-        return Err(Error(24));
+        return Err(Error::new(24));
     }
     let cm = inp[0] as u32 & 15;
     let cinfo = ((inp[0] as u32) >> 4) & 15;
     let fdict = ((inp[1] as u32) >> 5) & 1;
     if cm != 8 || cinfo > 7 {
         /*error: only compression method 8: inflate with sliding window of 32k is supported by the PNG spec*/
-        return Err(Error(25));
+        return Err(Error::new(25));
     }
     if fdict != 0 {
         /*error: the specification of PNG says about the zlib stream:
               "The additional flags shall not specify a preset dictionary."*/
-        return Err(Error(26));
+        return Err(Error::new(26));
     }
     let out = inflate(&inp[2..], settings)?;
     if (! cfg!(fuzzing)) && settings.ignore_adler32 == false {
@@ -2516,7 +2516,7 @@ pub fn lodepng_zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Res
         let checksum = adler32(&out);
         /*error, adler checksum not correct, data must be corrupted*/
         if checksum != adler32_val {
-            return Err(Error(58));
+            return Err(Error::new(58));
         };
     }
     Ok(out)
@@ -2683,7 +2683,7 @@ return value is error*/
 fn postprocess_scanlines(out: &mut [u8], inp: &mut [u8], w: usize, h: usize, info_png: &Info) -> Result<(), Error> {
     let bpp = info_png.color.bpp() as usize;
     if bpp == 0 {
-        return Err(Error(31));
+        return Err(Error::new(31));
     }
     if info_png.interlace_method == 0 {
         if bpp < 8 && w as usize * bpp != ((w as usize * bpp + 7) / 8) * 8 {
@@ -2807,7 +2807,7 @@ fn unfilter_scanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, b
                 recon[i] = scanline[i].wrapping_add(recon[i - bytewidth]);
             }
         },
-        _ => return Err(Error(36)),
+        _ => return Err(Error::new(36)),
     }
     Ok(())
 }
@@ -2869,7 +2869,7 @@ fn unfilter_scanline_aliased(inout: &mut [u8], recon: usize, scanline: usize, pr
                 inout[recon + i] = inout[scanline + i].wrapping_add(inout[recon + i - bytewidth]);
             }
         },
-        _ => return Err(Error(36)),
+        _ => return Err(Error::new(36)),
     }
     Ok(())
 }
@@ -2960,30 +2960,30 @@ fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: usize) {
 pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool) -> Result<(Info, usize, usize), Error> {
     if inp.len() < 33 {
         /*error: the data length is smaller than the length of a PNG header*/
-        return Err(Error(27));
+        return Err(Error::new(27));
     }
     /*when decoding a new PNG image, make sure all parameters created after previous decoding are reset*/
     let mut info_png = Info::new();
     if inp[0..8] != [137, 80, 78, 71, 13, 10, 26, 10] {
         /*error: the first 8 bytes are not the correct PNG signature*/
-        return Err(Error(28));
+        return Err(Error::new(28));
     }
     let mut chunks = ChunksIterFallible {data: &inp[8..]};
-    let ihdr = chunks.next().ok_or(Error(28))??;
+    let ihdr = chunks.next().ok_or(Error::new(28))??;
     if &ihdr.name() != b"IHDR" {
         /*error: it doesn't start with a IHDR chunk!*/
-        return Err(Error(29));
+        return Err(Error::new(29));
     }
     if ihdr.len() != 13 {
         /*error: header size must be 13 bytes*/
-        return Err(Error(94));
+        return Err(Error::new(94));
     }
     /*read the values given in the header*/
     let w = lodepng_read32bit_int(&inp[16..]) as usize;
     let h = lodepng_read32bit_int(&inp[20..]) as usize;
     let bitdepth = inp[24];
     if bitdepth == 0 || bitdepth > 16 {
-        return Err(Error(29));
+        return Err(Error::new(29));
     }
     info_png.color.set_bitdepth(inp[24] as u32);
     info_png.color.colortype = match inp[25] {
@@ -2992,28 +2992,28 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool)
         3 => ColorType::PALETTE,
         4 => ColorType::GREY_ALPHA,
         6 => ColorType::RGBA,
-        _ => return Err(Error(31)),
+        _ => return Err(Error::new(31)),
     };
     info_png.compression_method = inp[26] as u32;
     info_png.filter_method = inp[27] as u32;
     info_png.interlace_method = inp[28] as u32;
     if w == 0 || h == 0 {
-        return Err(Error(93));
+        return Err(Error::new(93));
     }
     if decoder.ignore_crc == 0 && !ihdr.check_crc() {
-        return Err(Error(57));
+        return Err(Error::new(57));
     }
     if info_png.compression_method != 0 {
         /*error: only compression method 0 is allowed in the specification*/
-        return Err(Error(32));
+        return Err(Error::new(32));
     }
     if info_png.filter_method != 0 {
         /*error: only filter method 0 is allowed in the specification*/
-        return Err(Error(33));
+        return Err(Error::new(33));
     }
     if info_png.interlace_method > 1 {
         /*error: only interlace methods 0 and 1 exist in the specification*/
-        return Err(Error(34));
+        return Err(Error::new(34));
     }
     if read_chunks {
         for ch in chunks {
@@ -3051,13 +3051,13 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     let numpixels = match w.checked_mul(h) {
         Some(n) => n,
         None => {
-            return Err(Error(92));
+            return Err(Error::new(92));
         },
     };
     /*multiplication overflow possible further below. Allows up to 2^31-1 pixel
       bytes with 16-bit RGBA, the rest is room for filter bytes.*/
     if numpixels > 268435455 {
-        return Err(Error(92)); /*first byte of the first chunk after the header*/
+        return Err(Error::new(92)); /*first byte of the first chunk after the header*/
     }
     let mut idat = Vec::with_capacity(inp.len() - 33);
     let chunks = ChunksIterFallible {
@@ -3104,7 +3104,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
             },
             _ => {
                 if !ch.is_ancillary() {
-                    return Err(Error(69));
+                    return Err(Error::new(69));
                 }
                 unknown = true;
                 if state.decoder.remember_unknown_chunks != 0 {
@@ -3113,7 +3113,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
             },
         };
         if state.decoder.ignore_crc == 0 && !unknown && !ch.check_crc() {
-            return Err(Error(57));
+            return Err(Error::new(57));
         }
         if found_iend {
             break;
@@ -3145,7 +3145,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     let mut scanlines = zlib_decompress(&idat, &state.decoder.zlibsettings)?;
     if scanlines.len() != predict {
         /*decompressed size doesn't match prediction*/
-        return Err(Error(91));
+        return Err(Error::new(91));
     }
     let mut out = vec![0; state.info_png.color.raw_size(w as u32, h as u32)];
     postprocess_scanlines(&mut out, &mut scanlines, w, h, &state.info_png)?;
@@ -3168,7 +3168,7 @@ pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, 
         /*TODO: check if this works according to the statement in the documentation: "The converter can convert
             from greyscale input color type, to 8-bit greyscale or greyscale with alpha"*/
         if !(state.info_raw.colortype == ColorType::RGB || state.info_raw.colortype == ColorType::RGBA) && (state.info_raw.bitdepth() != 8) {
-            return Err(Error(56)); /*unsupported color mode conversion*/
+            return Err(Error::new(56)); /*unsupported color mode conversion*/
         }
         let mut out = vec![0; state.info_raw.raw_size(w as u32, h as u32)];
         lodepng_convert(&mut out, &decoded, &state.info_raw, &state.info_png.color, w as u32, h as u32)?;
@@ -3195,18 +3195,18 @@ pub fn lodepng_decode_file(filename: &Path, colortype: ColorType, bitdepth: u32)
 pub fn lodepng_buffer_file(out: &mut [u8], filename: &Path) -> Result<(), Error> {
     fs::File::open(filename)
         .and_then(|mut f| f.read_exact(out))
-        .map_err(|_| Error(78))?;
+        .map_err(|_| Error::new(78))?;
     Ok(())
 }
 
 pub fn lodepng_load_file(filename: &Path) -> Result<Vec<u8>, Error> {
-    fs::read(filename).map_err(|_| Error(78)) // Requires Rust 1.28. If you see an error here, upgrade your Rust.
+    fs::read(filename).map_err(|_| Error::new(78)) // Requires Rust 1.28. If you see an error here, upgrade your Rust.
 }
 
 /*write given buffer to the file, overwriting the file, it doesn't append to it.*/
 pub fn lodepng_save_file(buffer: &[u8], filename: &Path) -> Result<(), Error> {
     fs::write(filename, buffer) // Requires Rust 1.28. If you see an error here, upgrade your Rust.
-        .map_err(|_| Error(79))
+        .map_err(|_| Error::new(79))
 }
 
 fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
@@ -3225,7 +3225,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
 
     let mut info = state.info_png.clone();
     if (info.color.colortype == ColorType::PALETTE || state.encoder.force_palette != 0) && (info.color.palette().is_empty() || info.color.palette().len() > 256) {
-        return Err(Error(68));
+        return Err(Error::new(68));
     }
     if state.encoder.auto_convert != 0 {
         /*write signature and chunks*/
@@ -3233,10 +3233,10 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     }
     if state.encoder.zlibsettings.btype > 2 {
         /*bKGD (must come between PLTE and the IDAt chunks*/
-        return Err(Error(61)); /*PLTE*/
+        return Err(Error::new(61)); /*PLTE*/
     } /*pHYs (must come before the IDAT chunks)*/
     if state.info_png.interlace_method > 1 {
-        return Err(Error(71)); /*unknown chunks between PLTE and IDAT*/
+        return Err(Error::new(71)); /*unknown chunks between PLTE and IDAT*/
         /*IDAT (multiple IDAT chunks must be consecutive)*/
     }
     check_png_color_validity(info.color.colortype, info.color.bitdepth())?; /*tEXt and/or zTXt */
@@ -3285,10 +3285,10 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     }
     for (t, v) in info.text_keys_cstr() {
         if t.to_bytes().len() > 79 {
-            return Err(Error(66));
+            return Err(Error::new(66));
         }
         if t.to_bytes().is_empty() {
-            return Err(Error(67));
+            return Err(Error::new(67));
         }
         if state.encoder.text_compression != 0 {
             add_chunk_ztxt(&mut outv, t, v, &state.encoder.zlibsettings)?;
@@ -3308,10 +3308,10 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     }
     for (k, l, t, s) in info.itext_keys() {
         if k.as_bytes().len() > 79 {
-            return Err(Error(66));
+            return Err(Error::new(66));
         }
         if k.as_bytes().is_empty() {
-            return Err(Error(67));
+            return Err(Error::new(67));
         }
         add_chunk_itxt(&mut outv, state.encoder.text_compression != 0, k, l, t, s, &state.encoder.zlibsettings)?;
     }
@@ -3555,7 +3555,7 @@ pub fn lodepng_encode_memory(image: &[u8], w: u32, h: u32, colortype: ColorType,
 impl EncoderSettings {
     unsafe fn predefined_filters(&self, len: usize) -> Result<&[u8], Error> {
         if self.predefined_filters.is_null() {
-            Err(Error(1))
+            Err(Error::new(1))
         } else {
             Ok(slice::from_raw_parts(self.predefined_filters, len))
         }
@@ -3635,11 +3635,11 @@ fn encode_lz77(
         64
     };
     if windowsize == 0 || windowsize > 32768 {
-        Error(60).to_result()?;
+        return Err(Error::new(60));
     }
     /*error: windowsize smaller/larger than allowed*/
     if (windowsize & (windowsize - 1)) != 0 {
-        Error(90).to_result()?; /*error: must be power of two*/
+        return Err(Error::new(90)); /*error: must be power of two*/
     }
     let mut numzeros = 0;
     let mut lazylength = 0;
@@ -3726,7 +3726,7 @@ fn encode_lz77(
             if lazy {
                 lazy = false;
                 if pos == 0 {
-                    return Err(Error(81));
+                    return Err(Error::new(81));
                 }
                 if length > lazylength + 1 {
                     out.push(in_[pos - 1] as u32);
@@ -3741,7 +3741,7 @@ fn encode_lz77(
             }; /*only lengths of 3 or higher are supported as length/distance pair*/
         }
         if length >= 3 && offset > windowsize {
-            return Err(Error(86));
+            return Err(Error::new(86));
         }
         if length < 3 || length < minmatch as u32 || (length == 3 && offset > 4096) {
             /*compensate for the fact that longer offsets have more extra bits, a

@@ -1,5 +1,4 @@
 
-
 use crate::rustimpl::lodepng_free;
 use crate::rustimpl::lodepng_malloc;
 
@@ -38,7 +37,7 @@ pub use crate::ffi::Time;
 pub use crate::ffi::DecoderSettings;
 pub use crate::ffi::FilterStrategy;
 pub use crate::ffi::EncoderSettings;
-pub use crate::ffi::Error;
+pub use crate::ffi::ErrorCode;
 
 pub use crate::ffi::Info;
 pub use crate::ffi::ColorMode;
@@ -90,11 +89,11 @@ impl ColorMode {
                 /*room for 256 colors with 4 bytes each*/
                 self.palette = lodepng_malloc(1024) as *mut _;
                 if self.palette.is_null() {
-                    return Err(Error(83));
+                    return Err(Error::new(83));
                 }
             }
             if self.palettesize >= 256 {
-                return Err(Error(38));
+                return Err(Error::new(38));
             }
             *self.palette.offset(self.palettesize as isize) = p;
             self.palettesize += 1;
@@ -364,7 +363,7 @@ impl Info {
     pub fn create_chunk<C: AsRef<[u8]>>(&mut self, position: ChunkPosition, chtype: C, data: &[u8]) -> Result<(), Error> {
         let chtype = chtype.as_ref();
         if chtype.len() != 4 {
-            return Err(Error(67));
+            return Err(Error::new(67));
         }
         unsafe {
             ffi::lodepng_chunk_create(
@@ -400,7 +399,7 @@ impl Info {
                 self.unknown_chunks_size[i] = src.unknown_chunks_size[i];
                 self.unknown_chunks_data[i] = lodepng_malloc(src.unknown_chunks_size[i]) as *mut u8;
                 if self.unknown_chunks_data[i].is_null() && self.unknown_chunks_size[i] != 0 {
-                    return Err(Error(83));
+                    return Err(Error::new(83));
                 }
                 for j in 0..src.unknown_chunks_size[i] {
                     *self.unknown_chunks_data[i].offset(j as isize) = *src.unknown_chunks_data[i].offset(j as isize);
@@ -708,23 +707,23 @@ impl State {
     pub fn get_icc(&self) -> Result<Vec<u8>, Error> {
         let iccp = self.info_png().get("iCCP");
         if iccp.is_none() {
-            return Err(Error(89));
+            return Err(Error::new(89));
         }
         let iccp = iccp.as_ref().unwrap().data();
         if iccp.get(0).cloned().unwrap_or(255) == 0 { // text min length is 1
-            return Err(Error(89));
+            return Err(Error::new(89));
         }
 
         let name_len = cmp::min(iccp.len(), 80); // skip name
         for i in 0..name_len {
             if iccp[i] == 0 { // string terminator
                 if iccp.get(i+1).cloned().unwrap_or(255) != 0 { // compression type
-                    return Err(Error(72));
+                    return Err(Error::new(72));
                 }
                 return zlib_decompress(&iccp[i+2 ..], &self.decoder.zlibsettings);
             }
         }
-        Err(Error(75))
+        Err(Error::new(75))
     }
 
     /// Load PNG from buffer using State's settings
@@ -787,7 +786,7 @@ impl Default for State {
             encoder: EncoderSettings::new(),
             info_raw: ColorMode::new(),
             info_png: Info::new(),
-            error: Error(1),
+            error: ErrorCode(1),
         }
     }
 }
@@ -909,7 +908,7 @@ pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bit
 pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA>, Error> {
     match decode_memory(input, ColorType::RGBA, 8)? {
         Image::RGBA(img) => Ok(img),
-        _ => Err(Error(56)), // given output image colortype or bitdepth not supported for color conversion
+        _ => Err(Error::new(56)), // given output image colortype or bitdepth not supported for color conversion
     }
 }
 
@@ -918,7 +917,7 @@ pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA>, Error>
 pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Error> {
     match decode_memory(input, ColorType::RGB, 8)? {
         Image::RGB(img) => Ok(img),
-        _ => Err(Error(56)),
+        _ => Err(Error::new(56)),
     }
 }
 
@@ -949,7 +948,7 @@ pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: 
 pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA>, Error> {
     match decode_file(filepath, ColorType::RGBA, 8)? {
         Image::RGBA(img) => Ok(img),
-        _ => Err(Error(56)),
+        _ => Err(Error::new(56)),
     }
 }
 
@@ -958,7 +957,7 @@ pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA>, Error>
 pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Error> {
     match decode_file(filepath, ColorType::RGB, 8)? {
         Image::RGB(img) => Ok(img),
-        _ => Err(Error(56)),
+        _ => Err(Error::new(56)),
     }
 }
 
@@ -973,7 +972,7 @@ fn buffer_for_type<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: 
     if image_bytes != required_bytes {
         debug_assert_eq!(image_bytes, required_bytes, "Image is {} bytes large ({}x{}x{}), but needs to be {} ({:?}, {})",
             image_bytes, w,h,px_bytes, required_bytes, colortype, bitdepth);
-        return Err(Error(84));
+        return Err(Error::new(84));
     }
 
     unsafe {
@@ -1062,15 +1061,15 @@ impl<'a> ChunkRef<'a> {
 
     pub(crate) fn new(data: &'a [u8]) -> Result<Self, Error> {
         if data.len() < 12 {
-            return Err(Error(30));
+            return Err(Error::new(30));
         }
         let len = lodepng_chunk_length(data);
         /*error: chunk length larger than the max PNG chunk size*/
         if len > (1 << 31) {
-            return Err(Error(63));
+            return Err(Error::new(63));
         }
         if data.len() - 12 < len {
-            return Err(Error(64));
+            return Err(Error::new(64));
         }
 
         Ok(Self {

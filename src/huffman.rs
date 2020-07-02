@@ -1,4 +1,5 @@
-use crate::ffi::Error;
+use crate::error::Error;
+
 use std::mem;
 use std::rc::Rc;
 
@@ -64,7 +65,7 @@ impl HuffmanTree {
             for i in 0..tree.lengths[n] as isize {
                 let bit = ((tree.tree1d[n] >> (tree.lengths[n] as isize - i - 1)) & 1) as usize;
                 if treepos > ‎0x7FFF_FFFF || treepos + 2 > tree.numcodes {
-                    return Err(Error(55));
+                    return Err(Error::new(55));
                 }
                 if tree.tree2d[2 * treepos + bit as usize] == 32767 {
                     if i + 1 == tree.lengths[n] as isize {
@@ -78,7 +79,7 @@ impl HuffmanTree {
                 } else {
                     let pos = tree.tree2d[2 * treepos + bit] as usize;
                     if pos < tree.numcodes {
-                        return Err(Error(55));
+                        return Err(Error::new(55));
                     }
                     treepos = pos - tree.numcodes;
                 };
@@ -147,10 +148,10 @@ struct BPMLists {
 pub(crate) fn huffman_code_lengths(frequencies: &[u32], maxbitlen: u32) -> Result<Vec<u32>, Error> {
     let numcodes = frequencies.len();
     if numcodes == 0 {
-        return Err(Error(80)); /*error: a tree of 0 symbols is not supposed to be made*/
+        return Err(Error::new(80)); /*error: a tree of 0 symbols is not supposed to be made*/
     } /*error: represent all symbols*/
     if (1 << maxbitlen) < numcodes {
-        return Err(Error(80));
+        return Err(Error::new(80));
     }
     let mut leaves: Vec<_> = frequencies.iter()
         .cloned().enumerate()

@@ -1,10 +1,14 @@
+use std::num::NonZeroU32;
 use std;
 use std::error;
 use std::fmt;
 use std::io;
-use crate::ffi::Error;
+use crate::ffi::ErrorCode;
 
-impl Error {
+#[derive(Copy, Clone)]
+pub struct Error(NonZeroU32);
+
+impl ErrorCode {
     /// Returns an English description of the numerical error code.
     pub fn as_str(&self) -> &'static str {
         std::str::from_utf8(self.c_description()).unwrap()
@@ -12,20 +16,42 @@ impl Error {
 
     /// Helper function for the library
     pub fn to_result(self) -> Result<(), Error> {
-        match self {
-            Error(0) => Ok(()),
-            err => Err(err),
+        match NonZeroU32::new(self.0) {
+            None => Ok(()),
+            Some(err) => Err(Error(err)),
         }
     }
 }
 
-impl From<Error> for Result<(), Error> {
-    fn from(err: Error) -> Self {
+impl Error {
+    /// Panics if the code is 0
+    #[inline(always)]
+    pub fn new(code: u32) -> Self {
+        Self(NonZeroU32::new(code).unwrap())
+    }
+}
+
+impl From<ErrorCode> for Result<(), Error> {
+    #[inline(always)]
+    fn from(err: ErrorCode) -> Self {
         err.to_result()
     }
 }
 
+impl From<Error> for ErrorCode {
+    #[inline(always)]
+    fn from(err: Error) -> Self {
+        ErrorCode(err.0.get())
+    }
+}
+
 impl fmt::Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} ({})", ErrorCode(self.0.get()).as_str(), self.0)
+    }
+}
+
+impl fmt::Debug for ErrorCode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ({})", self.as_str(), self.0)
     }
@@ -33,22 +59,19 @@ impl fmt::Debug for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_str())
+        f.write_str(ErrorCode(self.0.get()).as_str())
     }
 }
 
 impl error::Error for Error {
-    fn description(&self) -> &str {
-        self.as_str()
-    }
 }
 
 #[doc(hidden)]
 impl std::convert::From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
         match err.kind() {
-            io::ErrorKind::NotFound | io::ErrorKind::UnexpectedEof => Error(78),
-            _ => Error(79),
+            io::ErrorKind::NotFound | io::ErrorKind::UnexpectedEof => Error::new(78),
+            _ => Error::new(79),
         }
     }
 }
@@ -57,7 +80,7 @@ impl std::convert::From<io::Error> for Error {
 This returns the description of a numerical error code in English. This is also
 the documentation of all the error codes.
 */
-impl Error {
+impl ErrorCode {
     pub fn c_description(&self) -> &'static [u8] {
         match self.0 {
             0 => "no error, everything went ok\0",

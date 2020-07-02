@@ -65,6 +65,12 @@ for chunk in state.info_png().unknown_chunks() {
 let icc_data = state.info_png().get_icc();
 ```
 
+## Upgrading from 2.x
+
+* C FFI still exists, but is no longer ABI-compatible with the original C lodepng due to layout changes in the `State` struct.
+* Custom zlib callbacks use io::Write instead of `malloc`-ed buffers.
+* `ffi::Error` has been renamed to `ffi::ErrorCode`
+
 ## Upgrading from 1.x
 
 * `CVec` has been replaced with a regular `Vec`. Delete extra `.as_ref()` that the compiler may complain about.
