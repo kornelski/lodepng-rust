@@ -526,6 +526,7 @@ pub struct Decoder {
 }
 
 impl Decoder {
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
@@ -553,29 +554,33 @@ impl Decoder {
     }
 
     /// whether to convert the PNG to the color type you want. Default: yes
+    #[inline]
     pub fn color_convert(&mut self, true_or_false: bool) {
         self.state.color_convert(true_or_false);
     }
 
     /// if false but remember_unknown_chunks is true, they're stored in the unknown chunks.
+    #[inline]
     pub fn read_text_chunks(&mut self, true_or_false: bool) {
         self.state.read_text_chunks(true_or_false);
     }
 
     /// store all bytes from unknown chunks in the `Info` (off by default, useful for a png editor)
+    #[inline]
     pub fn remember_unknown_chunks(&mut self, true_or_false: bool) {
         self.state.remember_unknown_chunks(true_or_false);
     }
 
     /// Decompress ICC profile from iCCP chunk
+    #[inline]
     pub fn get_icc(&self) -> Result<Vec<u8>, Error> {
         self.state.get_icc()
     }
 
-    /// Load PNG from buffer using State's settings
+    /// Load PNG from buffer using Decoder's settings
     ///
     ///  ```no_run
-    ///  # use lodepng::*; let mut state = State::new();
+    ///  # use lodepng::*; let mut state = Decoder::new();
     ///  # let slice = [0u8]; #[allow(unused_variables)] fn do_stuff<T>(_buf: T) {}
     ///
     ///  state.info_raw_mut().colortype = ColorType::RGBA;
@@ -585,15 +590,20 @@ impl Decoder {
     ///  }
     ///  ```
     #[inline]
+    #[allow(deprecated)]
     pub fn decode<Bytes: AsRef<[u8]>>(&mut self, input: Bytes) -> Result<Image, Error> {
         self.state.decode(input)
     }
 
+    /// Decode a file from disk using Decoder's settings
+    #[allow(deprecated)]
     pub fn decode_file<P: AsRef<Path>>(&mut self, filepath: P) -> Result<Image, Error> {
         self.state.decode_file(filepath)
     }
 
     /// Updates `info_png`. Returns (width, height)
+    #[allow(deprecated)]
+    #[inline]
     pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
         self.state.inspect(input)
     }
@@ -610,10 +620,12 @@ impl Decoder {
 }
 
 impl State {
+    #[deprecated(note = "Use Decoder or Encoder type instead")]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[inline]
     pub fn set_auto_convert(&mut self, mode: bool) {
         self.encoder.auto_convert = mode as c_uint;
     }
@@ -624,44 +636,53 @@ impl State {
     }
 
     /// See `Encoder'
+    #[deprecated(note = "Use Encoder type instead of State")]
     pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.encoder.zlibsettings.custom_zlib = callback;
         self.encoder.zlibsettings.custom_context = context;
     }
 
     /// See `Encoder'
+    #[deprecated(note = "Use Encoder type instead of State")]
     pub unsafe fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.encoder.zlibsettings.custom_deflate = callback;
         self.encoder.zlibsettings.custom_context = context;
     }
 
+    #[inline]
     pub fn info_raw(&self) -> &ColorMode {
         &self.info_raw
     }
 
+    #[inline]
     pub fn info_raw_mut(&mut self) -> &mut ColorMode {
         &mut self.info_raw
     }
 
+    #[inline]
     pub fn info_png(&self) -> &Info {
         &self.info_png
     }
 
+    #[inline]
     pub fn info_png_mut(&mut self) -> &mut Info {
         &mut self.info_png
     }
 
     /// whether to convert the PNG to the color type you want. Default: yes
+    #[inline]
     pub fn color_convert(&mut self, true_or_false: bool) {
         self.decoder.color_convert = if true_or_false { 1 } else { 0 };
     }
 
     /// if false but remember_unknown_chunks is true, they're stored in the unknown chunks.
+    #[inline]
     pub fn read_text_chunks(&mut self, true_or_false: bool) {
         self.decoder.read_text_chunks = if true_or_false { 1 } else { 0 };
     }
 
     /// store all bytes from unknown chunks in the `Info` (off by default, useful for a png editor)
+    #[inline]
     pub fn remember_unknown_chunks(&mut self, true_or_false: bool) {
         self.decoder.remember_unknown_chunks = if true_or_false { 1 } else { 0 };
     }
@@ -701,6 +722,7 @@ impl State {
     ///      _ => panic!("¯\\_(ツ)_/¯")
     ///  }
     ///  ```
+    #[deprecated(note = "Use Decoder type instead of State")]
     pub fn decode<Bytes: AsRef<[u8]>>(&mut self, input: Bytes) -> Result<Image, Error> {
         let input = input.as_ref();
         unsafe {
@@ -710,22 +732,31 @@ impl State {
         }
     }
 
+    #[deprecated(note = "Use Decoder type instead of State")]
+    #[allow(deprecated)]
+    #[inline]
     pub fn decode_file<P: AsRef<Path>>(&mut self, filepath: P) -> Result<Image, Error> {
         self.decode(&load_file(filepath)?)
     }
 
     /// Updates `info_png`. Returns (width, height)
+    #[deprecated(note = "Use Decoder type instead of State")]
+    #[inline]
     pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
         let (info, w, h) = rustimpl::lodepng_inspect(&self.decoder, input, true)?;
         self.info_png = info;
         Ok((w, h))
     }
 
+    #[deprecated(note = "Use Encoder type instead of State")]
     pub fn encode<PixelType: Copy + 'static>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         let image = buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth)?;
         Ok(rustimpl::lodepng_encode(image, w as c_uint, h as c_uint, self)?)
     }
 
+    #[deprecated(note = "Use Encoder type instead of State")]
+    #[allow(deprecated)]
+    #[inline]
     pub fn encode_file<PixelType: Copy + 'static, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = self.encode(image, w, h)?;
         save_file(filepath, buf.as_ref())
@@ -864,6 +895,7 @@ pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bit
 }
 
 /// Same as `decode_memory`, but always decodes to 32-bit RGBA raw image
+#[inline]
 pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA>, Error> {
     match decode_memory(input, ColorType::RGBA, 8)? {
         Image::RGBA(img) => Ok(img),
@@ -872,6 +904,7 @@ pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA>, Error>
 }
 
 /// Same as `decode_memory`, but always decodes to 24-bit RGB raw image
+#[inline]
 pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Error> {
     match decode_memory(input, ColorType::RGB, 8)? {
         Image::RGB(img) => Ok(img),
@@ -896,11 +929,13 @@ pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Err
 ///      _ => panic!("¯\\_(ツ)_/¯")
 ///  }
 ///  ```
+#[inline]
 pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
     decode_memory(&load_file(filepath)?, colortype, bitdepth)
 }
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
+#[inline]
 pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA>, Error> {
     match decode_file(filepath, ColorType::RGBA, 8)? {
         Image::RGBA(img) => Ok(img),
@@ -909,6 +944,7 @@ pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA>, Error>
 }
 
 /// Same as `decode_file`, but always decodes to 24-bit RGB raw image
+#[inline]
 pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Error> {
     match decode_file(filepath, ColorType::RGB, 8)? {
         Image::RGB(img) => Ok(img),
@@ -952,11 +988,13 @@ pub fn encode_memory<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
+#[inline]
 pub fn encode32<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
+#[inline]
 pub fn encode24<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGB, 8)
 }
@@ -971,11 +1009,13 @@ pub fn encode_file<PixelType: Copy + 'static, P: AsRef<Path>>(filepath: P, image
 }
 
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
+#[inline]
 pub fn encode32_file<PixelType: Copy + 'static, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
+#[inline]
 pub fn encode24_file<PixelType: Copy + 'static, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGB, 8)
 }
@@ -1233,15 +1273,15 @@ mod test {
 
     #[test]
     fn create_and_destroy2() {
-        State::new().info_png();
-        State::new().info_png_mut();
-        State::new().clone().info_raw();
-        State::new().clone().info_raw_mut();
+        Encoder::new().info_png();
+        Encoder::new().info_png_mut();
+        Encoder::new().clone().info_raw();
+        Encoder::new().clone().info_raw_mut();
     }
 
     #[test]
     fn test_pal() {
-        let mut state = State::new();
+        let mut state = Encoder::new();
         state.info_raw_mut().colortype = ColorType::PALETTE;
         assert_eq!(state.info_raw().colortype(), ColorType::PALETTE);
         state.info_raw_mut().palette_add(RGBA::new(1,2,3,4)).unwrap();
@@ -1253,7 +1293,7 @@ mod test {
 
     #[test]
     fn chunks() {
-        let mut state = State::new();
+        let mut state = Encoder::new();
         {
             let info = state.info_png_mut();
             for _ in info.unknown_chunks(ChunkPosition::IHDR) {
@@ -1282,7 +1322,7 @@ mod test {
         }
 
         let img = state.encode(&[0u32], 1, 1).unwrap();
-        let mut dec = State::new();
+        let mut dec = Decoder::new();
         dec.remember_unknown_chunks(true);
         dec.decode(img).unwrap();
         let chunk = dec.info_png().unknown_chunks(ChunkPosition::IHDR).next().unwrap();
@@ -1292,7 +1332,7 @@ mod test {
 
     #[test]
     fn read_icc() {
-        let mut s = State::new();
+        let mut s = Decoder::new();
         s.remember_unknown_chunks(true);
         let f = s.decode_file("tests/profile.png");
         f.unwrap();

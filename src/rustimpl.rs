@@ -3196,9 +3196,9 @@ pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, 
 
 
 pub fn lodepng_decode_memory(inp: &[u8], colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
-    let mut state = State::new();
-    state.info_raw.colortype = colortype;
-    state.info_raw.set_bitdepth(bitdepth);
+    let mut state = Decoder::new();
+    state.info_raw_mut().colortype = colortype;
+    state.info_raw_mut().set_bitdepth(bitdepth);
     lodepng_decode(&mut state, inp)
 }
 
