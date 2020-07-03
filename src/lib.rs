@@ -1161,7 +1161,7 @@ impl<'a> ChunkRefMut<'a> {
 /// The data is output in the format of the zlib specification.
 #[doc(hidden)]
 pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    let mut v = Vec::new();
+    let mut v = Vec::with_capacity(input.len()/2);
     rustimpl::lodepng_zlib_compress(&mut v, input, settings)?;
     Ok(v)
 }

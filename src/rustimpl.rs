@@ -1355,7 +1355,7 @@ fn add_chunk_itxt(
     if k_len < 1 || k_len > 79 {
         return Err(Error(89));
     }
-    let mut data = Vec::new();
+    let mut data = Vec::with_capacity(2048);
     data.extend_from_slice(keyword.as_bytes()); data.push(0);
     data.push(compressed as u8);
     data.push(0);
@@ -1372,7 +1372,7 @@ fn add_chunk_itxt(
 
 
 fn add_chunk_bkgd(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
-    let mut bkgd = Vec::new();
+    let mut bkgd = Vec::with_capacity(16);
     if info.color.colortype == ColorType::GREY || info.color.colortype == ColorType::GREY_ALPHA {
         bkgd.push((info.background_r >> 8) as u8);
         bkgd.push((info.background_r & 255) as u8);
@@ -1390,7 +1390,7 @@ fn add_chunk_bkgd(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
 }
 
 fn add_chunk_ihdr(out: &mut Vec<u8>, w: usize, h: usize, colortype: ColorType, bitdepth: usize, interlace_method: u8) -> Result<(), Error> {
-    let mut header = Vec::new();
+    let mut header = Vec::with_capacity(16);
     add32bit_int(&mut header, w as u32);
     add32bit_int(&mut header, h as u32);
     header.push(bitdepth as u8);
@@ -1402,7 +1402,7 @@ fn add_chunk_ihdr(out: &mut Vec<u8>, w: usize, h: usize, colortype: ColorType, b
 }
 
 fn add_chunk_trns(out: &mut Vec<u8>, info: &ColorMode) -> Result<(), Error> {
-    let mut trns = Vec::new();
+    let mut trns = Vec::with_capacity(32);
     if info.colortype == ColorType::PALETTE {
         let palette = info.palette();
         let mut amount = palette.len();
@@ -1438,7 +1438,7 @@ fn add_chunk_trns(out: &mut Vec<u8>, info: &ColorMode) -> Result<(), Error> {
 }
 
 fn add_chunk_plte(out: &mut Vec<u8>, info: &ColorMode) -> Result<(), Error> {
-    let mut plte = Vec::new();
+    let mut plte = Vec::with_capacity(1024);
     for p in info.palette() {
         plte.push(p.r);
         plte.push(p.g);
@@ -1461,7 +1461,7 @@ fn add_chunk_time(out: &mut Vec<u8>, time: &Time) -> Result<(), Error> {
 }
 
 fn add_chunk_phys(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
-    let mut data = Vec::new();
+    let mut data = Vec::with_capacity(16);
     add32bit_int(&mut data, info.phys_x);
     add32bit_int(&mut data, info.phys_y);
     data.push(info.phys_unit as u8);
@@ -1988,7 +1988,7 @@ fn generate_fixed_lit_len_tree() -> Result<HuffmanTree, Error> {
 
 
 pub(crate) fn lodepng_inflatev(inp: &[u8], _settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
-    let mut out = Vec::new();
+    let mut out = Vec::with_capacity(inp.len() * 3/2);
     /*bit pointer in the "in" data, current byte is bp >> 3, current bit is bp & 0x7 (from lsb to msb of the byte)*/
     let mut bp = 0; /*byte position in the out buffer*/
     let mut bfinal = 0; /*error, bit pointer will jump past memory*/
@@ -2141,7 +2141,7 @@ fn deflate_no_compression(data: &[u8]) -> Result<Vec<u8>, Error> {
       2 bytes LEN, 2 bytes nlen, LEN bytes literal DATA*/
     let numdeflateblocks = (data.len() + 65534) / 65535;
     let mut datapos = 0;
-    let mut out = Vec::new();
+    let mut out = Vec::with_capacity(data.len()*5/4);
     for i in 0..numdeflateblocks {
         let bfinal = (i == numdeflateblocks - 1) as usize;
         let btype = 0;
@@ -2203,8 +2203,6 @@ fn deflate_dynamic(
     settings: &CompressSettings,
     bfinal: u32,
 ) -> Result<(), Error> {
-    let mut frequencies_cl = Vec::new();
-    let mut bitlen_cl = Vec::new();
     let datasize = dataend - datapos;
 
     let data = &data[0..dataend]; // not datasize. Truncating the length is important.
@@ -2237,14 +2235,14 @@ fn deflate_dynamic(
     let tree_d = HuffmanTree::from_frequencies(&frequencies_d, 2, 15)?;
     let numcodes_ll = tree_ll.numcodes.min(286);
     let numcodes_d = tree_d.numcodes.min(30);
-    let mut bitlen_lld = Vec::new();
+    let mut bitlen_lld = Vec::with_capacity(256);
     for i in 0..numcodes_ll {
         bitlen_lld.push(tree_ll.length(i as u32));
     }
     for i in 0..numcodes_d {
         bitlen_lld.push(tree_d.length(i as u32));
     }
-    let mut bitlen_lld_e = Vec::new();
+    let mut bitlen_lld_e = Vec::with_capacity(256);
     let mut i = 0;
     while i < bitlen_lld.len() {
         let mut j = 0;
@@ -2284,7 +2282,7 @@ fn deflate_dynamic(
         }
         i += 1
     }
-    frequencies_cl.resize(NUM_CODE_LENGTH_CODES, 0);
+    let mut frequencies_cl = [0; NUM_CODE_LENGTH_CODES];
     let mut i = 0;
     while i != bitlen_lld_e.len() {
         frequencies_cl[bitlen_lld_e[i] as usize] += 1;
@@ -2297,8 +2295,7 @@ fn deflate_dynamic(
     }
 
     let tree_cl = HuffmanTree::from_frequencies(&frequencies_cl, frequencies_cl.len(), 7)?;
-
-    bitlen_cl.resize(tree_cl.numcodes, 0);
+    let mut bitlen_cl = vec![0; tree_cl.numcodes];
     for i in 0..tree_cl.numcodes {
         bitlen_cl[i] = tree_cl.length(CLCL_ORDER[i]);
     }
@@ -2568,6 +2565,7 @@ pub fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &Compress
 
 /* compress using the default or custom zlib function */
 pub fn zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
+    let mut out = Vec::with_capacity(inp.len()/2);
     if let Some(cb) = settings.custom_zlib {
         unsafe {
             let mut outdata = ptr::null_mut();
@@ -2576,7 +2574,6 @@ pub fn zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>,
             Ok(vec_from_raw(outdata, outsize))
         }
     } else {
-        let mut out = Vec::new();
         lodepng_zlib_compress(&mut out, inp, settings)?;
         Ok(out)
     }
@@ -3075,7 +3072,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     if numpixels > 268435455 {
         return Err(Error(92)); /*first byte of the first chunk after the header*/
     }
-    let mut idat = Vec::new();
+    let mut idat = Vec::with_capacity(inp.len() - 33);
     let chunks = ChunksIterFallible {
         data: &inp[33..],
     };
@@ -3163,8 +3160,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
         /*decompressed size doesn't match prediction*/
         return Err(Error(91));
     }
-    let mut out = Vec::new();
-    out.resize(state.info_png.color.raw_size(w as u32, h as u32), 0);
+    let mut out = vec![0; state.info_png.color.raw_size(w as u32, h as u32)];
     postprocess_scanlines(&mut out, &mut scanlines, w, h, &state.info_png)?;
     Ok((out, w, h))
 }
@@ -3187,8 +3183,7 @@ pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, 
         if !(state.info_raw.colortype == ColorType::RGB || state.info_raw.colortype == ColorType::RGBA) && (state.info_raw.bitdepth() != 8) {
             return Err(Error(56)); /*unsupported color mode conversion*/
         }
-        let mut out = Vec::new();
-        out.resize(state.info_raw.raw_size(w as u32, h as u32), 0);
+        let mut out = vec![0; state.info_raw.raw_size(w as u32, h as u32)];
         lodepng_convert(&mut out, &decoded, &state.info_raw, &state.info_png.color, w as u32, h as u32)?;
         Ok((out, w, h))
     }
