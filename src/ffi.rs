@@ -168,24 +168,20 @@ pub struct CompressSettings {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Time {
-    pub year: c_uint,
-    pub month: c_uint,
-    pub day: c_uint,
-    pub hour: c_uint,
-    pub minute: c_uint,
-    pub second: c_uint,
+    pub year: u16,
+    pub month: u8,
+    pub day: u8,
+    pub hour: u8,
+    pub minute: u8,
+    pub second: u8,
 }
 
 /// Information about the PNG image, except pixels, width and height
 #[repr(C)]
 #[derive(Debug)]
 pub struct Info {
-    /// compression method of the original file. Always 0.
-    pub compression_method: c_uint,
-    /// filter method of the original file
-    pub filter_method: c_uint,
     /// interlace method of the original file
-    pub interlace_method: c_uint,
+    pub interlace_method: u8,
     /// color type and bits, palette and transparency of the PNG file
     pub color: ColorMode,
 
@@ -198,13 +194,37 @@ pub struct Info {
     ///  the palette in background_r, the other two are then ignored.
     ///
     ///  The decoder does not use this background color to edit the color of pixels.
-    pub background_defined: c_uint,
+    pub background_defined: bool,
     /// red component of suggested background color
-    pub background_r: c_uint,
+    pub background_r: u16,
     /// green component of suggested background color
-    pub background_g: c_uint,
+    pub background_g: u16,
     /// blue component of suggested background color
-    pub background_b: c_uint,
+    pub background_b: u16,
+
+    /// set to 1 to make the encoder generate a tIME chunk
+    pub time_defined: bool,
+    /// time chunk (tIME)
+    pub time: Time,
+
+    /// if 0, there is no pHYs chunk and the values below are undefined, if 1 else there is one
+    pub phys_defined: bool,
+    /// pixels per unit in x direction
+    pub phys_x: c_uint,
+    /// pixels per unit in y direction
+    pub phys_y: c_uint,
+    /// may be 0 (unknown unit) or 1 (metre)
+    pub phys_unit: u8,
+
+    /// unknown chunks
+    /// There are 3 buffers, one for each position in the PNG where unknown chunks can appear
+    /// each buffer contains all unknown chunks for that position consecutively
+    /// The 3 buffers are the unknown chunks between certain critical chunks:
+    /// 0: IHDR-`PLTE`, 1: `PLTE`-IDAT, 2: IDAT-IEND
+    /// Do not allocate or traverse this data yourself. Use the chunk traversing functions declared
+    /// later, such as lodepng_chunk_next and lodepng_chunk_append, to read/write this struct.
+    pub(crate) unknown_chunks_data: [*mut c_uchar; 3],
+    pub(crate) unknown_chunks_size: [usize; 3],
 
     ///  non-international text chunks (tEXt and zTXt)
     ///
@@ -226,30 +246,6 @@ pub struct Info {
     pub(crate) itext_langtags: *mut *mut c_char,
     pub(crate) itext_transkeys: *mut *mut c_char,
     pub(crate) itext_strings: *mut *mut c_char,
-
-    /// set to 1 to make the encoder generate a tIME chunk
-    pub time_defined: c_uint,
-    /// time chunk (tIME)
-    pub time: Time,
-
-    /// if 0, there is no pHYs chunk and the values below are undefined, if 1 else there is one
-    pub phys_defined: c_uint,
-    /// pixels per unit in x direction
-    pub phys_x: c_uint,
-    /// pixels per unit in y direction
-    pub phys_y: c_uint,
-    /// may be 0 (unknown unit) or 1 (metre)
-    pub phys_unit: c_uint,
-
-    /// unknown chunks
-    /// There are 3 buffers, one for each position in the PNG where unknown chunks can appear
-    /// each buffer contains all unknown chunks for that position consecutively
-    /// The 3 buffers are the unknown chunks between certain critical chunks:
-    /// 0: IHDR-`PLTE`, 1: `PLTE`-IDAT, 2: IDAT-IEND
-    /// Do not allocate or traverse this data yourself. Use the chunk traversing functions declared
-    /// later, such as lodepng_chunk_next and lodepng_chunk_append, to read/write this struct.
-    pub unknown_chunks_data: [*mut c_uchar; 3],
-    pub unknown_chunks_size: [usize; 3],
 }
 
 /// Settings for the decoder. This contains settings for the PNG and the Zlib decoder, but not the `Info` settings from the `Info` structs.
@@ -259,10 +255,10 @@ pub struct DecoderSettings {
     /// in here is the setting to ignore Adler32 checksums
     pub zlibsettings: DecompressSettings,
     /// ignore CRC checksums
-    pub ignore_crc: c_uint,
-    pub color_convert: c_uint,
-    pub read_text_chunks: c_uint,
-    pub remember_unknown_chunks: c_uint,
+    pub ignore_crc: bool,
+    pub color_convert: bool,
+    pub read_text_chunks: bool,
+    pub remember_unknown_chunks: bool,
 }
 
 /// automatically use color type with less bits per pixel if losslessly possible. Default: `AUTO`
@@ -289,12 +285,12 @@ pub struct EncoderSettings {
     /// settings for the zlib encoder, such as window size, ...
     pub zlibsettings: CompressSettings,
     /// how to automatically choose output PNG color type, if at all
-    pub auto_convert: c_uint,
+    pub auto_convert: bool,
     /// If true, follows the official PNG heuristic: if the PNG uses a palette or lower than
     /// 8 bit depth, set all filters to zero. Otherwise use the filter_strategy. Note that to
     /// completely follow the official PNG heuristic, filter_palette_zero must be true and
     /// filter_strategy must be FilterStrategy::MINSUM
-    pub filter_palette_zero: c_uint,
+    pub filter_palette_zero: bool,
     /// Which filter strategy to use when not using zeroes due to filter_palette_zero.
     /// Set filter_palette_zero to 0 to ensure always using your chosen strategy. Default: FilterStrategy::MINSUM
     pub filter_strategy: FilterStrategy,
@@ -307,11 +303,11 @@ pub struct EncoderSettings {
 
     /// force creating a `PLTE` chunk if colortype is 2 or 6 (= a suggested palette).
     /// If colortype is 3, `PLTE` is _always_ created
-    pub force_palette: c_uint,
+    pub force_palette: bool,
     /// add LodePNG identifier and version as a text chunk, for debugging
-    pub add_id: c_uint,
+    pub add_id: bool,
     /// encode text chunks as zTXt chunks instead of tEXt chunks, and use compression in iTXt chunks
-    pub text_compression: c_uint,
+    pub text_compression: bool,
 }
 
 /// The settings, state and information for extended encoding and decoding
@@ -333,21 +329,21 @@ pub struct State {
 #[repr(C)]
 pub struct ColorProfile {
     /// not greyscale
-    pub colored: c_uint,
+    pub colored: bool,
     /// image is not opaque and color key is possible instead of full alpha
-    pub key: c_uint,
+    pub key: bool,
     /// key values, always as 16-bit, in 8-bit case the byte is duplicated, e.g. 65535 means 255
     pub key_r: u16,
     pub key_g: u16,
     pub key_b: u16,
     /// image is not opaque and alpha channel or alpha palette required
-    pub alpha: c_uint,
+    pub alpha: bool,
     /// amount of colors, up to 257. Not valid if bits == 16.
-    pub numcolors: c_uint,
+    /// bits per channel (not for palette). 1,2 or 4 for greyscale only. 16 if 16-bit per channel required.
+    pub bits: u8,
+    pub numcolors: u16,
     /// Remembers up to the first 256 RGBA colors, in no particular order
     pub palette: [crate::RGBA; 256],
-    /// bits per channel (not for palette). 1,2 or 4 for greyscale only. 16 if 16-bit per channel required.
-    pub bits: c_uint,
 }
 
 impl fmt::Debug for ColorProfile {

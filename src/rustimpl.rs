@@ -213,7 +213,7 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
       but for "the other case", whatever strategy filter_strategy is set to instead of the minimum sum
       heuristic is used.
       */
-    let strategy = if settings.filter_palette_zero != 0 && (info.colortype == ColorType::PALETTE || info.bitdepth() < 8) {
+    let strategy = if settings.filter_palette_zero && (info.colortype == ColorType::PALETTE || info.bitdepth() < 8) {
         FilterStrategy::ZERO
     } else {
         settings.filter_strategy
@@ -1180,10 +1180,10 @@ fn read_chunk_bkgd(info: &mut Info, data: &[u8]) -> Result<(), Error> {
         if chunk_length != 1 {
             return Err(Error::new(43)); /*error: this chunk must be 2 bytes for greyscale image*/
         } /*error: this chunk must be 6 bytes for greyscale image*/
-        info.background_defined = 1; /* OK */
+        info.background_defined = true; /* OK */
         info.background_r = {
             info.background_g = {
-                info.background_b = data[0] as u32;
+                info.background_b = data[0].into();
                 info.background_b
             };
             info.background_g
@@ -1192,10 +1192,10 @@ fn read_chunk_bkgd(info: &mut Info, data: &[u8]) -> Result<(), Error> {
         if chunk_length != 2 {
             return Err(Error::new(44));
         }
-        info.background_defined = 1;
+        info.background_defined = true;
         info.background_r = {
             info.background_g = {
-                info.background_b = 256 * data[0] as u32 + data[1] as u32;
+                info.background_b = 256 * data[0] as u16 + data[1] as u16;
                 info.background_b
             };
             info.background_g
@@ -1204,10 +1204,10 @@ fn read_chunk_bkgd(info: &mut Info, data: &[u8]) -> Result<(), Error> {
         if chunk_length != 6 {
             return Err(Error::new(45));
         }
-        info.background_defined = 1;
-        info.background_r = 256 * data[0] as u32 + data[1] as u32;
-        info.background_g = 256 * data[2] as u32 + data[3] as u32;
-        info.background_b = 256 * data[4] as u32 + data[5] as u32;
+        info.background_defined = true;
+        info.background_r = 256 * data[0] as u16 + data[1] as u16;
+        info.background_g = 256 * data[2] as u16 + data[3] as u16;
+        info.background_b = 256 * data[4] as u16 + data[5] as u16;
     }
     Ok(())
 }
@@ -1270,7 +1270,7 @@ fn read_chunk_itxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u
     if data.len() < 2 {
         return Err(Error::new(75));
     }
-    let compressed_flag = data[0];
+    let compressed_flag = data[0] != 0;
     if data[1] != 0 {
         return Err(Error::new(72));
     }
@@ -1278,7 +1278,7 @@ fn read_chunk_itxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u
     let (transkey, data) = split_at_nul(data);
 
     let decoded;
-    let rest = if compressed_flag != 0 {
+    let rest = if compressed_flag {
         decoded = zlib_decompress(data, zlibsettings)?;
         &decoded[..]
     } else {
@@ -1293,13 +1293,13 @@ fn read_chunk_time(info: &mut Info, data: &[u8]) -> Result<(), Error> {
     if chunk_length != 7 {
         return Err(Error::new(73));
     }
-    info.time_defined = 1;
-    info.time.year = 256 * data[0] as u32 + data[1] as u32;
-    info.time.month = data[2] as u32;
-    info.time.day = data[3] as u32;
-    info.time.hour = data[4] as u32;
-    info.time.minute = data[5] as u32;
-    info.time.second = data[6] as u32;
+    info.time_defined = true;
+    info.time.year = 256 * data[0] as u16 + data[1] as u16;
+    info.time.month = data[2];
+    info.time.day = data[3];
+    info.time.hour = data[4];
+    info.time.minute = data[5];
+    info.time.second = data[6];
     Ok(())
 }
 
@@ -1308,10 +1308,10 @@ fn read_chunk_phys(info: &mut Info, data: &[u8]) -> Result<(), Error> {
     if chunk_length != 9 {
         return Err(Error::new(74));
     }
-    info.phys_defined = 1;
+    info.phys_defined = true;
     info.phys_x = 16777216 * data[0] as u32 + 65536 * data[1] as u32 + 256 * data[2] as u32 + data[3] as u32;
     info.phys_y = 16777216 * data[4] as u32 + 65536 * data[5] as u32 + 256 * data[6] as u32 + data[7] as u32;
-    info.phys_unit = data[8] as u32;
+    info.phys_unit = data[8];
     Ok(())
 }
 
@@ -2994,22 +2994,12 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool)
         6 => ColorType::RGBA,
         _ => return Err(Error::new(31)),
     };
-    info_png.compression_method = inp[26] as u32;
-    info_png.filter_method = inp[27] as u32;
-    info_png.interlace_method = inp[28] as u32;
+    info_png.interlace_method = inp[28];
     if w == 0 || h == 0 {
         return Err(Error::new(93));
     }
-    if decoder.ignore_crc == 0 && !ihdr.check_crc() {
+    if decoder.ignore_crc == false && !ihdr.check_crc() {
         return Err(Error::new(57));
-    }
-    if info_png.compression_method != 0 {
-        /*error: only compression method 0 is allowed in the specification*/
-        return Err(Error::new(32));
-    }
-    if info_png.filter_method != 0 {
-        /*error: only filter method 0 is allowed in the specification*/
-        return Err(Error::new(33));
     }
     if info_png.interlace_method > 1 {
         /*error: only interlace methods 0 and 1 exist in the specification*/
@@ -3087,13 +3077,13 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
             b"bKGD" => {
                 read_chunk_bkgd(&mut state.info_png, data)?;
             },
-            b"tEXt" => if state.decoder.read_text_chunks != 0 {
+            b"tEXt" => if state.decoder.read_text_chunks {
                 read_chunk_text(&mut state.info_png, data)?;
             },
-            b"zTXt" => if state.decoder.read_text_chunks != 0 {
+            b"zTXt" => if state.decoder.read_text_chunks {
                 read_chunk_ztxt(&mut state.info_png, &state.decoder.zlibsettings, data)?;
             },
-            b"iTXt" => if state.decoder.read_text_chunks != 0 {
+            b"iTXt" => if state.decoder.read_text_chunks {
                 read_chunk_itxt(&mut state.info_png, &state.decoder.zlibsettings, data)?;
             },
             b"tIME" => {
@@ -3107,12 +3097,12 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
                     return Err(Error::new(69));
                 }
                 unknown = true;
-                if state.decoder.remember_unknown_chunks != 0 {
+                if state.decoder.remember_unknown_chunks {
                     state.info_png.push_unknown_chunk(critical_pos, ch.whole_chunk_data())?;
                 }
             },
         };
-        if state.decoder.ignore_crc == 0 && !unknown && !ch.check_crc() {
+        if state.decoder.ignore_crc == false && !unknown && !ch.check_crc() {
             return Err(Error::new(57));
         }
         if found_iend {
@@ -3156,10 +3146,10 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
 pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usize), Error> {
     let (decoded, w, h) = decode_generic(state, inp)?;
 
-    if state.decoder.color_convert == 0 || lodepng_color_mode_equal(&state.info_raw, &state.info_png.color) {
+    if state.decoder.color_convert == false || lodepng_color_mode_equal(&state.info_raw, &state.info_png.color) {
         /*store the info_png color settings on the info_raw so that the info_raw still reflects what colortype
             the raw image has to the end user*/
-        if state.decoder.color_convert == 0 {
+        if state.decoder.color_convert == false {
             /*color conversion needed; sort of copy of the data*/
             state.info_raw = state.info_png.color.clone();
         }
@@ -3224,10 +3214,10 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     let h = h as usize;
 
     let mut info = state.info_png.clone();
-    if (info.color.colortype == ColorType::PALETTE || state.encoder.force_palette != 0) && (info.color.palette().is_empty() || info.color.palette().len() > 256) {
+    if (info.color.colortype == ColorType::PALETTE || state.encoder.force_palette) && (info.color.palette().is_empty() || info.color.palette().len() > 256) {
         return Err(Error::new(68));
     }
-    if state.encoder.auto_convert != 0 {
+    if state.encoder.auto_convert {
         /*write signature and chunks*/
         info.color = auto_choose_color(image, w, h, &state.info_raw)?;
     }
@@ -3261,7 +3251,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     if info.color.colortype == ColorType::PALETTE {
         add_chunk_plte(&mut outv, &info.color)?;
     }
-    if state.encoder.force_palette != 0 && (info.color.colortype == ColorType::RGB || info.color.colortype == ColorType::RGBA) {
+    if state.encoder.force_palette && (info.color.colortype == ColorType::RGB || info.color.colortype == ColorType::RGBA) {
         add_chunk_plte(&mut outv, &info.color)?;
     }
     if info.color.colortype == ColorType::PALETTE && get_palette_translucency(info.color.palette()) != PaletteTranslucency::Opaque {
@@ -3270,17 +3260,17 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     if (info.color.colortype == ColorType::GREY || info.color.colortype == ColorType::RGB) && info.color.key().is_some() {
         add_chunk_trns(&mut outv, &info.color)?;
     }
-    if info.background_defined != 0 {
+    if info.background_defined {
         add_chunk_bkgd(&mut outv, &info)?;
     }
-    if info.phys_defined != 0 {
+    if info.phys_defined {
         add_chunk_phys(&mut outv, &info)?;
     }
     if let Some(chunks) = info.unknown_chunks_data(ChunkPosition::PLTE) {
         add_unknown_chunks(&mut outv, chunks)?;
     }
     add_chunk_idat(&mut outv, &data, &state.encoder.zlibsettings)?;
-    if info.time_defined != 0 {
+    if info.time_defined {
         add_chunk_time(&mut outv, &info.time)?;
     }
     for (t, v) in info.text_keys_cstr() {
@@ -3290,13 +3280,13 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
         if t.to_bytes().is_empty() {
             return Err(Error::new(67));
         }
-        if state.encoder.text_compression != 0 {
+        if state.encoder.text_compression {
             add_chunk_ztxt(&mut outv, t, v, &state.encoder.zlibsettings)?;
         } else {
             add_chunk_text(&mut outv, t, v)?;
         }
     }
-    if state.encoder.add_id != 0 {
+    if state.encoder.add_id {
         let alread_added_id_text = info.text_keys_cstr()
             .any(|(t, _)| t.to_str().unwrap_or("") == "LodePNG");
         if !alread_added_id_text {
@@ -3313,7 +3303,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
         if k.as_bytes().is_empty() {
             return Err(Error::new(67));
         }
-        add_chunk_itxt(&mut outv, state.encoder.text_compression != 0, k, l, t, s, &state.encoder.zlibsettings)?;
+        add_chunk_itxt(&mut outv, state.encoder.text_compression, k, l, t, s, &state.encoder.zlibsettings)?;
     }
     if let Some(chunks) = info.unknown_chunks_data(ChunkPosition::IDAT) {
         add_unknown_chunks(&mut outv, chunks)?;
@@ -3360,23 +3350,23 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
         for i in 0..numpixels {
             let (r, g, b, a) = get_pixel_color_rgba16(inp, i, mode);
             if !colored_done && (r != g || r != b) {
-                profile.colored = 1;
+                profile.colored = true;
                 colored_done = true;
             }
             if !alpha_done {
                 let matchkey = r == profile.key_r && g == profile.key_g && b == profile.key_b;
-                if a != 65535 && (a != 0 || (profile.key != 0 && !matchkey)) {
-                    profile.alpha = 1;
-                    profile.key = 0;
+                if a != 65535 && (a != 0 || (profile.key && !matchkey)) {
+                    profile.alpha = true;
+                    profile.key = false;
                     alpha_done = true;
-                } else if a == 0 && profile.alpha == 0 && profile.key == 0 {
-                    profile.key = 1;
+                } else if a == 0 && profile.alpha == false && profile.key == false {
+                    profile.key = true;
                     profile.key_r = r;
                     profile.key_g = g;
                     profile.key_b = b;
-                } else if a == 65535 && profile.key != 0 && matchkey {
-                    profile.alpha = 1;
-                    profile.key = 0;
+                } else if a == 65535 && profile.key && matchkey {
+                    profile.alpha = true;
+                    profile.key = false;
                     alpha_done = true;
                 };
             }
@@ -3384,12 +3374,12 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
                 break;
             };
         }
-        if profile.key != 0 && profile.alpha == 0 {
+        if profile.key && profile.alpha == false {
             for i in 0..numpixels {
                 let (r, g, b, a) = get_pixel_color_rgba16(inp, i, mode);
                 if a != 0 && r == profile.key_r && g == profile.key_g && b == profile.key_b {
-                    profile.alpha = 1;
-                    profile.key = 0;
+                    profile.alpha = true;
+                    profile.key = false;
                 }
             }
         }
@@ -3398,14 +3388,14 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
         for i in 0..numpixels {
             let (r, g, b, a) = get_pixel_color_rgba8(inp, i, mode);
             if !bits_done && profile.bits < 8 {
-                let bits = get_value_required_bits(r) as u32;
+                let bits = get_value_required_bits(r);
                 if bits > profile.bits {
                     profile.bits = bits;
                 };
             }
             bits_done = profile.bits as usize >= bpp;
             if !colored_done && (r != g || r != b) {
-                profile.colored = 1;
+                profile.colored = true;
                 colored_done = true;
                 if profile.bits < 8 {
                     profile.bits = 8;
@@ -3414,22 +3404,22 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
             }
             if !alpha_done {
                 let matchkey = r as u16 == profile.key_r && g as u16 == profile.key_g && b as u16 == profile.key_b;
-                if a != 255 && (a != 0 || (profile.key != 0 && !matchkey)) {
-                    profile.alpha = 1;
-                    profile.key = 0;
+                if a != 255 && (a != 0 || (profile.key && !matchkey)) {
+                    profile.alpha = true;
+                    profile.key = false;
                     alpha_done = true;
                     if profile.bits < 8 {
                         profile.bits = 8;
                     };
                 /*PNG has no alphachannel modes with less than 8-bit per channel*/
-                } else if a == 0 && profile.alpha == 0 && profile.key == 0 {
-                    profile.key = 1;
+                } else if a == 0 && profile.alpha == false && profile.key == false {
+                    profile.key = true;
                     profile.key_r = r as u16;
                     profile.key_g = g as u16;
                     profile.key_b = b as u16;
-                } else if a == 255 && profile.key != 0 && matchkey {
-                    profile.alpha = 1;
-                    profile.key = 0;
+                } else if a == 255 && profile.key && matchkey {
+                    profile.alpha = true;
+                    profile.key = false;
                     alpha_done = true;
                     if profile.bits < 8 {
                         profile.bits = 8;
@@ -3449,12 +3439,12 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
                 break;
             };
         }
-        if profile.key != 0 && profile.alpha == 0 {
+        if profile.key && profile.alpha == false {
             for i in 0..numpixels {
                 let (r, g, b, a) = get_pixel_color_rgba8(inp, i, mode);
                 if a != 0 && r as u16 == profile.key_r && g as u16 == profile.key_g && b as u16 == profile.key_b {
-                    profile.alpha = 1;
-                    profile.key = 0;
+                    profile.alpha = true;
+                    profile.key = false;
                     /*PNG has no alphachannel modes with less than 8-bit per channel*/
                     if profile.bits < 8 {
                         profile.bits = 8;
@@ -3480,9 +3470,9 @@ pub fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &ColorMode) 
     let mut prof = get_color_profile(image, w as u32, h as u32, mode_in)?;
 
     mode_out.clear_key();
-    if prof.key != 0 && w * h <= 16 {
-        prof.alpha = 1;
-        prof.key = 0;
+    if prof.key && w * h <= 16 {
+        prof.alpha = true;
+        prof.key = false;
         /*PNG has no alphachannel modes with less than 8-bit per channel*/
         if prof.bits < 8 {
             prof.bits = 8;
@@ -3500,7 +3490,7 @@ pub fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &ColorMode) 
     };
     let palette_ok = (n <= 256 && prof.bits <= 8) &&
         (w * h >= (n * 2) as usize) &&
-        (prof.colored != 0 || prof.bits > palettebits);
+        (prof.colored || prof.bits > palettebits);
     if palette_ok {
         let pal = &prof.palette[0..prof.numcolors as usize];
         /*remove potential earlier palette*/
@@ -3509,25 +3499,25 @@ pub fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &ColorMode) 
             mode_out.palette_add(*p)?;
         }
         mode_out.colortype = ColorType::PALETTE;
-        mode_out.set_bitdepth(palettebits);
+        mode_out.set_bitdepth(palettebits.into());
         if mode_in.colortype == ColorType::PALETTE && mode_in.palette().len() >= mode_out.palette().len() && mode_in.bitdepth() == mode_out.bitdepth() {
             /*If input should have same palette colors, keep original to preserve its order and prevent conversion*/
             mode_out = mode_in.clone();
         };
     } else {
-        mode_out.set_bitdepth(prof.bits);
-        mode_out.colortype = if prof.alpha != 0 {
-            if prof.colored != 0 {
+        mode_out.set_bitdepth(prof.bits.into());
+        mode_out.colortype = if prof.alpha {
+            if prof.colored {
                 ColorType::RGBA
             } else {
                 ColorType::GREY_ALPHA
             }
-        } else if prof.colored != 0 {
+        } else if prof.colored {
             ColorType::RGB
         } else {
             ColorType::GREY
         };
-        if prof.key != 0 {
+        if prof.key {
             let mask = ((1 << mode_out.bitdepth()) - 1) as u16;
             /*profile always uses 16-bit, mask converts it*/
             mode_out.set_key(
@@ -3565,12 +3555,12 @@ impl EncoderSettings {
 impl ColorProfile {
     pub fn new() -> Self {
         Self {
-            colored: 0,
-            key: 0,
+            colored: false,
+            key: false,
             key_r: 0,
             key_g: 0,
             key_b: 0,
-            alpha: 0,
+            alpha: false,
             numcolors: 0,
             bits: 1,
             palette: [RGBA{r:0,g:0,b:0,a:0}; 256],

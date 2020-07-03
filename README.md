@@ -7,10 +7,10 @@ To do so, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-lodepng = "2.5.0"
+lodepng = "2.6.0"
 ```
 
-See [API reference](https://docs.rs/lodepng/) for details. Requires Rust 1.42 or later.
+See [API reference](https://docs.rs/lodepng/) for details. Requires Rust 1.44 or later.
 
 ### Loading image example
 
@@ -28,7 +28,6 @@ rgb = "0.8"
 ```
 
 ```rust
-extern crate rgb;
 use rgb::*;
 …
 let bytes: &[u8] = image.buffer.as_bytes();
@@ -67,17 +66,18 @@ let icc_data = state.info_png().get_icc();
 
 ## Upgrading from 2.x
 
-* C FFI still exists, but is no longer ABI-compatible with the original C lodepng due to layout changes in the `State` struct.
-* Custom zlib callbacks use io::Write instead of `malloc`-ed buffers.
-* `ffi::Error` has been renamed to `ffi::ErrorCode`
+* C FFI still exists, but is no longer ABI-compatible with the original C lodepng due to layout changes in structs.
+* Structs use `bool` where appropriate instead of 0/1 `int`.
+* Custom zlib callbacks use `io::Write` instead of `malloc`-ed buffers (remember to use `write_all`, not `write`!)
+* `ffi::Error` has been renamed to `ffi::ErrorCode`.
 
 ## Upgrading from 1.x
 
 * `CVec` has been replaced with a regular `Vec`. Delete extra `.as_ref()` that the compiler may complain about.
 * `LCT_*` constants have been changed to `ColorType::*`.
-* `Chunk`/`Chunks` renamed to `ChunkRef`/`ChunksIter`
-* `auto_convert` is a boolean
-* `bitdepth` has a getter/setter
+* `Chunk`/`Chunks` renamed to `ChunkRef`/`ChunksIter`.
+* `auto_convert` is a boolean.
+* `bitdepth` has a getter/setter.
 * There is no C any more!
 
 ## Origin of Rust version

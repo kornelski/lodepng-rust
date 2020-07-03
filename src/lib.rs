@@ -267,15 +267,15 @@ impl Info {
     pub fn new() -> Self {
         Self {
             color: ColorMode::new(),
-            interlace_method: 0, compression_method: 0, filter_method: 0,
-            background_defined: 0, background_r: 0, background_g: 0, background_b: 0,
-            time_defined: 0, time: Time::new(),
+            interlace_method: 0,
+            background_defined: false, background_r: 0, background_g: 0, background_b: 0,
+            time_defined: false, time: Time::new(),
             unknown_chunks_data: [ptr::null_mut(), ptr::null_mut(), ptr::null_mut()],
             unknown_chunks_size: [0, 0, 0],
             text_num: 0, text_keys: ptr::null_mut(), text_strings: ptr::null_mut(),
             itext_num: 0, itext_keys: ptr::null_mut(), itext_langtags: ptr::null_mut(),
             itext_transkeys: ptr::null_mut(), itext_strings: ptr::null_mut(),
-            phys_defined: 0, phys_x: 0, phys_y: 0, phys_unit: 0,
+            phys_defined: false, phys_x: 0, phys_y: 0, phys_unit: 0,
         }
     }
 
@@ -413,8 +413,6 @@ impl Info {
 impl Clone for Info {
     fn clone(&self) -> Self {
         let mut dest = Self {
-            compression_method: self.compression_method,
-            filter_method: self.filter_method,
             interlace_method: self.interlace_method,
             color: self.color.clone(),
             background_defined: self.background_defined,
@@ -471,7 +469,7 @@ impl Encoder {
     /// gzip text metadata
     #[inline]
     pub fn set_text_compression(&mut self, compr: bool) {
-        self.state.encoder.text_compression = if compr {1} else {0};
+        self.state.encoder.text_compression = compr;
     }
 
     /// Compress using another zlib implementation. It's gzip header + deflate + adler32 checksum.
@@ -643,12 +641,12 @@ impl State {
 
     #[inline]
     pub fn set_auto_convert(&mut self, mode: bool) {
-        self.encoder.auto_convert = mode as c_uint;
+        self.encoder.auto_convert = mode;
     }
 
     pub fn set_filter_strategy(&mut self, mode: FilterStrategy, palette_filter_zero: bool) {
         self.encoder.filter_strategy = mode;
-        self.encoder.filter_palette_zero = if palette_filter_zero {1} else {0};
+        self.encoder.filter_palette_zero = palette_filter_zero;
     }
 
     /// See `Encoder'
@@ -688,19 +686,19 @@ impl State {
     /// whether to convert the PNG to the color type you want. Default: yes
     #[inline]
     pub fn color_convert(&mut self, true_or_false: bool) {
-        self.decoder.color_convert = if true_or_false { 1 } else { 0 };
+        self.decoder.color_convert = true_or_false;
     }
 
     /// if false but remember_unknown_chunks is true, they're stored in the unknown chunks.
     #[inline]
     pub fn read_text_chunks(&mut self, true_or_false: bool) {
-        self.decoder.read_text_chunks = if true_or_false { 1 } else { 0 };
+        self.decoder.read_text_chunks = true_or_false;
     }
 
     /// store all bytes from unknown chunks in the `Info` (off by default, useful for a png editor)
     #[inline]
     pub fn remember_unknown_chunks(&mut self, true_or_false: bool) {
-        self.decoder.remember_unknown_chunks = if true_or_false { 1 } else { 0 };
+        self.decoder.remember_unknown_chunks = true_or_false;
     }
 
     /// Decompress ICC profile from iCCP chunk
@@ -1230,10 +1228,10 @@ impl DecoderSettings {
 impl Default for DecoderSettings {
     fn default() -> Self {
         Self {
-            color_convert: 1,
-            read_text_chunks: 1,
-            remember_unknown_chunks: 0,
-            ignore_crc: 0,
+            color_convert: true,
+            read_text_chunks: true,
+            remember_unknown_chunks: false,
+            ignore_crc: false,
             zlibsettings: DecompressSettings::new(),
         }
     }
@@ -1249,13 +1247,13 @@ impl Default for EncoderSettings {
     fn default() -> Self {
         Self {
             zlibsettings: CompressSettings::new(),
-            filter_palette_zero: 1,
+            filter_palette_zero: true,
             filter_strategy: FilterStrategy::MINSUM,
-            auto_convert: 1,
-            force_palette: 0,
+            auto_convert: true,
+            force_palette: false,
             predefined_filters: ptr::null_mut(),
-            add_id: 0,
-            text_compression: 1,
+            add_id: false,
+            text_compression: true,
         }
     }
 }

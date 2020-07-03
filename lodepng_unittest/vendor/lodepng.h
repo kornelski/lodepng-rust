@@ -342,21 +342,19 @@ extern "C" size_t lodepng_get_raw_size(unsigned w, unsigned h, const LodePNGColo
 /*The information of a Time chunk in PNG.*/
 typedef struct LodePNGTime
 {
-  unsigned year;    /*2 bytes used (0-65535)*/
-  unsigned month;   /*1-12*/
-  unsigned day;     /*1-31*/
-  unsigned hour;    /*0-23*/
-  unsigned minute;  /*0-59*/
-  unsigned second;  /*0-60 (to allow for leap seconds)*/
+  short year;    /*2 bytes used (0-65535)*/
+  char month;   /*1-12*/
+  char day;     /*1-31*/
+  char hour;    /*0-23*/
+  char minute;  /*0-59*/
+  char second;  /*0-60 (to allow for leap seconds)*/
 } LodePNGTime;
 
 /*Information about the PNG image, except pixels, width and height.*/
 typedef struct LodePNGInfo
 {
   /*header (IHDR), palette (PLTE) and transparency (tRNS) chunks*/
-  unsigned compression_method;/*compression method of the original file. Always 0.*/
-  unsigned filter_method;     /*filter method of the original file*/
-  unsigned interlace_method;  /*interlace method of the original file*/
+  char interlace_method;  /*interlace method of the original file*/
   LodePNGColorMode color;     /*color type and bits, palette and transparency of the PNG file*/
 
   /*
@@ -370,10 +368,32 @@ typedef struct LodePNGInfo
 
   The decoder does not use this background color to edit the color of pixels.
   */
-  unsigned background_defined; /*is a suggested background color given?*/
-  unsigned background_r;       /*red component of suggested background color*/
-  unsigned background_g;       /*green component of suggested background color*/
-  unsigned background_b;       /*blue component of suggested background color*/
+  bool background_defined; /*is a suggested background color given?*/
+  unsigned short background_r;       /*red component of suggested background color*/
+  unsigned short background_g;       /*green component of suggested background color*/
+  unsigned short background_b;       /*blue component of suggested background color*/
+
+  /*time chunk (tIME)*/
+  bool time_defined; /*set to 1 to make the encoder generate a tIME chunk*/
+  LodePNGTime time;
+
+  /*phys chunk (pHYs)*/
+  bool phys_defined; /*if 0, there is no pHYs chunk and the values below are undefined, if 1 else there is one*/
+  unsigned phys_x; /*pixels per unit in x direction*/
+  unsigned phys_y; /*pixels per unit in y direction*/
+  char phys_unit; /*may be 0 (unknown unit) or 1 (metre)*/
+
+  /*
+  unknown chunks
+  There are 3 buffers, one for each position in the PNG where unknown chunks can appear
+  each buffer contains all unknown chunks for that position consecutively
+  The 3 buffers are the unknown chunks between certain critical chunks:
+  0: IHDR-PLTE, 1: PLTE-IDAT, 2: IDAT-IEND
+  Do not allocate or traverse this data yourself. Use the chunk traversing functions declared
+  later, such as lodepng_chunk_next and lodepng_chunk_append, to read/write this struct.
+  */
+  unsigned char* unknown_chunks_data[3];
+  size_t unknown_chunks_size[3]; /*size in bytes of the unknown chunks, given for protection*/
 
   /*
   non-international text chunks (tEXt and zTXt)
@@ -402,28 +422,6 @@ typedef struct LodePNGInfo
   char** itext_langtags; /*language tag for this text's language, ISO/IEC 646 string, e.g. ISO 639 language tag*/
   char** itext_transkeys; /*keyword translated to the international language - UTF-8 string*/
   char** itext_strings; /*the actual international text - UTF-8 string*/
-
-  /*time chunk (tIME)*/
-  unsigned time_defined; /*set to 1 to make the encoder generate a tIME chunk*/
-  LodePNGTime time;
-
-  /*phys chunk (pHYs)*/
-  unsigned phys_defined; /*if 0, there is no pHYs chunk and the values below are undefined, if 1 else there is one*/
-  unsigned phys_x; /*pixels per unit in x direction*/
-  unsigned phys_y; /*pixels per unit in y direction*/
-  unsigned phys_unit; /*may be 0 (unknown unit) or 1 (metre)*/
-
-  /*
-  unknown chunks
-  There are 3 buffers, one for each position in the PNG where unknown chunks can appear
-  each buffer contains all unknown chunks for that position consecutively
-  The 3 buffers are the unknown chunks between certain critical chunks:
-  0: IHDR-PLTE, 1: PLTE-IDAT, 2: IDAT-IEND
-  Do not allocate or traverse this data yourself. Use the chunk traversing functions declared
-  later, such as lodepng_chunk_next and lodepng_chunk_append, to read/write this struct.
-  */
-  unsigned char* unknown_chunks_data[3];
-  size_t unknown_chunks_size[3]; /*size in bytes of the unknown chunks, given for protection*/
 } LodePNGInfo;
 
 /*init, cleanup and copy functions to use with this struct*/
@@ -465,13 +463,13 @@ typedef struct LodePNGDecoderSettings
 {
   LodePNGDecompressSettings zlibsettings; /*in here is the setting to ignore Adler32 checksums*/
 
-  unsigned ignore_crc; /*ignore CRC checksums*/
+  bool ignore_crc; /*ignore CRC checksums*/
 
-  unsigned color_convert; /*whether to convert the PNG to the color type you want. Default: yes*/
+  bool color_convert; /*whether to convert the PNG to the color type you want. Default: yes*/
 
-  unsigned read_text_chunks; /*if false but remember_unknown_chunks is true, they're stored in the unknown chunks*/
+  bool read_text_chunks; /*if false but remember_unknown_chunks is true, they're stored in the unknown chunks*/
   /*store all bytes from unknown chunks in the LodePNGInfo (off by default, useful for a png editor)*/
-  unsigned remember_unknown_chunks;
+  bool remember_unknown_chunks;
 } LodePNGDecoderSettings;
 
 extern "C" void lodepng_decoder_settings_init(LodePNGDecoderSettings* settings);
@@ -499,15 +497,15 @@ typedef enum LodePNGFilterStrategy
 Used internally by default if "auto_convert" is enabled. Public because it's useful for custom algorithms.*/
 typedef struct LodePNGColorProfile
 {
-  unsigned colored; /*not greyscale*/
-  unsigned key; /*image is not opaque and color key is possible instead of full alpha*/
+  bool colored; /*not greyscale*/
+  bool key; /*image is not opaque and color key is possible instead of full alpha*/
   unsigned short key_r; /*key values, always as 16-bit, in 8-bit case the byte is duplicated, e.g. 65535 means 255*/
   unsigned short key_g;
   unsigned short key_b;
-  unsigned alpha; /*image is not opaque and alpha channel or alpha palette required*/
-  unsigned numcolors; /*amount of colors, up to 257. Not valid if bits == 16.*/
+  bool alpha; /*image is not opaque and alpha channel or alpha palette required*/
+  char bits; /*bits per channel (not for palette). 1,2 or 4 for greyscale only. 16 if 16-bit per channel required.*/
+  short numcolors; /*amount of colors, up to 257. Not valid if bits == 16.*/
   unsigned char palette[1024]; /*Remembers up to the first 256 RGBA colors, in no particular order*/
-  unsigned bits; /*bits per channel (not for palette). 1,2 or 4 for greyscale only. 16 if 16-bit per channel required.*/
 } LodePNGColorProfile;
 
 extern "C" void lodepng_color_profile_init(LodePNGColorProfile* profile);
@@ -527,13 +525,13 @@ typedef struct LodePNGEncoderSettings
 {
   LodePNGCompressSettings zlibsettings; /*settings for the zlib encoder, such as window size, ...*/
 
-  unsigned auto_convert; /*automatically choose output PNG color type. Default: true*/
+  bool auto_convert; /*automatically choose output PNG color type. Default: true*/
 
   /*If true, follows the official PNG heuristic: if the PNG uses a palette or lower than
   8 bit depth, set all filters to zero. Otherwise use the filter_strategy. Note that to
   completely follow the official PNG heuristic, filter_palette_zero must be true and
   filter_strategy must be LFS_MINSUM*/
-  unsigned filter_palette_zero;
+  bool filter_palette_zero;
   /*Which filter strategy to use when not using zeroes due to filter_palette_zero.
   Set filter_palette_zero to 0 to ensure always using your chosen strategy. Default: LFS_MINSUM*/
   LodePNGFilterStrategy filter_strategy;
@@ -545,11 +543,11 @@ typedef struct LodePNGEncoderSettings
 
   /*force creating a PLTE chunk if colortype is 2 or 6 (= a suggested palette).
   If colortype is 3, PLTE is _always_ created.*/
-  unsigned force_palette;
+  bool force_palette;
   /*add LodePNG identifier and version as a text chunk, for debugging*/
-  unsigned add_id;
+  bool add_id;
   /*encode text chunks as zTXt chunks instead of tEXt chunks, and use compression in iTXt chunks*/
-  unsigned text_compression;
+  bool text_compression;
 } LodePNGEncoderSettings;
 
 extern "C" void lodepng_encoder_settings_init(LodePNGEncoderSettings* settings);
