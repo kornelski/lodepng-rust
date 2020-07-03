@@ -376,6 +376,7 @@ pub unsafe extern "C" fn lodepng_free(ptr: *mut c_void) {
 }
 
 #[no_mangle]
+#[allow(deprecated)]
 pub unsafe extern "C" fn lodepng_state_init(state: *mut State) {
     ptr::write(state, State::new())
 }

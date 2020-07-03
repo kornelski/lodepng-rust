@@ -2,12 +2,12 @@
 use lodepng::*;
 
 fn encode<T: Copy + 'static>(pixels: &[T], in_type: ColorType, out_type: ColorType) -> Result<Vec<u8>, Error> {
-    let mut state = State::new();
+    let mut state = Encoder::new();
     state.set_auto_convert(true);
-    state.info_raw.colortype = in_type;
-    state.info_raw.set_bitdepth(8);
-    state.info_png.color.colortype = out_type;
-    state.info_png.color.set_bitdepth(8);
+    state.info_raw_mut().colortype = in_type;
+    state.info_raw_mut().set_bitdepth(8);
+    state.info_png_mut().color.colortype = out_type;
+    state.info_png_mut().color.set_bitdepth(8);
     state.encode(pixels, pixels.len(), 1)
 }
 
@@ -91,8 +91,8 @@ fn rgb_with_trns_inspect() {
 
 #[test]
 fn text_chunks() {
-    let mut s = State::new();
-    s.encoder.text_compression = 0;
+    let mut s = Encoder::new();
+    s.set_text_compression(false);
     let longstr = "World 123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_";
     assert!(longstr.len() > 89);
     s.info_png_mut().add_text("Hello", longstr).unwrap();
@@ -101,7 +101,7 @@ fn text_chunks() {
 
     assert!(data.windows(4).any(|w| w == b"tEXt"));
 
-    let mut s = State::new();
+    let mut s = Decoder::new();
     s.read_text_chunks(true);
     s.decode(data).unwrap();
     assert_eq!(1, s.info_png().text_keys_cstr().count());

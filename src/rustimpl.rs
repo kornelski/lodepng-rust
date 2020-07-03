@@ -3199,7 +3199,7 @@ pub fn lodepng_decode_memory(inp: &[u8], colortype: ColorType, bitdepth: u32) ->
     let mut state = Decoder::new();
     state.info_raw_mut().colortype = colortype;
     state.info_raw_mut().set_bitdepth(bitdepth);
-    lodepng_decode(&mut state, inp)
+    lodepng_decode(&mut state.state, inp)
 }
 
 pub fn lodepng_decode_file(filename: &Path, colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
@@ -3562,12 +3562,12 @@ pub fn lodepng_filesize(filename: &Path) -> Option<u64> {
 }
 
 pub fn lodepng_encode_memory(image: &[u8], w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> Result<Vec<u8>, Error> {
-    let mut state = State::new();
-    state.info_raw.colortype = colortype;
-    state.info_raw.set_bitdepth(bitdepth);
-    state.info_png.color.colortype = colortype;
-    state.info_png.color.set_bitdepth(bitdepth);
-    lodepng_encode(image, w, h, &mut state)
+    let mut state = Encoder::new();
+    state.info_raw_mut().colortype = colortype;
+    state.info_raw_mut().set_bitdepth(bitdepth);
+    state.info_png_mut().color.colortype = colortype;
+    state.info_png_mut().color.set_bitdepth(bitdepth);
+    lodepng_encode(image, w, h, &mut state.state)
 }
 
 impl EncoderSettings {

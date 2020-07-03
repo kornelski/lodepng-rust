@@ -458,30 +458,40 @@ impl Encoder {
         Self::default()
     }
 
+    /// If true, convert to output format
     #[inline]
     pub fn set_auto_convert(&mut self, mode: bool) {
         self.state.set_auto_convert(mode);
     }
 
+    /// palette_filter_zero controls filtering for low-bitdepth images
     #[inline]
     pub fn set_filter_strategy(&mut self, mode: FilterStrategy, palette_filter_zero: bool) {
         self.state.set_filter_strategy(mode, palette_filter_zero);
     }
 
+    /// gzip text metadata
     #[inline]
+    pub fn set_text_compression(&mut self, compr: bool) {
+        self.state.encoder.text_compression = if compr {1} else {0};
+    }
+
     /// Compress using another zlib implementation. It's gzip header + deflate + adler32 checksum.
     ///
     /// The callback returns 0 on success.
     /// The callback MUST allocate memory using `libc::malloc`
+    #[inline]
+    #[allow(deprecated)]
     pub unsafe fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.state.set_custom_zlib(callback, context);
     }
 
-    #[inline]
     /// Compress using another deflate implementation. It's just deflate, without headers or checksum.
     ///
     /// The callback returns 0 on success.
     /// The callback MUST allocate memory using `libc::malloc`
+    #[inline]
+    #[allow(deprecated)]
     pub unsafe fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.state.set_custom_deflate(callback, context);
     }
@@ -509,11 +519,13 @@ impl Encoder {
     }
 
     #[inline]
+    #[allow(deprecated)]
     pub fn encode<PixelType: Copy + 'static>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         self.state.encode(image, w, h)
     }
 
     #[inline]
+    #[allow(deprecated)]
     pub fn encode_file<PixelType: Copy + 'static, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         self.state.encode_file(filepath, image, w, h)
     }
@@ -522,7 +534,7 @@ impl Encoder {
 #[derive(Clone, Debug, Default)]
 /// Read an image with custom settings
 pub struct Decoder {
-    state: State,
+    pub(crate) state: State,
 }
 
 impl Decoder {

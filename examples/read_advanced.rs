@@ -5,7 +5,7 @@ use std::path::Path;
 fn main() {
     let path = Path::new("tests/test.png");
 
-    let mut state = lodepng::State::new();
+    let mut state = lodepng::Decoder::new();
 
     match state.decode_file(&path) {
         Ok(image) => match image {
