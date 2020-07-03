@@ -26,7 +26,6 @@ use std::slice;
 use std::cmp;
 use std::fs::File;
 use std::io::Write;
-use std::io::Read;
 use std::path::Path;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
@@ -748,7 +747,7 @@ impl State {
     #[allow(deprecated)]
     #[inline]
     pub fn decode_file<P: AsRef<Path>>(&mut self, filepath: P) -> Result<Image, Error> {
-        self.decode(&load_file(filepath)?)
+        self.decode(&std::fs::read(filepath)?)
     }
 
     /// Updates `info_png`. Returns (width, height)
@@ -880,13 +879,6 @@ fn save_file<P: AsRef<Path>>(filepath: P, data: &[u8]) -> Result<(), Error> {
     Ok(())
 }
 
-fn load_file<P: AsRef<Path>>(filepath: P) -> Result<Vec<u8>, Error> {
-    let mut file = File::open(filepath)?;
-    let mut data = Vec::new();
-    file.read_to_end(&mut data)?;
-    Ok(data)
-}
-
 /// Converts PNG data in memory to raw pixel data.
 ///
 /// `decode32` and `decode24` are more convenient if you want specific image format.
@@ -943,7 +935,7 @@ pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Err
 ///  ```
 #[inline]
 pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
-    decode_memory(&load_file(filepath)?, colortype, bitdepth)
+    decode_memory(&std::fs::read(filepath)?, colortype, bitdepth)
 }
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
