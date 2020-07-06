@@ -1,7 +1,6 @@
-
 use lodepng::*;
 
-fn encode<T: Copy + 'static>(pixels: &[T], in_type: ColorType, out_type: ColorType) -> Result<Vec<u8>, Error> {
+fn encode<T: rgb::Pod>(pixels: &[T], in_type: ColorType, out_type: ColorType) -> Result<Vec<u8>, Error> {
     let mut state = Encoder::new();
     state.set_auto_convert(true);
     state.info_raw_mut().colortype = in_type;
