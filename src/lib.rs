@@ -42,16 +42,6 @@ pub use crate::ffi::ErrorCode;
 pub use crate::ffi::Info;
 pub use crate::ffi::ColorMode;
 
-#[doc(hidden)] #[deprecated(note="use `ColorType::GREY` instead")] pub const LCT_GREY: ColorType = ColorType::GREY;
-#[doc(hidden)] #[deprecated(note="use `ColorType::RGB` instead")] pub const LCT_RGB: ColorType = ColorType::RGB;
-#[doc(hidden)] #[deprecated(note="use `ColorType::PALETTE` instead")] pub const LCT_PALETTE: ColorType = ColorType::PALETTE;
-#[doc(hidden)] #[deprecated(note="use `ColorType::GREY_ALPHA` instead")] pub const LCT_GREY_ALPHA: ColorType = ColorType::GREY_ALPHA;
-#[doc(hidden)] #[deprecated(note="use `ColorType::RGBA` instead")] pub const LCT_RGBA: ColorType = ColorType::RGBA;
-#[doc(hidden)] #[deprecated(note="use `FilterStrategy::ZERO` instead")] pub const LFS_ZERO: FilterStrategy = FilterStrategy::ZERO;
-#[doc(hidden)] #[deprecated(note="use `FilterStrategy::MINSUM` instead")] pub const LFS_MINSUM: FilterStrategy = FilterStrategy::MINSUM;
-#[doc(hidden)] #[deprecated(note="use `FilterStrategy::ENTROPY` instead")] pub const LFS_ENTROPY: FilterStrategy = FilterStrategy::ENTROPY;
-#[doc(hidden)] #[deprecated(note="use `FilterStrategy::BRUTE_FORCE` instead")] pub const LFS_BRUTE_FORCE: FilterStrategy = FilterStrategy::BRUTE_FORCE;
-
 impl ColorMode {
     pub fn new() -> Self {
         Self::default()
@@ -1033,21 +1023,6 @@ pub fn encode24_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[
     encode_file(filepath, image, w, h, ColorType::RGB, 8)
 }
 
-/// Automatically chooses color type that gives smallest amount of bits in the
-/// output image, e.g. grey if there are only greyscale pixels, palette if there
-/// are less than 256 colors, ...
-///
-/// The auto_convert parameter is not supported any more.
-///
-/// updates values of mode with a potentially smaller color model. mode_out should
-/// contain the user chosen color model, but will be overwritten with the new chosen one.
-#[doc(hidden)]
-#[deprecated]
-pub fn auto_choose_color(mode_out: &mut ColorMode, image: &[u8], w: usize, h: usize, mode_in: &ColorMode) -> Result<(), Error> {
-    *mode_out = rustimpl::auto_choose_color(image, w, h, mode_in)?;
-    Ok(())
-}
-
 /// Reference to a chunk
 #[derive(Copy, Clone)]
 pub struct ChunkRef<'a> {
@@ -1165,24 +1140,8 @@ impl<'a> ChunkRefMut<'a> {
     }
 }
 
-/// Compresses data with Zlib.
-/// Zlib adds a small header and trailer around the deflate data.
-/// The data is output in the format of the zlib specification.
-#[doc(hidden)]
-pub fn zlib_compress(input: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    let mut v = Vec::with_capacity(input.len()/2);
-    rustimpl::lodepng_zlib_compress(&mut v, input, settings)?;
-    Ok(v)
-}
-
 fn zlib_decompress(input: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
     Ok(rustimpl::lodepng_zlib_decompress(input, settings)?)
-}
-
-/// Compress a buffer with deflate. See RFC 1951.
-#[doc(hidden)]
-pub fn deflate(input: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    Ok(rustimpl::lodepng_deflatev(input, settings)?)
 }
 
 impl CompressSettings {
