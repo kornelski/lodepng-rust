@@ -1,4 +1,3 @@
-
 use crate::rustimpl::lodepng_free;
 use crate::rustimpl::lodepng_malloc;
 
@@ -16,6 +15,7 @@ use crate::iter::*;
 
 pub use rgb::RGB;
 pub use rgb::RGBA8 as RGBA;
+pub use rgb::Pod;
 
 use std::os::raw::c_uint;
 use std::fmt;
@@ -518,13 +518,15 @@ impl Encoder {
 
     #[inline]
     #[allow(deprecated)]
-    pub fn encode<PixelType: Copy + 'static>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+    /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
+    pub fn encode<PixelType: rgb::Pod>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         self.state.encode(image, w, h)
     }
 
     #[inline]
     #[allow(deprecated)]
-    pub fn encode_file<PixelType: Copy + 'static, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+    /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
+    pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         self.state.encode_file(filepath, image, w, h)
     }
 }
@@ -763,7 +765,7 @@ impl State {
     }
 
     #[deprecated(note = "Use Encoder type instead of State")]
-    pub fn encode<PixelType: Copy + 'static>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+    pub fn encode<PixelType: rgb::Pod>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         let image = buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth)?;
         Ok(rustimpl::lodepng_encode(image, w as c_uint, h as c_uint, self)?)
     }
@@ -771,7 +773,7 @@ impl State {
     #[deprecated(note = "Use Encoder type instead of State")]
     #[allow(deprecated)]
     #[inline]
-    pub fn encode_file<PixelType: Copy + 'static, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+    pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = self.encode(image, w, h)?;
         save_file(filepath, buf.as_ref())
     }
@@ -819,7 +821,9 @@ pub enum ChunkPosition {
 }
 
 /// Low-level representation of an image
-pub struct Bitmap<PixelType: Copy + 'static> {
+///
+/// Takes any pixel type, but for safety the type has to be marked as "plain old data"
+pub struct Bitmap<PixelType> {
     /// Raw bitmap memory. Layout depends on color mode and bitdepth used to create it.
     ///
     /// * For RGB/RGBA images one element is one pixel.
@@ -831,7 +835,7 @@ pub struct Bitmap<PixelType: Copy + 'static> {
     pub height: usize,
 }
 
-impl<T: Copy> Bitmap<T> {
+impl<PixelType: rgb::Pod> Bitmap<PixelType> {
     unsafe fn from_buffer(out: *mut u8, w: usize, h: usize) -> Self {
         Self {
             buffer: vec_from_malloced(out as *mut _, w * h),
@@ -841,7 +845,7 @@ impl<T: Copy> Bitmap<T> {
     }
 }
 
-impl<PixelType: Copy + 'static> fmt::Debug for Bitmap<PixelType> {
+impl<PixelType> fmt::Debug for Bitmap<PixelType> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{{} × {} Bitmap}}", self.width, self.height)
     }
@@ -959,7 +963,7 @@ pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Err
     }
 }
 
-fn buffer_for_type<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> Result<&[u8], Error> {
+fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> Result<&[u8], Error> {
     let bytes_per_pixel = bitdepth as usize/8;
     assert!(mem::size_of::<PixelType>() <= 4*bytes_per_pixel, "Implausibly large {}-byte pixel data type", mem::size_of::<PixelType>());
 
@@ -989,20 +993,22 @@ fn buffer_for_type<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: 
 /// * `h`: height of the raw pixel data in pixels.
 /// * `colortype`: the color type of the raw input image. See `ColorType`.
 /// * `bitdepth`: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.
-pub fn encode_memory<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
+///
+/// Takes any pixel type, but for safety the type has to be marked as "plain old data"
+pub fn encode_memory<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
     let image = buffer_for_type(image, w, h, colortype, bitdepth)?;
     Ok(rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)?)
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
 #[inline]
-pub fn encode32<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+pub fn encode32<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
 #[inline]
-pub fn encode24<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+pub fn encode24<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGB, 8)
 }
 
@@ -1010,20 +1016,20 @@ pub fn encode24<PixelType: Copy + 'static>(image: &[PixelType], w: usize, h: usi
 /// Same as the other encode functions, but instead takes a file path as output.
 ///
 /// NOTE: This overwrites existing files without warning!
-pub fn encode_file<PixelType: Copy + 'static, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
+pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = encode_memory(image, w, h, colortype, bitdepth)?;
     save_file(filepath, encoded.as_ref())
 }
 
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
 #[inline]
-pub fn encode32_file<PixelType: Copy + 'static, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode32_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
 #[inline]
-pub fn encode24_file<PixelType: Copy + 'static, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode24_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGB, 8)
 }
 
