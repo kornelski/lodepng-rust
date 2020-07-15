@@ -408,20 +408,14 @@ typedef struct LodePNGInfo
   Don't allocate these text buffers yourself. Use the init/cleanup functions
   correctly and use lodepng_add_text and lodepng_clear_text.
   */
-  size_t text_num; /*the amount of texts in these char** buffers (there may be more texts in itext)*/
-  char** text_keys; /*the keyword of a text chunk (e.g. "Comment")*/
-  char** text_strings; /*the actual text*/
+  size_t text_rust_vec[3]; /*the amount of texts in these char** buffers (there may be more texts in itext)*/
 
   /*
   international text chunks (iTXt)
   Similar to the non-international text chunks, but with additional strings
   "langtags" and "transkeys".
   */
-  size_t itext_num; /*the amount of international texts in this PNG*/
-  char** itext_keys; /*the English keyword of the text chunk (e.g. "Comment")*/
-  char** itext_langtags; /*language tag for this text's language, ISO/IEC 646 string, e.g. ISO 639 language tag*/
-  char** itext_transkeys; /*keyword translated to the international language - UTF-8 string*/
-  char** itext_strings; /*the actual international text - UTF-8 string*/
+  size_t itext_rust_vec[3];
 } LodePNGInfo;
 
 /*init, cleanup and copy functions to use with this struct*/

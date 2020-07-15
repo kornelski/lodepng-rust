@@ -26,7 +26,6 @@ use std::cmp;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use std::marker::PhantomData;
 use std::os::raw::c_void;
 
 pub use crate::ffi::State;
@@ -262,54 +261,33 @@ impl Info {
             time_defined: false, time: Time::new(),
             unknown_chunks_data: [ptr::null_mut(), ptr::null_mut(), ptr::null_mut()],
             unknown_chunks_size: [0, 0, 0],
-            text_num: 0, text_keys: ptr::null_mut(), text_strings: ptr::null_mut(),
-            itext_num: 0, itext_keys: ptr::null_mut(), itext_langtags: ptr::null_mut(),
-            itext_transkeys: ptr::null_mut(), itext_strings: ptr::null_mut(),
+            texts: Vec::new(),
+            itexts: Vec::new(),
             phys_defined: false, phys_x: 0, phys_y: 0, phys_unit: 0,
         }
     }
 
     pub fn text_keys(&self) -> TextKeysIter<'_> {
         TextKeysIter {
-            k: self.text_keys,
-            v: self.text_strings,
-            n: self.text_num,
-            _p: PhantomData,
+            s: &self.texts,
         }
     }
 
     #[deprecated(note="use text_keys")]
-    pub fn text_keys_cstr(&self) -> TextKeysCStrIter<'_> {
-        TextKeysCStrIter {
-            k: self.text_keys,
-            v: self.text_strings,
-            n: self.text_num,
-            _p: PhantomData,
-        }
+    pub fn text_keys_cstr(&self) -> TextKeysIter<'_> {
+        self.text_keys()
     }
 
     pub fn itext_keys(&self) -> ITextKeysIter<'_> {
         ITextKeysIter {
-            k: self.itext_keys,
-            l: self.itext_langtags,
-            t: self.itext_transkeys,
-            s: self.itext_strings,
-            n: self.itext_num,
-            _p: PhantomData,
+            s: &self.itexts,
         }
     }
 
     /// use this to clear the texts again after you filled them in
     pub fn clear_text(&mut self) {
-        unsafe {
-            for i in 0..self.text_num as isize {
-                string_cleanup(&mut *self.text_keys.offset(i));
-                string_cleanup(&mut *self.text_strings.offset(i));
-            }
-            lodepng_free(self.text_keys as *mut _);
-            lodepng_free(self.text_strings as *mut _);
-            self.text_num = 0;
-        }
+        self.texts = Vec::new();
+        self.itexts = Vec::new();
     }
 
     /// push back both texts at once
@@ -319,23 +297,7 @@ impl Info {
 
     /// use this to clear the itexts again after you filled them in
     pub fn clear_itext(&mut self) {
-        unsafe {
-            for i in 0..self.itext_num as isize {
-                string_cleanup(&mut *self.itext_keys.offset(i));
-                string_cleanup(&mut *self.itext_langtags.offset(i));
-                string_cleanup(&mut *self.itext_transkeys.offset(i));
-                string_cleanup(&mut *self.itext_strings.offset(i));
-            }
-            lodepng_free(self.itext_keys as *mut _);
-            lodepng_free(self.itext_langtags as *mut _);
-            lodepng_free(self.itext_transkeys as *mut _);
-            lodepng_free(self.itext_strings as *mut _);
-        }
-        self.itext_keys = ptr::null_mut();
-        self.itext_langtags = ptr::null_mut();
-        self.itext_transkeys = ptr::null_mut();
-        self.itext_strings = ptr::null_mut();
-        self.itext_num = 0;
+        self.itexts = Vec::new();
     }
 
     /// push back the 4 texts of 1 chunk at once
@@ -419,14 +381,8 @@ impl Clone for Info {
             background_r: self.background_r,
             background_g: self.background_g,
             background_b: self.background_b,
-            text_num: 0,
-            text_keys: ptr::null_mut(),
-            text_strings: ptr::null_mut(),
-            itext_num: 0,
-            itext_keys: ptr::null_mut(),
-            itext_langtags: ptr::null_mut(),
-            itext_transkeys: ptr::null_mut(),
-            itext_strings: ptr::null_mut(),
+            texts: self.texts.clone(),
+            itexts: self.itexts.clone(),
             time_defined: self.time_defined,
             time: self.time,
             phys_defined: self.phys_defined,
@@ -436,8 +392,6 @@ impl Clone for Info {
             unknown_chunks_data: [ptr::null_mut(), ptr::null_mut(), ptr::null_mut()],
             unknown_chunks_size: [0, 0, 0],
         };
-        rustimpl::text_copy(&mut dest, self).unwrap();
-        rustimpl::itext_copy(&mut dest, self).unwrap();
         dest.set_unknown_chunks(self).unwrap();
         dest
     }

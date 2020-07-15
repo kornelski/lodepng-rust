@@ -234,18 +234,26 @@ pub struct Info {
     ///
     ///  A keyword is minimum 1 character and maximum 79 characters long. It's
     ///  discouraged to use a single line length longer than 79 characters for texts.
-    pub(crate) text_num: usize,
-    pub(crate) text_keys: *mut *mut c_char,
-    pub(crate) text_strings: *mut *mut c_char,
+    pub(crate) texts: Vec<LatinText>,
 
     ///  international text chunks (iTXt)
     ///  Similar to the non-international text chunks, but with additional strings
     ///  "langtags" and "transkeys".
-    pub(crate) itext_num: usize,
-    pub(crate) itext_keys: *mut *mut c_char,
-    pub(crate) itext_langtags: *mut *mut c_char,
-    pub(crate) itext_transkeys: *mut *mut c_char,
-    pub(crate) itext_strings: *mut *mut c_char,
+    pub(crate) itexts: Vec<IntlText>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct LatinText {
+    pub(crate) key: Box<[u8]>,
+    pub(crate) value: Box<[u8]>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct IntlText {
+    pub(crate) key: Box<str>,
+    pub(crate) langtag: Box<str>,
+    pub(crate) transkey: Box<str>,
+    pub(crate) value: Box<str>,
 }
 
 /// Settings for the decoder. This contains settings for the PNG and the Zlib decoder, but not the `Info` settings from the `Info` structs.

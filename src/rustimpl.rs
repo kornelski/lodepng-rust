@@ -13,6 +13,8 @@
 #![cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
 
 
+use crate::ffi::IntlText;
+use crate::ffi::LatinText;
 use super::*;
 use crate::ffi::ColorProfile;
 use crate::ffi::State;
@@ -23,11 +25,9 @@ pub use rgb::RGBA8 as RGBA;
 use std::collections::HashMap;
 use std::fs;
 use std::io::prelude::*;
-use std::mem;
 use std::num::Wrapping;
 use std::os::raw::*;
 use std::path::*;
-use std::ptr;
 use std::slice;
 
 pub(crate) unsafe fn vec_from_raw(data: *mut u8, len: usize) -> Vec<u8> {
@@ -492,26 +492,6 @@ pub const DISTANCEBASE: [u32; 30] = [
 pub const DISTANCEEXTRA: [u32; 30] = [
     0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, ];
 
-pub(crate) unsafe fn string_cleanup(out: &mut *mut c_char) {
-    lodepng_free((*out) as *mut _);
-    *out = ptr::null_mut();
-}
-
-pub(crate) fn string_copy(inp: &[u8]) -> Result<*mut c_char, Error> {
-    let insize = inp.len();
-    unsafe {
-        let out = lodepng_malloc(insize + 1) as *mut c_char;
-        if out.is_null() {
-            return Err(Error::new(83));
-        }
-        for i in 0..insize {
-            *out.offset(i as isize) = inp[i] as c_char;
-        }
-        *out.offset(insize as isize) = 0;
-        Ok(out)
-    }
-}
-
 #[inline]
 pub(crate) fn lodepng_read32bit_int(buffer: &[u8]) -> u32 {
     ((buffer[0] as u32) << 24) | ((buffer[1] as u32) << 16) | ((buffer[2] as u32) << 8) | buffer[3] as u32
@@ -538,52 +518,23 @@ fn lodepng_add32bit_int(buffer: &mut Vec<u8>, value: u32) {
     add32bit_int(buffer, value);
 }
 
-pub(crate) fn text_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
-    dest.text_keys = ptr::null_mut();
-    dest.text_strings = ptr::null_mut();
-    dest.text_num = 0;
-    for (k, v) in source.text_keys() {
-        dest.push_text(k, v)?;
-    }
-    Ok(())
-}
-
-unsafe fn realloc_extend(array: &mut *mut *mut c_char, len: usize) -> Result<(), Error> {
-    *array = lodepng_realloc((*array) as *mut _, (len + 1) * mem::size_of::<*mut c_char>()) as *mut _;
-    if array.is_null() {
-        return Err(Error::new(83));
-    }
-    *array.offset(len as isize) = ptr::null_mut();
-    Ok(())
-}
-
 impl Info {
-
-    pub(crate) fn push_itext(&mut self, key: &[u8], langtag: &[u8], transkey: &[u8], str: &[u8]) -> Result<(), Error> {
-        unsafe {
-            realloc_extend(&mut self.itext_keys, self.itext_num)?;
-            realloc_extend(&mut self.itext_langtags, self.itext_num)?;
-            realloc_extend(&mut self.itext_transkeys, self.itext_num)?;
-            realloc_extend(&mut self.itext_strings, self.itext_num)?;
-            let n = self.itext_num as isize;
-            self.itext_num += 1;
-            *self.itext_keys.offset(n) = string_copy(key)?;
-            *self.itext_langtags.offset(n) = string_copy(langtag)?;
-            *self.itext_transkeys.offset(n) = string_copy(transkey)?;
-            *self.itext_strings.offset(n) = string_copy(str)?;
-        }
+    /// It's supposed to be in UTF-8, but trusting chunk data to be valid would be naive
+    pub(crate) fn push_itext(&mut self, key: &[u8], langtag: &[u8], transkey: &[u8], value: &[u8]) -> Result<(), Error> {
+        self.itexts.push(IntlText {
+            key: String::from_utf8_lossy(key).into_owned().into(),
+            langtag: String::from_utf8_lossy(langtag).into_owned().into(),
+            transkey: String::from_utf8_lossy(transkey).into_owned().into(),
+            value: String::from_utf8_lossy(value).into_owned().into(),
+        });
         Ok(())
     }
 
     pub(crate) fn push_text(&mut self, k: &[u8], v: &[u8]) -> Result<(), Error> {
-        unsafe {
-            realloc_extend(&mut self.text_keys, self.text_num)?;
-            realloc_extend(&mut self.text_strings, self.text_num)?;
-            let n = self.text_num as isize;
-            self.text_num += 1;
-            *self.text_keys.offset(n) = string_copy(k)?;
-            *self.text_strings.offset(n) = string_copy(v)?;
-        }
+        self.texts.push(LatinText {
+            key: k.into(),
+            value: v.into(),
+        });
         Ok(())
     }
 
@@ -609,21 +560,6 @@ impl Info {
             Some(slice::from_raw_parts(self.unknown_chunks_data[set], self.unknown_chunks_size[set]))
         }
     }
-}
-
-pub(crate) fn itext_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
-    dest.itext_keys = ptr::null_mut();
-    dest.itext_langtags = ptr::null_mut();
-    dest.itext_transkeys = ptr::null_mut();
-    dest.itext_strings = ptr::null_mut();
-    dest.itext_num = 0;
-    for (k,l,t,s) in source.itext_keys() {
-        dest.push_itext(k.as_bytes(),
-            l.as_bytes(),
-            t.as_bytes(),
-            s.as_bytes())?;
-    }
-    Ok(())
 }
 
 fn add_color_bits(out: &mut [u8], index: usize, bits: u32, mut inp: u32) {
@@ -1329,7 +1265,8 @@ fn add_chunk_text(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8]) -> Resul
     if keyword.is_empty() || keyword.len() > 79 {
         return Err(Error::new(89));
     }
-    let mut text = Vec::from(keyword);
+    let mut text = Vec::with_capacity(keyword.len()+1+textstring.len());
+    text.extend_from_slice(keyword);
     text.push(0);
     text.extend_from_slice(textstring);
     add_chunk(out, b"tEXt", &text)
@@ -1339,10 +1276,11 @@ fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8], zlibsett
     if keyword.is_empty() || keyword.len() > 79 {
         return Err(Error::new(89));
     }
-    let mut data = Vec::from(keyword);
-    data.push(0u8);
-    data.push(0u8);
     let v = zlib_compress(textstring, zlibsettings)?;
+    let mut data = Vec::with_capacity(keyword.len()+2+v.len());
+    data.extend_from_slice(keyword);
+    data.push(0u8);
+    data.push(0u8);
     data.extend_from_slice(&v);
     add_chunk(out, b"zTXt", &data)?;
     Ok(())
@@ -3273,22 +3211,21 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     if info.time_defined {
         add_chunk_time(&mut outv, &info.time)?;
     }
-    for (t, v) in info.text_keys() {
-        if t.len() > 79 {
+    for t in info.texts.iter() {
+        if t.key.len() > 79 {
             return Err(Error::new(66));
         }
-        if t.is_empty() {
+        if t.key.is_empty() {
             return Err(Error::new(67));
         }
         if state.encoder.text_compression {
-            add_chunk_ztxt(&mut outv, t, v, &state.encoder.zlibsettings)?;
+            add_chunk_ztxt(&mut outv, &t.key, &t.value, &state.encoder.zlibsettings)?;
         } else {
-            add_chunk_text(&mut outv, t, v)?;
+            add_chunk_text(&mut outv, &t.key, &t.value)?;
         }
     }
     if state.encoder.add_id {
-        let alread_added_id_text = info.text_keys()
-            .any(|(t, _)| t == b"LodePNG");
+        let alread_added_id_text = info.texts.iter().any(|t| *t.key == b"LodePNG"[..]);
         if !alread_added_id_text {
             /*it's shorter as tEXt than as zTXt chunk*/
             add_chunk_text(&mut outv, b"LodePNG", LODEPNG_VERSION_STRING)?;
