@@ -399,9 +399,10 @@ pub unsafe extern "C" fn lodepng_state_init(state: *mut State) {
 }
 
 #[no_mangle]
+#[allow(deprecated)]
 pub unsafe extern "C" fn lodepng_state_cleanup(state: &mut State) {
-    let mut hack = mem::zeroed();
-    ptr::swap(&mut hack, state);
+    // relies on the fact that empty State doesn't have any heap allocations
+    *state = State::new();
 }
 
 #[no_mangle]
@@ -701,8 +702,8 @@ pub unsafe extern "C" fn lodepng_info_init(info: *mut Info) {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_info_cleanup(info: &mut Info) {
-    let mut hack = mem::zeroed();
-    ptr::swap(&mut hack, info);
+    // relies on the fact that empty Info doesn't have any heap allocations
+    *info = Info::new();
 }
 
 #[no_mangle]
