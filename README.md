@@ -2,8 +2,7 @@
 
 This is a pure Rust PNG image decoder and encoder. Allows easy reading and writing of PNG files without any system dependencies.
 
-The easiest way to use LodePNG is to include the [lodepng crate](https://lib.rs/crates/lodepng).
-To do so, add this to your `Cargo.toml`:
+To use the [lodepng crate](https://lib.rs/crates/lodepng), add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -39,12 +38,12 @@ let bytes: &[u8] = image.buffer.as_bytes();
 lodepng::encode32_file("out.png", &buffer, width, height)
 ```
 
-The buffer can be a slice of any type as long as it has 4 bytes per element (e.g. `struct RGBA` or `(u8,u8,u8,u8)`).
+The buffer can be a slice of any type as long as it has 4 bytes per element (e.g. `struct RGBA` or `[u8; 4]`).
 
 ### Advanced
 
 ```rust
-let mut state = lodepng::State::new();
+let mut state = lodepng::Decoder::new();
 state.remember_unknown_chunks(true);
 
 match state.decode("in.png") {
@@ -64,6 +63,8 @@ for chunk in state.info_png().unknown_chunks() {
 let icc_data = state.info_png().get_icc();
 ```
 
+See [load_image](https://lib.rs/load_image) crate for an example how to use lodepng with color profiles.
+
 ## Upgrading from 2.x
 
 * C FFI still exists, but is no longer ABI-compatible with the original C lodepng due to layout changes in structs.
@@ -80,7 +81,6 @@ let icc_data = state.info_png().get_icc();
 * `bitdepth` has a getter/setter.
 * There is no C any more!
 
-## Origin of Rust version
+## Origin of the Rust version
 
 This codebase is derived from [C LodePNG](https://lodev.org/lodepng/) by Lode Vandevenne. It has been converted to Rust using [Citrus C to Rust converter](https://gitlab.com/citrus-rs/citrus) and manual refactorings.
-
