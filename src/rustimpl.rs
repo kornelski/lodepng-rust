@@ -21,7 +21,6 @@ use crate::ChunkPosition;
 
 pub use rgb::RGBA8 as RGBA;
 use std::collections::HashMap;
-use std::ffi::CStr;
 use std::fs;
 use std::io::prelude::*;
 use std::mem;
@@ -543,8 +542,8 @@ pub(crate) fn text_copy(dest: &mut Info, source: &Info) -> Result<(), Error> {
     dest.text_keys = ptr::null_mut();
     dest.text_strings = ptr::null_mut();
     dest.text_num = 0;
-    for (k, v) in source.text_keys_cstr() {
-        dest.push_text(k.to_bytes(), v.to_bytes())?;
+    for (k, v) in source.text_keys() {
+        dest.push_text(k, v)?;
     }
     Ok(())
 }
@@ -1326,22 +1325,23 @@ fn add_chunk_iend(out: &mut Vec<u8>) -> Result<(), Error> {
     add_chunk(out, b"IEND", &[])
 }
 
-fn add_chunk_text(out: &mut Vec<u8>, keyword: &CStr, textstring: &CStr) -> Result<(), Error> {
-    if keyword.to_bytes().is_empty() || keyword.to_bytes().len() > 79 {
+fn add_chunk_text(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8]) -> Result<(), Error> {
+    if keyword.is_empty() || keyword.len() > 79 {
         return Err(Error::new(89));
     }
-    let mut text = Vec::from(keyword.to_bytes_with_nul());
-    text.extend_from_slice(textstring.to_bytes());
+    let mut text = Vec::from(keyword);
+    text.push(0);
+    text.extend_from_slice(textstring);
     add_chunk(out, b"tEXt", &text)
 }
 
-fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &CStr, textstring: &CStr, zlibsettings: &CompressSettings) -> Result<(), Error> {
-    if keyword.to_bytes().is_empty() || keyword.to_bytes().len() > 79 {
+fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8], zlibsettings: &CompressSettings) -> Result<(), Error> {
+    if keyword.is_empty() || keyword.len() > 79 {
         return Err(Error::new(89));
     }
-    let mut data = Vec::from(keyword.to_bytes_with_nul());
+    let mut data = Vec::from(keyword);
     data.push(0u8);
-    let textstring = textstring.to_bytes();
+    data.push(0u8);
     let v = zlib_compress(textstring, zlibsettings)?;
     data.extend_from_slice(&v);
     add_chunk(out, b"zTXt", &data)?;
@@ -3273,11 +3273,11 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     if info.time_defined {
         add_chunk_time(&mut outv, &info.time)?;
     }
-    for (t, v) in info.text_keys_cstr() {
-        if t.to_bytes().len() > 79 {
+    for (t, v) in info.text_keys() {
+        if t.len() > 79 {
             return Err(Error::new(66));
         }
-        if t.to_bytes().is_empty() {
+        if t.is_empty() {
             return Err(Error::new(67));
         }
         if state.encoder.text_compression {
@@ -3287,13 +3287,11 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
         }
     }
     if state.encoder.add_id {
-        let alread_added_id_text = info.text_keys_cstr()
-            .any(|(t, _)| t.to_str().unwrap_or("") == "LodePNG");
+        let alread_added_id_text = info.text_keys()
+            .any(|(t, _)| t == b"LodePNG");
         if !alread_added_id_text {
             /*it's shorter as tEXt than as zTXt chunk*/
-            let l = CStr::from_bytes_with_nul(b"LodePNG\0").unwrap();
-            let v = CStr::from_bytes_with_nul(LODEPNG_VERSION_STRING).unwrap();
-            add_chunk_text(&mut outv, l, v)?;
+            add_chunk_text(&mut outv, b"LodePNG", LODEPNG_VERSION_STRING)?;
         }
     }
     for (k, l, t, s) in info.itext_keys() {

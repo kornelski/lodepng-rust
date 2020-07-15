@@ -269,6 +269,16 @@ impl Info {
         }
     }
 
+    pub fn text_keys(&self) -> TextKeysIter<'_> {
+        TextKeysIter {
+            k: self.text_keys,
+            v: self.text_strings,
+            n: self.text_num,
+            _p: PhantomData,
+        }
+    }
+
+    #[deprecated(note="use text_keys")]
     pub fn text_keys_cstr(&self) -> TextKeysCStrIter<'_> {
         TextKeysCStrIter {
             k: self.text_keys,

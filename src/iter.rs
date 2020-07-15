@@ -30,6 +30,31 @@ impl<'a> Iterator for TextKeysCStrIter<'a> {
     }
 }
 
+pub struct TextKeysIter<'a> {
+    pub(crate) k: *mut *mut c_char,
+    pub(crate) v: *mut *mut c_char,
+    pub(crate) n: usize,
+    pub(crate) _p: PhantomData<&'a [u8]>,
+}
+
+impl<'a> Iterator for TextKeysIter<'a> {
+    type Item = (&'a [u8], &'a [u8]);
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.n > 0 {
+            unsafe {
+                debug_assert!(!(*self.k).is_null()); let k = CStr::from_ptr(*self.k).to_bytes();
+                debug_assert!(!(*self.v).is_null()); let v = CStr::from_ptr(*self.v).to_bytes();
+                self.n -= 1;
+                self.k = self.k.offset(1);
+                self.v = self.v.offset(1);
+                Some((k, v))
+            }
+        } else {
+            None
+        }
+    }
+}
+
 pub struct ITextKeysIter<'a> {
     pub(crate) k: *mut *mut c_char,
     pub(crate) l: *mut *mut c_char,
