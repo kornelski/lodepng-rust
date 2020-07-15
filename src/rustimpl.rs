@@ -3207,7 +3207,7 @@ fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
     Ok(())
 }
 
-pub const LODEPNG_VERSION_STRING: &[u8] = b"20161127\0";
+pub const LODEPNG_VERSION_STRING: &[u8] = b"20161127-Rust-3.0\0";
 
 pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result<Vec<u8>, Error> {
     let w = w as usize;
