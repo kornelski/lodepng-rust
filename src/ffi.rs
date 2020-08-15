@@ -121,7 +121,6 @@ pub type custom_decompress_callback = Option<fn(input: &[u8], output: &mut dyn i
 #[repr(C)]
 #[derive(Clone)]
 pub struct DecompressSettings {
-    pub(crate) ignore_adler32: bool,
     pub(crate) custom_zlib: custom_decompress_callback,
     pub(crate) custom_inflate: custom_decompress_callback,
     pub(crate) custom_context: *const c_void,
@@ -130,7 +129,6 @@ pub struct DecompressSettings {
 impl fmt::Debug for DecompressSettings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = f.debug_struct("DecompressSettings");
-        s.field("ignore_adler32", &self.ignore_adler32);
         s.field("custom_zlib", &self.custom_zlib.is_some());
         s.field("custom_inflate", &self.custom_inflate.is_some());
         s.field("custom_context", &self.custom_context);
@@ -654,18 +652,13 @@ pub unsafe extern "C" fn lodepng_color_mode_copy(dest: *mut ColorMode, source: &
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_inflate(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, settings: &DecompressSettings) -> ErrorCode {
-    to_vec(out, outsize, rustimpl::lodepng_inflatev(slice::from_raw_parts(inp, insize), settings))
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn lodepng_deflate(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, settings: &CompressSettings) -> ErrorCode {
     to_vec(out, outsize, rustimpl::lodepng_deflatev(slice::from_raw_parts(inp, insize), settings))
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn lodepng_zlib_decompress(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, settings: &DecompressSettings) -> ErrorCode {
-    to_vec(out, outsize, rustimpl::lodepng_zlib_decompress(slice::from_raw_parts(inp, insize), settings))
+pub unsafe extern "C" fn lodepng_zlib_decompress(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, _: &DecompressSettings) -> ErrorCode {
+    to_vec(out, outsize, rustimpl::lodepng_zlib_decompress(slice::from_raw_parts(inp, insize)))
 }
 
 #[no_mangle]
@@ -882,7 +875,6 @@ pub static lodepng_default_compress_settings: CompressSettings = CompressSetting
 
 #[no_mangle]
 pub static lodepng_default_decompress_settings: DecompressSettings = DecompressSettings {
-    ignore_adler32: false,
     custom_zlib: None,
     custom_inflate: None,
     custom_context: 0usize as *mut _,

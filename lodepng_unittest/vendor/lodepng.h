@@ -212,8 +212,6 @@ extern "C" const char* lodepng_error_text(unsigned code);
 typedef struct LodePNGDecompressSettings LodePNGDecompressSettings;
 struct LodePNGDecompressSettings
 {
-  bool ignore_adler32; /*if 1, continue and don't give an error message if the Adler32 checksum is corrupted*/
-
   /*use custom zlib decoder instead of built in one (default: null)*/
   void *custom_zlib_rust_abi_callback;
   /*use custom deflate decoder instead of built in one (default: null)

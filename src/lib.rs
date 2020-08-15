@@ -674,7 +674,7 @@ impl State {
                 if iccp.get(i+1).cloned().unwrap_or(255) != 0 { // compression type
                     return Err(Error::new(72));
                 }
-                return zlib_decompress(&iccp[i+2 ..], &self.decoder.zlibsettings);
+                return lodepng_zlib_decompress(&iccp[i+2 ..]);
             }
         }
         Err(Error::new(75))
@@ -1104,10 +1104,6 @@ impl<'a> ChunkRefMut<'a> {
     }
 }
 
-fn zlib_decompress(input: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
-    Ok(rustimpl::lodepng_zlib_decompress(input, settings)?)
-}
-
 impl CompressSettings {
     /// Default compression settings
     pub fn new() -> CompressSettings {
@@ -1140,7 +1136,6 @@ impl DecompressSettings {
 impl Default for DecompressSettings {
     fn default() -> Self {
         Self {
-            ignore_adler32: false,
             custom_zlib: None,
             custom_inflate: None,
             custom_context: ptr::null_mut(),

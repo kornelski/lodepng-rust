@@ -19,6 +19,7 @@ travis-ci = { repository = "kornelski/lodepng-rust" }
 [dependencies]
 libc = "0.2.71"
 rgb = { version = "0.8.20", features = ["as-bytes"] }
+flate2 = "1.0.16"
 
 [workspace]
 members = ["lodepng_unittest"]

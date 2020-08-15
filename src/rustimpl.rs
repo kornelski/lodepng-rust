@@ -1634,31 +1634,11 @@ fn add_bits_to_stream(bitpointer: &mut usize, bitstream: &mut Vec<u8>, value: u3
     }
 }
 
-fn read_bit_from_stream(bitpointer: &mut usize, bitstream: &[u8]) -> u8 {
-    let result = ((bitstream[*bitpointer >> 3] >> (*bitpointer & 7)) & 1u8) as u8;
-    *bitpointer += 1;
-    result
-}
-
-fn read_bits_from_stream(bitpointer: &mut usize, bitstream: &[u8], nbits: usize) -> u32 {
-    let mut result = 0;
-    for i in 0..nbits {
-        result += (((bitstream[*bitpointer >> 3] >> (*bitpointer & 7)) & 1u8) as u32) << i;
-        *bitpointer += 1;
-    }
-    result
-}
-
 const NUM_DISTANCE_SYMBOLS: usize = 32;
 /*get the distance code tree of a deflated block with fixed tree, as specified in the deflate specification*/
 fn generate_fixed_distance_tree() -> Result<HuffmanTree, Error> {
     let bitlen = vec![5; NUM_DISTANCE_SYMBOLS];
     HuffmanTree::from_lengths(&bitlen, 15)
-}
-
-/*get the tree of a deflated block with fixed tree, as specified in the deflate specification*/
-fn get_tree_inflate_fixed() -> Result<(HuffmanTree, HuffmanTree), Error> {
-    Ok((generate_fixed_lit_len_tree()?, generate_fixed_distance_tree()?))
 }
 
 pub const NUM_CODE_LENGTH_CODES: usize = 19;
@@ -1669,244 +1649,7 @@ pub const CLCL_ORDER: [u32; 19] = [
 ];
 pub const NUM_DEFLATE_CODE_SYMBOLS: usize = 288;
 pub const FIRST_LENGTH_CODE_INDEX: u32 = 257;
-pub const LAST_LENGTH_CODE_INDEX: u32 = 285;
 
-fn inflate_huffman_block(out: &mut Vec<u8>, inp: &[u8], bp: &mut usize, pos: &mut usize, btype: u32) -> Result<(), Error> {
-    let (ref mut tree_ll, ref mut tree_d) = if btype == 1 {
-        get_tree_inflate_fixed()?
-    } else {
-        assert_eq!(2, btype);
-        get_tree_inflate_dynamic(inp, bp)?
-    };
-    loop {
-        match tree_ll.decode_symbol(inp, bp) {
-            Some(code_ll @ 0..=255) => {
-                out.push(code_ll as u8);
-                (*pos) += 1;
-            },
-            Some(code_ll @ FIRST_LENGTH_CODE_INDEX..=LAST_LENGTH_CODE_INDEX) => {
-                let numextrabits_d; /*part 2: get extra bits and add the value of that to length*/
-                let mut length: usize = LENGTHBASE[(code_ll - FIRST_LENGTH_CODE_INDEX) as usize] as usize;
-                let numextrabits_l = LENGTHEXTRA[(code_ll - FIRST_LENGTH_CODE_INDEX) as usize] as usize;
-                let inbitlength = inp.len() * 8;
-                if (*bp + numextrabits_l) > inbitlength {
-                    return Err(Error::new(51));
-                }
-                /*error, bit pointer will jump past memory*/
-                length += read_bits_from_stream(bp, inp, numextrabits_l) as usize; /*part 3: get distance code*/
-                /*return error code 10 or 11 depending on the situation that happened in decode_symbol
-                              (10=no endcode, 11=wrong jump outside of tree)*/
-                let code_d = tree_d.decode_symbol(inp, bp).ok_or_else(|| Error::new(if (*bp) > inp.len() * 8 { 10 } else { 11 }))?;
-                if code_d > 29 {
-                    /*error: invalid distance code (30-31 are never used)*/
-                    return Err(Error::new(18)); /*part 4: get extra bits from distance*/
-                }
-                let mut distance = DISTANCEBASE[code_d as usize] as usize;
-                numextrabits_d = DISTANCEEXTRA[code_d as usize] as usize;
-                let inbitlength = inp.len() * 8;
-                if (*bp + numextrabits_d) > inbitlength {
-                    return Err(Error::new(51));
-                }
-                /*error, bit pointer will jump past memory*/
-                distance += read_bits_from_stream(bp, inp, numextrabits_d) as usize; /*part 5: fill in all the out[n] values based on the length and dist*/
-                let start = *pos; /*too long backward distance*/
-                if distance > start {
-                    return Err(Error::new(52));
-                }
-                let mut backward = start - distance;
-                unsafe {
-                    out.reserve(length);
-                    out.set_len((*pos) + length);
-                }
-                let out_data = &mut out[..];
-                if distance < length {
-                    for _ in 0..length {
-                        out_data[*pos] = out_data[backward];
-                        backward += 1;
-                        (*pos) += 1;
-                    }
-                } else {
-                    let (src, dest) = out_data.split_at_mut(*pos);
-                    let dest = &mut dest[0..length];
-                    let src = &src[backward..backward + length];
-                    dest.clone_from_slice(src);
-                    *pos += length;
-                }
-            },
-            Some(256) => {
-                break;
-            },
-            _ => {
-                /*return error code 10 or 11 depending on the situation that happened in decode_symbol
-                      (10=no endcode, 11=wrong jump outside of tree)*/
-                return Err(Error::new(if (*bp) > inp.len() * 8 { 10 } else { 11 }));
-            },
-        }
-    }
-    Ok(())
-}
-
-fn inflate_no_compression(out: &mut Vec<u8>, inp: &[u8], bp: &mut usize, pos: &mut usize) -> Result<(), Error> {
-    /*go to first boundary of byte*/
-    while ((*bp) & 7) != 0 {
-        (*bp) += 1; /*byte position*/
-    }
-    let mut p = (*bp) / 8;
-    /*read LEN (2 bytes) and nlen (2 bytes)*/
-    if p + 4 >= inp.len() {
-        return Err(Error::new(52)); /*error, bit pointer will jump past memory*/
-    }
-    let len = inp[p] as usize + 256 * inp[p + 1] as usize;
-    p += 2;
-    let nlen = inp[p] as usize + 256 * inp[p + 1] as usize;
-    p += 2;
-    /*check if 16-bit nlen is really the one's complement of len*/
-    if len + nlen != 65535 {
-        return Err(Error::new(21)); /*error: nlen is not one's complement of len*/
-    }
-    /*read the literal data: len bytes are now stored in the out buffer*/
-    if p + len > inp.len() {
-        return Err(Error::new(23)); /*error: reading outside of in buffer*/
-    }
-    out.extend_from_slice(&inp[p..p + len]);
-    p += len;
-    (*pos) += len;
-    (*bp) = p * 8;
-    Ok(())
-}
-
-fn get_tree_inflate_dynamic(inp: &[u8], bp: &mut usize) -> Result<(HuffmanTree, HuffmanTree), Error> {
-    if (*bp) + 14 > (inp.len() << 3) {
-        return Err(Error::new(49));
-    }
-    let hlit = (read_bits_from_stream(bp, inp, 5) + 257) as usize;
-    let hdist = (read_bits_from_stream(bp, inp, 5) + 1) as usize;
-    let hclen = (read_bits_from_stream(bp, inp, 4) + 4) as usize;
-    if (*bp) + hclen as usize * 3 > (inp.len() << 3) {
-        return Err(Error::new(50));
-    }
-    let mut bitlen_cl = vec![0; NUM_CODE_LENGTH_CODES];
-    for &clcl in CLCL_ORDER.iter().take(hclen) {
-        bitlen_cl[clcl as usize] = read_bits_from_stream(bp, inp, 3);
-    }
-    let tree_cl = HuffmanTree::from_lengths(&bitlen_cl, 7)?;
-    /*now we can use this tree to read the lengths for the tree that this function will return*/
-    let mut bitlen_ll = vec![0; NUM_DEFLATE_CODE_SYMBOLS];
-    let mut bitlen_d = vec![0; NUM_DISTANCE_SYMBOLS];
-
-    /*i is the current symbol we're reading in the part that contains the code lengths of lit/len and dist codes*/
-    let mut i = 0;
-    while i < hlit + hdist {
-        /*repeat previous*/
-        match tree_cl.decode_symbol(inp, bp) {
-            Some(code @ 0..=15) => {
-                if i < hlit {
-                    bitlen_ll[i] = code; /*read in the 2 bits that indicate repeat length (3-6)*/
-                } else {
-                    bitlen_d[i - hlit] = code; /*set value to the previous code*/
-                } /*can't repeat previous if i is 0*/
-                i += 1; /*error, bit pointer jumps past memory*/
-            },
-            Some(16) => {
-                let mut replength = 3; /*repeat this value in the next lengths*/
-                let value; /*error: i is larger than the amount of codes*/
-                if i == 0 {
-                    /*read in the bits that indicate repeat length*/
-                    return Err(Error::new(54)); /*repeat "0" 3-10 times*/
-                } /*error, bit pointer jumps past memory*/
-                let inbitlength = inp.len() * 8;
-                if (*bp + 2) > inbitlength {
-                    /*error: i is larger than the amount of codes*/
-                    return Err(Error::new(50)); /*repeat this value in the next lengths*/
-                } /*repeat "0" 11-138 times*/
-                replength += read_bits_from_stream(bp, inp, 2); /*read in the bits that indicate repeat length*/
-                if i < hlit + 1 {
-                    value = bitlen_ll[i - 1]; /*error, bit pointer jumps past memory*/
-                } else {
-                    value = bitlen_d[i - hlit - 1]; /*repeat this value in the next lengths*/
-                } /*error: i is larger than the amount of codes*/
-                let mut n = 0; /*if(code == (unsigned)(-1))*/
-                while n < replength {
-                    if i >= hlit + hdist {
-                        return Err(Error::new(13));
-                    }
-                    if i < hlit {
-                        bitlen_ll[i] = value;
-                    } else {
-                        bitlen_d[i - hlit] = value;
-                    }
-                    i += 1;
-                    n += 1
-                }
-            },
-            Some(17) => {
-                let mut replength = 3;
-                let inbitlength = inp.len() * 8;
-                if (*bp + 3) > inbitlength {
-                    return Err(Error::new(50));
-                }
-                replength += read_bits_from_stream(bp, inp, 3);
-                let mut n = 0;
-                while n < replength {
-                    if i >= hlit + hdist {
-                        return Err(Error::new(14));
-                    }
-                    if i < hlit {
-                        bitlen_ll[i] = 0;
-                    } else {
-                        bitlen_d[i - hlit] = 0;
-                    }
-                    i += 1;
-                    n += 1
-                }
-            },
-            Some(18) => {
-                let mut replength = 11;
-                let inbitlength = inp.len() * 8;
-                if (*bp + 7) > inbitlength {
-                    return Err(Error::new(50));
-                }
-                replength += read_bits_from_stream(bp, inp, 7);
-                let mut n = 0;
-                while n < replength {
-                    if i >= hlit + hdist {
-                        return Err(Error::new(15));
-                    }
-                    if i < hlit {
-                        bitlen_ll[i] = 0;
-                    } else {
-                        bitlen_d[i - hlit] = 0;
-                    }
-                    i += 1;
-                    n += 1;
-                }
-            },
-            Some(_) => {
-                return Err(Error::new({
-                    /*return error code 10 or 11 depending on the situation that happened in huffman_decode_symbol
-                          (10=no endcode, 11=wrong jump outside of tree)*/
-                    let inbitlength = inp.len() * 8;
-                    if (*bp) > inbitlength {
-                        10
-                    } else {
-                        11
-                    } /*unexisting code, this can never happen*/
-                }));
-            },
-            _ => {
-                return Err(Error::new(16));
-            },
-        };
-    }
-    if bitlen_ll[256] == 0 {
-        return Err(Error::new(64));
-    }
-    /*the length of the end code 256 must be larger than 0*/
-    /*now we've finally got HLIT and HDIST, so generate the code trees, and the function is done*/
-    let tree_ll = HuffmanTree::from_lengths(&bitlen_ll, 15)?;
-    let tree_d = HuffmanTree::from_lengths(&bitlen_d, 15)?;
-    Ok((tree_ll, tree_d))
-}
 
 fn generate_fixed_lit_len_tree() -> Result<HuffmanTree, Error> {
     let mut bitlen = vec![8; NUM_DEFLATE_CODE_SYMBOLS];
@@ -1919,49 +1662,6 @@ fn generate_fixed_lit_len_tree() -> Result<HuffmanTree, Error> {
     }
     HuffmanTree::from_lengths(&bitlen, 15)
 }
-
-/* ////////////////////////////////////////////////////////////////////////// */
-/* / Inflator (Decompressor)                                                / */
-/* ////////////////////////////////////////////////////////////////////////// */
-
-
-pub(crate) fn lodepng_inflatev(inp: &[u8], _settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
-    let mut out = Vec::with_capacity(inp.len() * 3/2);
-    /*bit pointer in the "in" data, current byte is bp >> 3, current bit is bp & 0x7 (from lsb to msb of the byte)*/
-    let mut bp = 0; /*byte position in the out buffer*/
-    let mut bfinal = 0; /*error, bit pointer will jump past memory*/
-    let mut pos = 0; /*error: invalid BTYPE*/
-    while bfinal == 0 {
-        let mut btype: u32;
-        if bp + 2 >= inp.len() * 8 {
-            return Err(Error::new(52));
-        }
-        bfinal = read_bit_from_stream(&mut bp, inp);
-        btype = 1 * read_bit_from_stream(&mut bp, inp) as u32;
-        btype += 2 * read_bit_from_stream(&mut bp, inp) as u32;
-        if btype == 3 {
-            return Err(Error::new(20));
-        } else if btype == 0 {
-            /*no compression*/
-            inflate_no_compression(&mut out, inp, &mut bp, &mut pos)?;
-        } else {
-            /*compression, btype 01 or 10*/
-            inflate_huffman_block(&mut out, inp, &mut bp, &mut pos, btype)?;
-        }
-    }
-    Ok(out)
-}
-
-fn inflate(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
-    if let Some(cb) = settings.custom_inflate {
-        let mut out = Vec::with_capacity(inp.len() * 3/2);
-        (cb)(inp, &mut out, settings)?;
-        Ok(out)
-    } else {
-        lodepng_inflatev(inp, settings)
-    }
-}
-
 
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / Deflator (Compressor)                                                  / */
@@ -2427,7 +2127,9 @@ fn adler32(data: &[u8]) -> u32 {
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / Zlib                                                                   / */
 /* ////////////////////////////////////////////////////////////////////////// */
-pub fn lodepng_zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
+pub fn lodepng_zlib_decompress(inp: &[u8]) -> Result<Vec<u8>, Error> {
+    use flate2::read::ZlibDecoder;
+
     if inp.len() < 2 {
         return Err(Error::new(53));
     }
@@ -2448,15 +2150,10 @@ pub fn lodepng_zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Res
               "The additional flags shall not specify a preset dictionary."*/
         return Err(Error::new(26));
     }
-    let out = inflate(&inp[2..], settings)?;
-    if (! cfg!(fuzzing)) && settings.ignore_adler32 == false {
-        let adler32_val = lodepng_read32bit_int(&inp[(inp.len() - 4)..]);
-        let checksum = adler32(&out);
-        /*error, adler checksum not correct, data must be corrupted*/
-        if checksum != adler32_val {
-            return Err(Error::new(58));
-        };
-    }
+
+    let mut z = ZlibDecoder::new(inp);
+    let mut out = Vec::with_capacity(inp.len()*3/2);
+    z.read_to_end(&mut out).map_err(|_| Error::new(53))?;
     Ok(out)
 }
 
@@ -2466,7 +2163,7 @@ pub fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<
         (cb)(inp, &mut out, settings)?;
         Ok(out)
     } else {
-        lodepng_zlib_decompress(inp, settings)
+        lodepng_zlib_decompress(inp)
     }
 }
 

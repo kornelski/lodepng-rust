@@ -30,33 +30,6 @@ impl HuffmanTree {
         self.lengths[index as usize]
     }
 
-    #[inline]
-    pub fn decode_symbol(&self, inp: &[u8], bp: &mut usize) -> Option<u32> {
-        let inbitlength = inp.len() * 8;
-        let mut treepos = 0;
-        loop {
-            /*error: end of input memory reached without endcode*/
-            if *bp >= inbitlength {
-                return None;
-            }
-            /*
-                decode the symbol from the tree. The "readBitFromStream" code is inlined in
-                the expression below because this is the biggest bottleneck while decoding
-                */
-            let ct = self.tree2d[(treepos << 1) + (((inp[*bp >> 3]) >> (*bp & 7)) & 1u8) as usize]; /*the symbol is decoded, return it*/
-            (*bp) += 1; /*symbol not yet decoded, instead move tree position*/
-            if (ct as usize) < self.numcodes {
-                return Some(ct);
-            } else {
-                treepos = ct as usize - self.numcodes;
-            }
-            if treepos >= self.numcodes {
-                return None;
-            }
-        }
-    }
-
-
     fn new_2d_tree(tree: &mut HuffmanTree) -> Result<(), Error> {
         let mut nodefilled = 0;
         let mut treepos = 0;

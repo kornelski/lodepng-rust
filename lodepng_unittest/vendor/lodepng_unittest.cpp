@@ -1288,7 +1288,6 @@ void testFuzzing()
   unsigned w, h;
   lodepng::State state;
   state.decoder.ignore_crc = 1;
-  state.decoder.zlibsettings.ignore_adler32 = 1;
   for(size_t i = 0; i < png.size(); i++)
   {
     result.clear();
