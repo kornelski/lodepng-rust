@@ -47,6 +47,26 @@ macro_rules! lode_try_state {
     }}
 }
 
+
+unsafe fn vec_from_raw(data: *mut u8, len: usize) -> Vec<u8> {
+    assert!(!data.is_null());
+    slice::from_raw_parts_mut(data, len).to_owned()
+}
+
+fn vec_into_raw(v: Vec<u8>) -> Result<(*mut u8, usize), crate::Error> {
+    unsafe {
+        let len = v.len();
+        let data = lodepng_malloc(len) as *mut u8;
+        if data.is_null() {
+            Err(crate::Error::new(83))
+        } else {
+            slice::from_raw_parts_mut(data, len).clone_from_slice(&v);
+            Ok((data, len))
+        }
+    }
+}
+
+
 #[repr(C)]
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct ErrorCode(pub c_uint);
@@ -204,7 +224,7 @@ pub struct Time {
 
 /// Information about the PNG image, except pixels, width and height
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Info {
     /// interlace method of the original file
     pub interlace_method: u8,
@@ -242,15 +262,14 @@ pub struct Info {
     /// may be 0 (unknown unit) or 1 (metre)
     pub phys_unit: u8,
 
-    /// unknown chunks
     /// There are 3 buffers, one for each position in the PNG where unknown chunks can appear
     /// each buffer contains all unknown chunks for that position consecutively
     /// The 3 buffers are the unknown chunks between certain critical chunks:
     /// 0: IHDR-`PLTE`, 1: `PLTE`-IDAT, 2: IDAT-IEND
-    /// Do not allocate or traverse this data yourself. Use the chunk traversing functions declared
-    /// later, such as lodepng_chunk_next and lodepng_chunk_append, to read/write this struct.
-    pub(crate) unknown_chunks_data: [*mut c_uchar; 3],
-    pub(crate) unknown_chunks_size: [usize; 3],
+    /// Must be boxed for FFI hack.
+    pub(crate) unknown_chunks: [Box<Vec<u8>>; 3],
+    /// Ugly hack for back-compat with C FFI
+    pub(crate) always_zero_for_ffi_hack: [usize; 3],
 
     ///  non-international text chunks (tEXt and zTXt)
     ///
@@ -396,6 +415,7 @@ impl fmt::Debug for ColorProfile {
 }
 
 impl fmt::Debug for CompressSettings {
+    #[allow(deprecated)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = f.debug_struct("CompressSettings");
         s.field("minmatch", &self.minmatch);
@@ -414,7 +434,7 @@ pub unsafe extern "C" fn lodepng_malloc(size: usize) -> *mut c_void {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_realloc(ptr: *mut c_void, size: usize) -> *mut c_void {
-    rustimpl::lodepng_realloc(ptr, size)
+    libc::realloc(ptr as *mut _, size) as *mut _
 }
 
 #[no_mangle]
@@ -557,14 +577,24 @@ pub unsafe extern "C" fn lodepng_add_itext(info: &mut Info, key: *const c_char, 
     lode_error!(info.push_itext(k.to_bytes(), l.to_bytes(), t.to_bytes(), s.to_bytes()))
 }
 
+/// Terrible hack.
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_create(out: &mut *mut u8, outsize: &mut usize, length: c_uint, type_: *const [u8; 4], data: *const u8) -> ErrorCode {
-    let mut v = vec_from_raw(*out, *outsize);
-    let err = lode_error!(rustimpl::add_chunk(&mut v, type_.as_ref().unwrap(), slice::from_raw_parts(data, length as usize)));
-    let (data, size) = lode_try!(vec_into_raw(v));
-    *out = data;
-    *outsize = size;
-    err
+    let data = slice::from_raw_parts(data, length as usize);
+    let type_ = type_.as_ref().unwrap();
+
+    // detect it's our Vec, not malloced buf
+    if *outsize == 0 && !(*out).is_null() {
+        let vec = std::mem::transmute::<&mut *mut u8, &mut &mut Vec<u8>>(out);
+        lode_error!(rustimpl::add_chunk(vec, type_, data))
+    } else {
+        let mut v = vec_from_raw(*out, *outsize);
+        let err = lode_error!(rustimpl::add_chunk(&mut v, type_, data));
+        let (data, size) = lode_try!(vec_into_raw(v));
+        *out = data;
+        *outsize = size;
+        err
+    }
 }
 
 #[no_mangle]

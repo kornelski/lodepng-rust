@@ -26,6 +26,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use std::os::raw::c_void;
+use std::convert::TryInto;
 
 pub use crate::ffi::State;
 pub use crate::ffi::ColorType;
@@ -258,8 +259,8 @@ impl Info {
             interlace_method: 0,
             background_defined: false, background_r: 0, background_g: 0, background_b: 0,
             time_defined: false, time: Time::new(),
-            unknown_chunks_data: [ptr::null_mut(), ptr::null_mut(), ptr::null_mut()],
-            unknown_chunks_size: [0, 0, 0],
+            always_zero_for_ffi_hack: [0, 0, 0],
+            unknown_chunks: [Box::new(Vec::new()), Box::new(Vec::new()), Box::new(Vec::new())],
             texts: Vec::new(),
             itexts: Vec::new(),
             phys_defined: false, phys_x: 0, phys_y: 0, phys_unit: 0,
@@ -310,31 +311,17 @@ impl Info {
     }
 
     pub fn append_chunk(&mut self, position: ChunkPosition, chunk: ChunkRef<'_>) -> Result<(), Error> {
-        let set = position as usize;
-        unsafe {
-            let mut tmp = slice::from_raw_parts_mut(self.unknown_chunks_data[set], self.unknown_chunks_size[set]).to_owned();
-            chunk_append(&mut tmp, chunk.data);
-            let (data, size) = vec_into_raw(tmp)?;
-            self.unknown_chunks_data[set] = data;
-            self.unknown_chunks_size[set] = size;
-        }
+        self.unknown_chunks[position as usize].extend_from_slice(chunk.data);
         Ok(())
     }
 
     pub fn create_chunk<C: AsRef<[u8]>>(&mut self, position: ChunkPosition, chtype: C, data: &[u8]) -> Result<(), Error> {
         let chtype = chtype.as_ref();
-        if chtype.len() != 4 {
-            return Err(Error::new(67));
-        }
-        unsafe {
-            ffi::lodepng_chunk_create(
-                &mut self.unknown_chunks_data[position as usize],
-                &mut self.unknown_chunks_size[position as usize],
-                data.len() as c_uint,
-                chtype.as_ptr() as *const _,
-                data.as_ptr(),
-            ).to_result()
-        }
+        let chtype = match chtype.try_into() {
+            Ok(c) => c,
+            Err(_) => return Err(Error::new(67)),
+        };
+        rustimpl::add_chunk(&mut self.unknown_chunks[position as usize], &chtype, data)
     }
 
     pub fn get<Name: AsRef<[u8]>>(&self, index: Name) -> Option<ChunkRef<'_>> {
@@ -346,53 +333,7 @@ impl Info {
     }
 
     pub fn unknown_chunks(&self, position: ChunkPosition) -> ChunksIter<'_> {
-        ChunksIter::new(unsafe {
-                slice::from_raw_parts(
-                    self.unknown_chunks_data[position as usize],
-                    self.unknown_chunks_size[position as usize])
-        })
-    }
-
-
-    fn set_unknown_chunks(&mut self, src: &Info) -> Result<(), Error> {
-        for i in 0..3 {
-            unsafe {
-                self.unknown_chunks_size[i] = src.unknown_chunks_size[i];
-                self.unknown_chunks_data[i] = lodepng_malloc(src.unknown_chunks_size[i]) as *mut u8;
-                if self.unknown_chunks_data[i].is_null() && self.unknown_chunks_size[i] != 0 {
-                    return Err(Error::new(83));
-                }
-                for j in 0..src.unknown_chunks_size[i] {
-                    *self.unknown_chunks_data[i].offset(j as isize) = *src.unknown_chunks_data[i].offset(j as isize);
-                }
-            }
-        }
-        Ok(())
-    }
-}
-
-impl Clone for Info {
-    fn clone(&self) -> Self {
-        let mut dest = Self {
-            interlace_method: self.interlace_method,
-            color: self.color.clone(),
-            background_defined: self.background_defined,
-            background_r: self.background_r,
-            background_g: self.background_g,
-            background_b: self.background_b,
-            texts: self.texts.clone(),
-            itexts: self.itexts.clone(),
-            time_defined: self.time_defined,
-            time: self.time,
-            phys_defined: self.phys_defined,
-            phys_x: self.phys_x,
-            phys_y: self.phys_y,
-            phys_unit: self.phys_unit,
-            unknown_chunks_data: [ptr::null_mut(), ptr::null_mut(), ptr::null_mut()],
-            unknown_chunks_size: [0, 0, 0],
-        };
-        dest.set_unknown_chunks(self).unwrap();
-        dest
+        ChunksIter::new(&self.unknown_chunks[position as usize])
     }
 }
 

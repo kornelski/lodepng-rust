@@ -28,31 +28,10 @@ use std::os::raw::*;
 use std::path::*;
 use std::slice;
 
-pub(crate) unsafe fn vec_from_raw(data: *mut u8, len: usize) -> Vec<u8> {
-    slice::from_raw_parts_mut(data, len).to_owned()
-}
-
-pub(crate) fn vec_into_raw(v: Vec<u8>) -> Result<(*mut u8, usize), Error> {
-    unsafe {
-        let len = v.len();
-        let data = lodepng_malloc(len) as *mut u8;
-        if data.is_null() {
-            Err(Error::new(83))
-        } else {
-            slice::from_raw_parts_mut(data, len).clone_from_slice(&v);
-            Ok((data, len))
-        }
-    }
-}
-
 pub(crate) fn lodepng_malloc(size: usize) -> *mut c_void {
     unsafe {
         libc::malloc(size) as *mut _
     }
-}
-
-pub(crate) unsafe fn lodepng_realloc(ptr: *mut c_void, size: usize) -> *mut c_void {
-    libc::realloc(ptr as *mut _, size) as *mut _
 }
 
 pub(crate) unsafe fn lodepng_free(ptr: *mut c_void) {
@@ -515,27 +494,10 @@ impl Info {
     }
 
     fn push_unknown_chunk(&mut self, critical_pos: ChunkPosition, chunk: &[u8]) -> Result<(), Error> {
-        let set = critical_pos as usize;
-        unsafe {
-            let mut tmp = vec_from_raw(self.unknown_chunks_data[set], self.unknown_chunks_size[set]);
-            chunk_append(&mut tmp, chunk);
-            let (data, size) = vec_into_raw(tmp)?;
-            self.unknown_chunks_data[set] = data;
-            self.unknown_chunks_size[set] = size;
-        }
+        self.unknown_chunks[critical_pos as usize].extend_from_slice(chunk);
         Ok(())
     }
 
-    #[inline]
-    fn unknown_chunks_data(&self, critical_pos: ChunkPosition) -> Option<&[u8]> {
-        let set = critical_pos as usize;
-        unsafe {
-            if self.unknown_chunks_data[set].is_null() {
-                return None;
-            }
-            Some(slice::from_raw_parts(self.unknown_chunks_data[set], self.unknown_chunks_size[set]))
-        }
-    }
 }
 
 fn add_color_bits(out: &mut [u8], index: usize, bits: u32, mut inp: u32) {
@@ -1697,19 +1659,6 @@ pub fn lodepng_crc32(data: &[u8]) -> u32 {
     r ^ 4294967295
 }
 
-
-impl Drop for Info {
-    fn drop(&mut self) {
-        unsafe {
-            self.clear_text();
-            self.clear_itext();
-            for &i in &self.unknown_chunks_data {
-                lodepng_free(i as *mut _);
-            }
-        }
-    }
-}
-
 pub fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, mode_in: &ColorMode, w: u32, h: u32) -> Result<(), Error> {
     let numpixels = w as usize * h as usize;
     if lodepng_color_mode_equal(mode_out, mode_in) {
@@ -2319,9 +2268,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     write_signature(&mut outv);
 
     add_chunk_ihdr(&mut outv, w, h, info.color.colortype, info.color.bitdepth() as usize, info.interlace_method as u8)?;
-    if let Some(chunks) = info.unknown_chunks_data(ChunkPosition::IHDR) {
-        add_unknown_chunks(&mut outv, chunks)?;
-    }
+    add_unknown_chunks(&mut outv, &info.unknown_chunks[ChunkPosition::IHDR as usize])?;
     if info.color.colortype == ColorType::PALETTE {
         add_chunk_plte(&mut outv, &info.color)?;
     }
@@ -2340,9 +2287,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     if info.phys_defined {
         add_chunk_phys(&mut outv, &info)?;
     }
-    if let Some(chunks) = info.unknown_chunks_data(ChunkPosition::PLTE) {
-        add_unknown_chunks(&mut outv, chunks)?;
-    }
+    add_unknown_chunks(&mut outv, &info.unknown_chunks[ChunkPosition::PLTE as usize])?;
     add_chunk_idat(&mut outv, &data, &state.encoder.zlibsettings)?;
     if info.time_defined {
         add_chunk_time(&mut outv, &info.time)?;
@@ -2376,9 +2321,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
         }
         add_chunk_itxt(&mut outv, state.encoder.text_compression, k, l, t, s, &state.encoder.zlibsettings)?;
     }
-    if let Some(chunks) = info.unknown_chunks_data(ChunkPosition::IDAT) {
-        add_unknown_chunks(&mut outv, chunks)?;
-    }
+    add_unknown_chunks(&mut outv, &info.unknown_chunks[ChunkPosition::IDAT as usize])?;
     add_chunk_iend(&mut outv)?;
     Ok(outv)
 }
