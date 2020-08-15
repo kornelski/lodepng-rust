@@ -71,6 +71,7 @@ See [load_image](https://lib.rs/load_image) crate for an example how to use lode
 * Structs use `bool` where appropriate instead of 0/1 `int`.
 * Custom zlib callbacks use `io::Write` instead of `malloc`-ed buffers (remember to use `write_all`, not `write`!)
 * `ffi::Error` has been renamed to `ffi::ErrorCode`.
+* Compression level is set via `set_level()` function instead of individual `CompressConfig` fields.
 
 ## Upgrading from 1.x
 

@@ -2,7 +2,6 @@
 #![allow(non_upper_case_globals)]
 use crate::ChunkRef;
 use crate::rustimpl::*;
-use crate::huffman;
 use std::ptr;
 use std::mem;
 use std::slice;
@@ -140,17 +139,23 @@ impl fmt::Debug for DecompressSettings {
 #[repr(C)]
 #[derive(Clone)]
 pub struct CompressSettings {
-    /// must be a power of two <= 32768. higher compresses more but is slower. Typical value: 2048.
+    /// Obsolete. No-op.
+    #[deprecated]
     pub windowsize: u32,
-    /// mininum lz77 length. 3 is normally best, 6 can be better for some PNGs. Default: 0
+    /// Compression level 1 (fast) to 9 (best). Use `set_level()` instead.
+    #[deprecated]
     pub minmatch: u16,
-    /// stop searching if >= this length found. Set to 258 for best compression. Default: 128
+    /// Obsolete. No-op.
+    #[deprecated]
     pub nicematch: u16,
-    /// the block type for LZ (0, 1, 2 or 3, see zlib standard). Should be 2 for proper compression.
+    /// Obsolete. No-op.
+    #[deprecated]
     pub btype: u8,
-    /// whether or not to use LZ77. Should be 1 for proper compression.
+    /// If false, it won't compress at all. Use `set_level(0)`
+    #[deprecated]
     pub use_lz77: bool,
-    /// use lazy matching: better compression but a bit slower. Default: true
+    /// Obsolete. No-op.
+    #[deprecated]
     pub lazymatching: bool,
     /// use custom zlib encoder instead of built in one (default: None)
     pub custom_zlib: custom_compress_callback,
@@ -160,6 +165,29 @@ pub struct CompressSettings {
     pub custom_deflate: custom_compress_callback,
     /// optional custom settings for custom functions
     pub custom_context: *const c_void,
+}
+
+impl CompressSettings {
+    /// 0 (none), 1 (fast) to 9 (best)
+    #[allow(deprecated)]
+    pub fn set_level(&mut self, level: u8) {
+        self.use_lz77 = level != 0;
+        self.minmatch = level.into();
+    }
+
+    /// zlib compression level
+    #[allow(deprecated)]
+    pub fn level(&self) -> u8 {
+        if self.use_lz77 {
+            if self.minmatch > 0 && self.minmatch <= 9 {
+            self.minmatch as _
+            } else {
+                7
+            }
+        } else {
+            0
+        }
+    }
 }
 
 /// The information of a `Time` chunk in PNG
@@ -370,12 +398,8 @@ impl fmt::Debug for ColorProfile {
 impl fmt::Debug for CompressSettings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = f.debug_struct("CompressSettings");
-        s.field("btype", &self.btype);
-        s.field("use_lz77", &self.use_lz77);
-        s.field("windowsize", &self.windowsize);
         s.field("minmatch", &self.minmatch);
-        s.field("nicematch", &self.nicematch);
-        s.field("lazymatching", &self.lazymatching);
+        s.field("use_lz77", &self.use_lz77);
         s.field("custom_zlib", &self.custom_zlib.is_some());
         s.field("custom_deflate", &self.custom_deflate.is_some());
         s.field("custom_context", &self.custom_context);
@@ -495,13 +519,6 @@ pub unsafe extern "C" fn lodepng_get_raw_size(w: c_uint, h: c_uint, color: &Colo
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_get_raw_size_lct(w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> usize {
     rustimpl::lodepng_get_raw_size_lct(w, h, colortype, bitdepth)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn lodepng_huffman_code_lengths(lengths: *mut c_uint, frequencies: *const c_uint, numcodes: usize, maxbitlen: c_uint) -> ErrorCode {
-    let l = lode_try!(huffman::huffman_code_lengths(slice::from_raw_parts(frequencies, numcodes), maxbitlen));
-    slice::from_raw_parts_mut(lengths, numcodes).clone_from_slice(&l);
-    ErrorCode(0)
 }
 
 #[no_mangle]
@@ -649,11 +666,6 @@ pub unsafe extern "C" fn lodepng_color_mode_equal(a: &ColorMode, b: &ColorMode) 
 pub unsafe extern "C" fn lodepng_color_mode_copy(dest: *mut ColorMode, source: &ColorMode) -> ErrorCode {
     ptr::write(dest, source.clone());
     ErrorCode(0)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn lodepng_deflate(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, settings: &CompressSettings) -> ErrorCode {
-    to_vec(out, outsize, rustimpl::lodepng_deflatev(slice::from_raw_parts(inp, insize), settings))
 }
 
 #[no_mangle]
@@ -861,13 +873,14 @@ pub unsafe extern "C" fn lodepng_color_profile_init(prof: *mut ColorProfile) {
 }
 
 #[no_mangle]
+#[allow(deprecated)]
 pub static lodepng_default_compress_settings: CompressSettings = CompressSettings {
-    btype: 2,
+    btype: 0,
     use_lz77: true,
-    windowsize: DEFAULT_WINDOWSIZE as _,
-    minmatch: 3,
-    nicematch: 128,
-    lazymatching: true,
+    windowsize: 0,
+    minmatch: 0,
+    nicematch: 0,
+    lazymatching: false,
     custom_zlib: None,
     custom_deflate: None,
     custom_context: 0usize as *mut _,

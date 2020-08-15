@@ -940,54 +940,6 @@ std::vector<unsigned> strtovector(const std::string& numbers)
   return result;
 }
 
-void doTestHuffmanCodeLengths(const std::string& expectedstr, const std::string& counts, size_t bitlength)
-{
-  std::vector<unsigned> expected = strtovector(expectedstr);
-  std::vector<unsigned> count = strtovector(counts);
-  std::cout << "doTestHuffmanCodeLengths: " << counts << std::endl;
-  std::vector<unsigned> result(count.size());
-  unsigned error = lodepng_huffman_code_lengths(&result[0], &count[0], count.size(), bitlength);
-  assertNoPNGError(error, "errorcode");
-  std::stringstream ss1, ss2;
-  for(size_t i = 0; i < count.size(); i++)
-  {
-    ss1 << expected[i] << " ";
-    ss2 << result[i] << " ";
-  }
-  assertEquals(ss1.str(), ss2.str(), "value");
-}
-
-void testHuffmanCodeLengths()
-{
-  bool atleasttwo = true; //LodePNG generates at least two, instead of at least one, symbol
-  if(atleasttwo)
-  {
-    doTestHuffmanCodeLengths("1 1", "0 0", 16);
-    doTestHuffmanCodeLengths("1 1 0", "0 0 0", 16);
-    doTestHuffmanCodeLengths("1 1", "1 0", 16);
-    doTestHuffmanCodeLengths("1 1 0 0 0 0 0 0 0", "0 0 0 0 0 0 0 0 0", 16);
-    doTestHuffmanCodeLengths("1 1 0 0 0 0 0 0 0", "1 0 0 0 0 0 0 0 0", 16);
-    doTestHuffmanCodeLengths("1 1 0 0 0 0 0 0 0", "0 1 0 0 0 0 0 0 0", 16);
-    doTestHuffmanCodeLengths("1 0 0 0 0 0 0 0 1", "0 0 0 0 0 0 0 0 1", 16);
-    doTestHuffmanCodeLengths("0 0 0 0 0 0 0 1 1", "0 0 0 0 0 0 0 1 1", 16);
-  }
-  else
-  {
-    doTestHuffmanCodeLengths("1 0", "0 0", 16);
-    doTestHuffmanCodeLengths("1 0 0", "0 0 0", 16);
-    doTestHuffmanCodeLengths("1 0", "1 0", 16);
-    doTestHuffmanCodeLengths("1", "1", 16);
-    doTestHuffmanCodeLengths("1", "0", 16);
-  }
-  doTestHuffmanCodeLengths("1 1", "1 1", 16);
-  doTestHuffmanCodeLengths("1 1", "1 100", 16);
-  doTestHuffmanCodeLengths("2 2 1", "1 2 3", 16);
-  doTestHuffmanCodeLengths("2 1 2", "2 3 1", 16);
-  doTestHuffmanCodeLengths("1 2 2", "3 1 2", 16);
-  doTestHuffmanCodeLengths("3 3 2 1", "1 30 31 32", 16);
-  doTestHuffmanCodeLengths("2 2 2 2", "1 30 31 32", 2);
-  doTestHuffmanCodeLengths("5 5 4 4 4 3 3 1", "1 2 3 4 5 6 7 500", 16);
-}
 
 /*
 Create a PNG image with all known chunks (except only one of tEXt or zTXt) plus
@@ -1561,28 +1513,6 @@ void testPredefinedFilters() {
   for(size_t i = 0; i < h; i++) ASSERT_EQUALS(3, outfilters[i]);
 }
 
-void testWrongWindowSizeGivesError() {
-  std::vector<unsigned char> png;
-  unsigned w = 32, h = 32;
-  Image image;
-  generateTestImage(image, w, h);
-  unsigned error = 0;
-
-  lodepng::State state;
-  state.encoder.zlibsettings.windowsize = 0;
-  error = lodepng::encode(png, &image.data[0], w, h, state);
-  ASSERT_EQUALS(60, error);
-  state.encoder.zlibsettings.windowsize = 65536;
-  error = lodepng::encode(png, &image.data[0], w, h, state);
-  ASSERT_EQUALS(60, error);
-  state.encoder.zlibsettings.windowsize = 1000; // not power of two
-  error = lodepng::encode(png, &image.data[0], w, h, state);
-  ASSERT_EQUALS(90, error);
-  state.encoder.zlibsettings.windowsize = 256;
-  error = lodepng::encode(png, &image.data[0], w, h, state);
-  ASSERT_EQUALS(0, error);
-}
-
 void addColor(std::vector<unsigned char>& colors, unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
   colors.push_back(r);
@@ -1872,7 +1802,6 @@ extern "C" int lode_unittest_main1() {
 extern "C" int lode_unittest_main2() {
   try {
     testPredefinedFilters();
-    testWrongWindowSizeGivesError();
     testFuzzing();
     testPaletteToPaletteDecode();
     testPaletteToPaletteDecode2();
@@ -1952,7 +1881,6 @@ extern "C" int lode_unittest_main9() {
   try {
     //Zlib
     testCompressZlib();
-    testHuffmanCodeLengths();
 
     //lodepng_util
     testChunkUtil();

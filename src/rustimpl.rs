@@ -18,14 +18,12 @@ use crate::ffi::LatinText;
 use super::*;
 use crate::ffi::ColorProfile;
 use crate::ffi::State;
-use crate::huffman::HuffmanTree;
 use crate::ChunkPosition;
 
 pub use rgb::RGBA8 as RGBA;
 use std::collections::HashMap;
 use std::fs;
 use std::io::prelude::*;
-use std::num::Wrapping;
 use std::os::raw::*;
 use std::path::*;
 use std::slice;
@@ -318,11 +316,7 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
             let mut smallest = 0;
             let mut best_type = 0;
             let mut zlibsettings = settings.zlibsettings.clone();
-            /*use fixed tree on the attempts so that the tree is not adapted to the filter_type on purpose,
-            to simulate the true case where the tree is the same for the whole image. Sometimes it gives
-            better result with dynamic tree anyway. Using the fixed tree sometimes gives worse, but in rare
-            cases better compression. It does make this a bit less slow, so it's worth doing this.*/
-            zlibsettings.btype = 1;
+            zlibsettings.set_level(1);
             /*a custom encoder likely doesn't read the btype setting and is optimized for complete PNG
             images only, so disable it*/
             zlibsettings.custom_zlib = None;
@@ -473,24 +467,6 @@ pub fn lodepng_get_raw_size_lct(w: u32, h: u32, colortype: ColorType, bitdepth: 
     ((n / 8) * bpp) + ((n & 7) * bpp + 7) / 8
 }
 
-/* ////////////////////////////////////////////////////////////////////////// */
-/* / Deflate - Huffman                                                      / */
-/* ////////////////////////////////////////////////////////////////////////// */
-/*256 literals, the end code, some length codes, and 2 unused codes*/
-/*the distance codes have their own symbols, 30 used, 2 unused*/
-/*the code length codes. 0-15: code lengths, 16: copy previous 3-6 times, 17: 3-10 zeros, 18: 11-138 zeros*/
-/*the base lengths represented by codes 257-285*/
-pub const LENGTHBASE: [u32; 29] = [
-    3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, ];
-/*the extra bits used by codes 257-285 (added to base length)*/
-pub const LENGTHEXTRA: [u32; 29] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, ];
-/*the base backwards distances (the bits of distance codes appear after length codes and use their own huffman tree)*/
-pub const DISTANCEBASE: [u32; 30] = [
-    1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577, ];
-/*the extra bits of backwards distances (added to base)*/
-pub const DISTANCEEXTRA: [u32; 30] = [
-    0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, ];
 
 #[inline]
 pub(crate) fn lodepng_read32bit_int(buffer: &[u8]) -> u32 {
@@ -1602,527 +1578,6 @@ pub fn lodepng_color_mode_equal(a: &ColorMode, b: &ColorMode) -> bool {
     a.palette() == b.palette()
 }
 
-/* ////////////////////////////////////////////////////////////////////////// */
-/* / Deflator (Compressor)                                                  / */
-/* ////////////////////////////////////////////////////////////////////////// */
-
-const MAX_SUPPORTED_DEFLATE_LENGTH: usize = 258;
-/*bitlen is the size in bits of the code*/
-fn add_huffman_symbol(bp: &mut usize, compressed: &mut Vec<u8>, code: u32, bitlen: u32) {
-    add_bits_to_stream_reversed(bp, compressed, code, bitlen as usize);
-}
-
-fn add_bits_to_stream_reversed(bitpointer: &mut usize, bitstream: &mut Vec<u8>, value: u32, nbits: usize) {
-    for i in 0..nbits {
-        if ((*bitpointer) & 7) == 0 {
-            bitstream.push(0u8);
-        }
-        let end = bitstream.len() - 1;
-        bitstream[end] |= (((value >> (nbits - 1 - i)) & 1) as u8) << ((*bitpointer) & 7);
-        *bitpointer += 1;
-    }
-}
-
-fn add_bits_to_stream(bitpointer: &mut usize, bitstream: &mut Vec<u8>, value: u32, nbits: usize) {
-    for i in 0..nbits {
-        if ((*bitpointer) & 7) == 0 {
-            bitstream.push(0u8);
-        }
-        let end = bitstream.len() - 1;
-        bitstream[end] |= (((value >> i) & 1) as u8) << ((*bitpointer) & 7);
-        *bitpointer += 1;
-    }
-}
-
-const NUM_DISTANCE_SYMBOLS: usize = 32;
-/*get the distance code tree of a deflated block with fixed tree, as specified in the deflate specification*/
-fn generate_fixed_distance_tree() -> Result<HuffmanTree, Error> {
-    let bitlen = vec![5; NUM_DISTANCE_SYMBOLS];
-    HuffmanTree::from_lengths(&bitlen, 15)
-}
-
-pub const NUM_CODE_LENGTH_CODES: usize = 19;
-/*the order in which "code length alphabet code lengths" are stored, out of this
-the huffman tree of the dynamic huffman tree lengths is generated*/
-pub const CLCL_ORDER: [u32; 19] = [
-    16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
-];
-pub const NUM_DEFLATE_CODE_SYMBOLS: usize = 288;
-pub const FIRST_LENGTH_CODE_INDEX: u32 = 257;
-
-
-fn generate_fixed_lit_len_tree() -> Result<HuffmanTree, Error> {
-    let mut bitlen = vec![8; NUM_DEFLATE_CODE_SYMBOLS];
-    /*288 possible codes: 0-255=literals, 256=endcode, 257-285=lengthcodes, 286-287=unused*/
-    for b in &mut bitlen[144..256] {
-        *b = 9;
-    }
-    for b in &mut bitlen[256..280] {
-        *b = 7;
-    }
-    HuffmanTree::from_lengths(&bitlen, 15)
-}
-
-/* ////////////////////////////////////////////////////////////////////////// */
-/* / Deflator (Compressor)                                                  / */
-/* ////////////////////////////////////////////////////////////////////////// */
-
-/*search the index in the array, that has the largest value smaller than or equal to the given value,
-given array must be sorted (if no value is smaller, it returns the size of the given array)*/
-fn search_code_index(array: &[u32], value: u32) -> u32 {
-    let idx = match array.binary_search(&value) {Ok(x) | Err(x) => x};
-    if idx > 0 && array[idx] > value {
-        idx as u32 - 1
-    } else {
-        idx as u32
-    }
-}
-
-/*values in encoded vector are those used by deflate:
-  0-255: literal bytes
-  256: end
-  257-285: length/distance pair (length code, followed by extra length bits, distance code, extra distance bits)
-  286-287: invalid*/
-#[inline]
-fn add_length_distance(values: &mut Vec<u32>, length: u32, distance: u32) {
-    let length_code = search_code_index(&LENGTHBASE, length);
-    let extra_length = length - LENGTHBASE[length_code as usize];
-    let dist_code = search_code_index(&DISTANCEBASE, distance);
-    let extra_distance = distance - DISTANCEBASE[dist_code as usize];
-    values.push(length_code + FIRST_LENGTH_CODE_INDEX);
-    values.push(extra_length);
-    values.push(dist_code);
-    values.push(extra_distance);
-}
-
-pub const HASH_NUM_VALUES: usize = 65536;
-
-struct Hash {
-    pub head: Vec<i32>,
-    pub chain: Vec<u16>,
-    pub val: Vec<i32>,
-    pub headz: Vec<i32>,
-    pub chainz: Vec<u16>,
-    pub zeros: Vec<u16>,
-}
-
-impl Hash {
-    pub fn new(windowsize: usize) -> Result<Self, Error> {
-        let mut hash = Hash {
-            head: vec![-1; HASH_NUM_VALUES],
-            val: vec![-1; windowsize],
-            chain: vec![0; windowsize],
-            chainz: vec![0; windowsize],
-            zeros: vec![0; windowsize],
-            headz: vec![-1; MAX_SUPPORTED_DEFLATE_LENGTH + 1],
-        };
-        /*same value as index indicates uninitialized*/
-        for (i, c) in hash.chain.iter_mut().enumerate() {
-            *c = i as u16;
-        }
-        for (i, c) in hash.chainz.iter_mut().enumerate() {
-            *c = i as u16;
-        }
-        Ok(hash)
-    }
-}
-
-#[inline(always)]
-fn get_hash(data: &[u8], pos: usize) -> u16 {
-    let mut result = 0;
-    if pos + 2 < data.len() {
-        /*A simple shift and xor hash is used. Since the data of PNGs is dominated
-            by zeroes due to the filters, a better hash does not have a significant
-            effect on speed in traversing the chain, and causes more time spend on
-            calculating the hash.*/
-        result ^= (data[pos + 0] as u32) << 0;
-        result ^= (data[pos + 1] as u32) << 4;
-        result ^= (data[pos + 2] as u32) << 8;
-    } else {
-        if pos >= data.len() {
-            return 0;
-        }
-        for i in 0..data.len() - pos {
-            result ^= (Wrapping(data[pos + i]) << (i * 8)).0 as u32
-        }
-    }
-    result as u16
-}
-
-#[inline(always)]
-fn count_zeros(data: &[u8], pos: usize) -> u32 {
-    data[pos..].iter()
-        .take(MAX_SUPPORTED_DEFLATE_LENGTH)
-        .take_while(|&d| *d == 0)
-        .count() as u32
-}
-
-#[inline]
-fn update_hash_chain(hash: &mut Hash, wpos: u32, hashval: u32, numzeros: u16) {
-    hash.val[wpos as usize] = hashval as i32;
-    if hash.head[hashval as usize] != -1 {
-        hash.chain[wpos as usize] = hash.head[hashval as usize] as u16;
-    }
-    hash.head[hashval as usize] = wpos as i32;
-    hash.zeros[wpos as usize] = numzeros;
-    if hash.headz[numzeros as usize] != -1 {
-        hash.chainz[wpos as usize] = hash.headz[numzeros as usize] as u16;
-    }
-    hash.headz[numzeros as usize] = wpos as i32;
-}
-
-fn deflate_no_compression(data: &[u8]) -> Result<Vec<u8>, Error> {
-    /*non compressed deflate block data: 1 bit BFINAL,2 bits BTYPE,(5 bits): it jumps to start of next byte,
-      2 bytes LEN, 2 bytes nlen, LEN bytes literal DATA*/
-    let numdeflateblocks = (data.len() + 65534) / 65535;
-    let mut datapos = 0;
-    let mut out = Vec::with_capacity(data.len()*5/4);
-    for i in 0..numdeflateblocks {
-        let bfinal = (i == numdeflateblocks - 1) as usize;
-        let btype = 0;
-        let firstbyte = (bfinal + ((btype & 1) << 1) + ((btype & 2) << 1)) as u8;
-        out.push(firstbyte);
-        let len = (data.len() - datapos).min(65535);
-        let nlen = 65535 - len;
-        out.push((len & 255) as u8);
-        out.push((len >> 8) as u8);
-        out.push((nlen & 255) as u8);
-        out.push((nlen >> 8) as u8);
-        let mut j = 0;
-        while j < 65535 && datapos < data.len() {
-            out.push(data[datapos]);
-            datapos += 1;
-            j += 1
-        }
-    }
-    Ok(out)
-}
-
-/*
-write the lz77-encoded data, which has lit, len and dist codes, to compressed stream using huffman trees.
-tree_ll: the tree for lit and len codes.
-tree_d: the tree for distance codes.
-*/
-fn write_lz77_data(bp: &mut usize, out: &mut Vec<u8>, lz77_encoded: &[u32], tree_ll: &HuffmanTree, tree_d: &HuffmanTree) {
-    let mut i = 0; /*for a length code, 3 more things have to be added*/
-    while i != lz77_encoded.len() {
-        let val = lz77_encoded[i as usize];
-        add_huffman_symbol(bp, out, tree_ll.code(val), tree_ll.length(val));
-        if val > 256 {
-            let length_index = (val - FIRST_LENGTH_CODE_INDEX as u32) as usize;
-            let n_length_extra_bits = LENGTHEXTRA[length_index] as usize;
-            i += 1;
-            let length_extra_bits = lz77_encoded[i as usize];
-            i += 1;
-            let distance_code = lz77_encoded[i as usize];
-            let distance_index = distance_code as usize;
-            let n_distance_extra_bits = DISTANCEEXTRA[distance_index];
-            i += 1;
-            let distance_extra_bits = lz77_encoded[i as usize];
-            add_bits_to_stream(bp, out, length_extra_bits, n_length_extra_bits);
-            add_huffman_symbol(bp, out, tree_d.code(distance_code), tree_d.length(distance_code));
-            add_bits_to_stream(bp, out, distance_extra_bits, n_distance_extra_bits as usize);
-        };
-        i += 1
-    }
-}
-
-
-fn deflate_dynamic(
-    out: &mut Vec<u8>,
-    bp: &mut usize,
-    hash: &mut Hash,
-    data: &[u8],
-    datapos: usize,
-    dataend: usize,
-    settings: &CompressSettings,
-    bfinal: u32,
-) -> Result<(), Error> {
-    let datasize = dataend - datapos;
-
-    let data = &data[0..dataend]; // not datasize. Truncating the length is important.
-    let lz77_encoded = if settings.use_lz77 {
-        encode_lz77(hash, data, datapos, settings.windowsize, settings.minmatch, settings.nicematch, settings.lazymatching)?
-    } else {
-        let mut t = Vec::with_capacity(datasize);
-        for &d in &data[datapos..dataend] {
-            t.push(d as u32);
-        }
-        t
-    };
-    let mut frequencies_ll = [0; 286];
-    let mut frequencies_d = [0; 30];
-    let mut l = &lz77_encoded[..];
-    while !l.is_empty() {
-        let symbol = l[0];
-        frequencies_ll[symbol as usize] += 1;
-        let skip = if symbol > 256 {
-            let dist = l[2];
-            frequencies_d[dist as usize] += 1;
-            4
-        } else {
-            1
-        };
-        l = &l[skip..];
-    }
-    frequencies_ll[256] = 1;
-    let tree_ll = HuffmanTree::from_frequencies(&frequencies_ll, 257, 15)?;
-    let tree_d = HuffmanTree::from_frequencies(&frequencies_d, 2, 15)?;
-    let numcodes_ll = tree_ll.numcodes.min(286);
-    let numcodes_d = tree_d.numcodes.min(30);
-    let mut bitlen_lld = Vec::with_capacity(256);
-    for i in 0..numcodes_ll {
-        bitlen_lld.push(tree_ll.length(i as u32));
-    }
-    for i in 0..numcodes_d {
-        bitlen_lld.push(tree_d.length(i as u32));
-    }
-    let mut bitlen_lld_e = Vec::with_capacity(256);
-    let mut i = 0;
-    while i < bitlen_lld.len() {
-        let mut j = 0;
-        while i + j + 1 < (bitlen_lld.len()) && bitlen_lld[i + j + 1] == bitlen_lld[i] {
-            j += 1;
-        }
-        if bitlen_lld[i] == 0 && j >= 2 {
-            j += 1;
-            if j <= 10 {
-                bitlen_lld_e.push(17);
-                bitlen_lld_e.push(j as u32 - 3);
-            } else {
-                if j > 138 {
-                    j = 138;
-                }
-                bitlen_lld_e.push(18);
-                bitlen_lld_e.push(j as u32 - 11);
-            }
-            i += j - 1;
-        } else if j >= 3 {
-            let num = j / 6;
-            let rest = j % 6;
-            bitlen_lld_e.push(bitlen_lld[i]);
-            for _ in 0..num {
-                bitlen_lld_e.push(16);
-                bitlen_lld_e.push(6 - 3);
-            }
-            if rest >= 3 {
-                bitlen_lld_e.push(16);
-                bitlen_lld_e.push(rest as u32 - 3);
-            } else {
-                j -= rest;
-            }
-            i += j;
-        } else {
-            bitlen_lld_e.push(bitlen_lld[i]);
-        }
-        i += 1
-    }
-    let mut frequencies_cl = [0; NUM_CODE_LENGTH_CODES];
-    let mut i = 0;
-    while i != bitlen_lld_e.len() {
-        frequencies_cl[bitlen_lld_e[i] as usize] += 1;
-        /*after a repeat code come the bits that specify the number of repetitions,
-                  those don't need to be in the frequencies_cl calculation*/
-        if bitlen_lld_e[i] >= 16 {
-            i += 1;
-        } /*lenghts of code length tree is in the order as specified by deflate*/
-        i += 1
-    }
-
-    let tree_cl = HuffmanTree::from_frequencies(&frequencies_cl, frequencies_cl.len(), 7)?;
-    let mut bitlen_cl = vec![0; tree_cl.numcodes];
-    for i in 0..tree_cl.numcodes {
-        bitlen_cl[i] = tree_cl.length(CLCL_ORDER[i]);
-    }
-    while bitlen_cl[bitlen_cl.len() - 1] == 0 && bitlen_cl.len() > 4 {
-        let s = bitlen_cl.len() - 1;
-        bitlen_cl.resize(s, 0);
-    }
-
-    /*
-        Write everything into the output
-
-        After the BFINAL and btype, the dynamic block consists out of the following:
-        - 5 bits HLIT, 5 bits HDIST, 4 bits HCLEN
-        - (HCLEN+4)*3 bits code lengths of code length alphabet
-        - HLIT + 257 code lenghts of lit/length alphabet (encoded using the code length
-          alphabet, + possible repetition codes 16, 17, 18)
-        - HDIST + 1 code lengths of distance alphabet (encoded using the code length
-          alphabet, + possible repetition codes 16, 17, 18)
-        - compressed data
-        - 256 (end code)
-        */
-    /*Write block type*/
-    if ((*bp) & 7) == 0 {
-        out.push(0); /*first bit of BTYPE "dynamic"*/
-    } /*second bit of BTYPE "dynamic"*/
-    *out.last_mut().unwrap() |= ((bfinal as u32) << ((*bp as u32) & 7)) as u8; /*write the HLIT, HDIST and HCLEN values*/
-    (*bp) += 1; /*trim zeroes for HCLEN. HLIT and HDIST were already trimmed at tree creation*/
-    /*write the code lenghts of the code length alphabet*/
-
-    if ((*bp) & 7) == 0 {
-        out.push(0); /*write the lenghts of the lit/len AND the dist alphabet*/
-    } /*extra bits of repeat codes*/
-    *out.last_mut().unwrap() |= (0 << ((*bp as u32) & 7)) as u8; /*write the compressed data symbols*/
-    (*bp) += 1; /*error: the length of the end code 256 must be larger than 0*/
-    /*write the end code*/
-
-    if ((*bp) & 7) == 0 {
-        out.push(0); /*end of error-while*/
-    }
-    *out.last_mut().unwrap() |= (1 << ((*bp as u32) & 7)) as u8;
-    (*bp) += 1;
-
-    let hlit = (numcodes_ll - 257) as u32;
-    let hdist = (numcodes_d - 1) as u32;
-    let mut hclen = (bitlen_cl.len() as u32) - 4;
-    while bitlen_cl[hclen as usize + 4 - 1] == 0 && hclen > 0 {
-        hclen -= 1;
-    }
-    add_bits_to_stream(bp, out, hlit, 5);
-    add_bits_to_stream(bp, out, hdist, 5);
-    add_bits_to_stream(bp, out, hclen, 4);
-    for &b in &bitlen_cl[0..hclen as usize + 4] {
-        add_bits_to_stream(bp, out, b, 3);
-    }
-    let mut i = 0;
-    while i != bitlen_lld_e.len() {
-        add_huffman_symbol(bp, out, tree_cl.code(bitlen_lld_e[i]), tree_cl.length(bitlen_lld_e[i]));
-        if bitlen_lld_e[i] == 16 {
-            i += 1;
-            add_bits_to_stream(bp, out, bitlen_lld_e[i], 2);
-        } else if bitlen_lld_e[i] == 17 {
-            i += 1;
-            add_bits_to_stream(bp, out, bitlen_lld_e[i], 3);
-        } else if bitlen_lld_e[i] == 18 {
-            i += 1;
-            add_bits_to_stream(bp, out, bitlen_lld_e[i], 7);
-        };
-        i += 1;
-    }
-    write_lz77_data(bp, out, &lz77_encoded, &tree_ll, &tree_d);
-    if tree_ll.length(256) == 0 {
-        return Err(Error::new(64));
-    }
-    add_huffman_symbol(bp, out, tree_ll.code(256), tree_ll.length(256));
-    Ok(())
-}
-
-fn deflate_fixed(out: &mut Vec<u8>, bp: &mut usize, hash: &mut Hash, data: &[u8], datapos: usize, dataend: usize, settings: &CompressSettings, bfinal: u32) -> Result<(), Error> {
-    let tree_ll = generate_fixed_lit_len_tree()?;
-    let tree_d = generate_fixed_distance_tree()?;
-
-    if ((*bp) & 7) == 0 {
-        out.push(0);
-    }
-    let end = out.len() - 1;
-    out[end] |= (bfinal << ((*bp as u32) & 7)) as u8;
-    (*bp) += 1;
-    if ((*bp) & 7) == 0 {
-        out.push(0);
-    }
-    let end = out.len() - 1;
-    out[end] |= (1 << ((*bp as u32) & 7)) as u8;
-    (*bp) += 1;
-    if ((*bp) & 7) == 0 {
-        out.push(0);
-    }
-    let end = out.len() - 1;
-    out[end] |= (0 << ((*bp as u32) & 7)) as u8;
-    (*bp) += 1;
-    if settings.use_lz77 {
-        let lz77_encoded = encode_lz77(
-            hash,
-            data,
-            datapos,
-            settings.windowsize,
-            settings.minmatch,
-            settings.nicematch,
-            settings.lazymatching,
-        )?;
-        write_lz77_data(bp, out, &lz77_encoded, &tree_ll, &tree_d);
-    } else {
-        for &d in &data[datapos..dataend] {
-            add_huffman_symbol(bp, out, tree_ll.code(d as u32), tree_ll.length(d as u32));
-        }
-    }
-    /*add END code*/
-    add_huffman_symbol(bp, out, tree_ll.code(256), tree_ll.length(256));
-    Ok(())
-}
-
-pub(crate) fn lodepng_deflatev(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    let mut blocksize: usize;
-    let mut bp = 0;
-
-    if settings.btype > 2 {
-        return Err(Error::new(61));
-    } else if settings.btype == 0 {
-        return deflate_no_compression(inp);
-    } else if settings.btype == 1 {
-        blocksize = inp.len();
-    } else {
-        blocksize = inp.len() / 8 + 8;
-        if blocksize < 65536 {
-            blocksize = 65536;
-        }
-        if blocksize > 262144 {
-            blocksize = 262144;
-        };
-    }
-    let mut numdeflateblocks = (inp.len() + blocksize - 1) / blocksize;
-    if numdeflateblocks == 0 {
-        numdeflateblocks = 1;
-    }
-    let mut hash = Hash::new(settings.windowsize as usize)?;
-    let mut out = Vec::new();
-    for i in 0..numdeflateblocks {
-        let final_ = numdeflateblocks - 1 == i;
-        let start = i * blocksize;
-        let end = (start + blocksize).min(inp.len());
-        if settings.btype == 1 {
-            deflate_fixed(&mut out, &mut bp, &mut hash, inp, start, end, settings, final_ as u32)?;
-        } else {
-            debug_assert_eq!(2, settings.btype);
-            deflate_dynamic(&mut out, &mut bp, &mut hash, inp, start, end, settings, final_ as u32)?;
-        }
-    }
-    Ok(out)
-}
-
-fn deflate(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    if let Some(cb) = settings.custom_deflate {
-        let mut out = Vec::with_capacity(inp.len() * 3/2);
-        (cb)(inp, &mut out, settings)?;
-        Ok(out)
-    } else {
-        lodepng_deflatev(inp, settings)
-    }
-}
-
-/* ////////////////////////////////////////////////////////////////////////// */
-/* / Adler32                                                                  */
-/* ////////////////////////////////////////////////////////////////////////// */
-fn update_adler32(adler: u32, data: &[u8]) -> u32 {
-    let mut s1 = adler & 65535;
-    let mut s2 = (adler >> 16) & 65535;
-    /*at least 5550 sums can be done before the sums overflow, saving a lot of module divisions*/
-    for part in data.chunks(5550) {
-        for &v in part {
-            s1 += v as u32;
-            s2 += s1;
-        }
-        s1 %= 65521;
-        s2 %= 65521;
-    }
-    (s2 << 16) | s1
-}
-
-/*Return the adler32 of the bytes data[0..len-1]*/
-fn adler32(data: &[u8]) -> u32 {
-    update_adler32(1, data)
-}
-
 
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / Zlib                                                                   / */
@@ -2169,23 +1624,16 @@ pub fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<
 
 
 pub fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
-    /*initially, *out must be NULL and outsize 0, if you just give some random *out
-      that's pointing to a non allocated buffer, this'll crash*/
-    /*zlib data: 1 byte CMF (cm+cinfo), 1 byte FLG, deflate data, 4 byte adler32_val checksum of the Decompressed data*/
-    let cmf = 120;
-    /*0b01111000: CM 8, cinfo 7. With cinfo 7, any window size up to 32768 can be used.*/
-    let flevel = 0;
-    let fdict = 0;
-    let mut cmfflg = 256 * cmf + fdict * 32 + flevel * 64;
-    let fcheck = 31 - cmfflg % 31;
-    cmfflg += fcheck;
-    /*Vec<u8>-controlled version of the output buffer, for dynamic array*/
-    outv.push((cmfflg >> 8) as u8);
-    outv.push((cmfflg & 255) as u8);
-    let deflated = deflate(inp, settings)?;
-    let adler32_val = adler32(inp);
-    outv.extend_from_slice(&deflated);
-    lodepng_add32bit_int(outv, adler32_val);
+    use flate2::write::ZlibEncoder;
+    use flate2::Compression;
+    let level = settings.level();
+    let level = if level == 0 {
+        Compression::none()
+    } else {
+        Compression::new(level.min(9).into())
+    };
+    let mut z = ZlibEncoder::new(outv, level);
+    z.write_all(inp)?;
     Ok(())
 }
 
@@ -2200,9 +1648,6 @@ pub fn zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>,
         Ok(out)
     }
 }
-
-/*this is a good tradeoff between speed and compression ratio*/
-pub const DEFAULT_WINDOWSIZE: usize = 2048;
 
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / CRC32                                                                  / */
@@ -2853,16 +2298,10 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
         return Err(Error::new(68));
     }
     if state.encoder.auto_convert {
-        /*write signature and chunks*/
         info.color = auto_choose_color(image, w, h, &state.info_raw)?;
     }
-    if state.encoder.zlibsettings.btype > 2 {
-        /*bKGD (must come between PLTE and the IDAt chunks*/
-        return Err(Error::new(61)); /*PLTE*/
-    } /*pHYs (must come before the IDAT chunks)*/
     if state.info_png.interlace_method > 1 {
-        return Err(Error::new(71)); /*unknown chunks between PLTE and IDAT*/
-        /*IDAT (multiple IDAT chunks must be consecutive)*/
+        return Err(Error::new(71));
     }
     check_png_color_validity(info.color.colortype, info.color.bitdepth())?; /*tEXt and/or zTXt */
     check_lode_color_validity(state.info_raw.colortype, state.info_raw.bitdepth())?; /*LodePNG version id in text chunk */
@@ -2876,7 +2315,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
         pre_process_scanlines(image, w, h, &info, &state.encoder)?
     };
 
-    let mut outv = Vec::new();
+    let mut outv = Vec::with_capacity(1024);
     write_signature(&mut outv);
 
     add_chunk_ihdr(&mut outv, w, h, info.color.colortype, info.color.bitdepth() as usize, info.interlace_method as u8)?;
@@ -3211,187 +2650,6 @@ fn get_value_required_bits(value: u8) -> u8 {
         _ => 8,
     }
 }
-
-#[inline]
-fn longest_match(a: &[u8], b: &[u8]) -> usize {
-    let len = a.len().min(b.len());
-    let a = &a[0..len];
-    let b = &b[0..len];
-    for i in 0..len {
-        if a[i] != b[i] {
-            return i;
-        }
-    }
-    len
-}
-
-/*
-LZ77-encode the data. Return value is error code. The input are raw bytes, the output
-is in the form of unsigned integers with codes representing for example literal bytes, or
-length/distance pairs.
-It uses a hash table technique to let it encode faster. When doing LZ77 encoding, a
-sliding window (of windowsize) is used, and all past bytes in that window can be used as
-the "dictionary". A brute force search through all possible distances would be slow, and
-this hash technique is one out of several ways to speed this up.
-*/
-fn encode_lz77(
-    hash: &mut Hash,
-    in_: &[u8],
-    inpos: usize,
-    windowsize: u32,
-    minmatch: u16,
-    nicematch: u16,
-    lazymatching: bool,
-) -> Result<Vec<u32>, Error> {
-    let mut out = Vec::with_capacity(in_.len()/2);
-    let nicematch = (nicematch as u32).min(MAX_SUPPORTED_DEFLATE_LENGTH as u32);
-    /*for large window lengths, assume the user wants no compression loss. Otherwise, max hash chain length speedup.*/
-    let maxchainlength = if windowsize >= 8192 {
-        windowsize
-    } else {
-        windowsize / 8
-    };
-    let maxlazymatch = if windowsize >= 8192 {
-        MAX_SUPPORTED_DEFLATE_LENGTH as u32
-    } else {
-        64
-    };
-    if windowsize == 0 || windowsize > 32768 {
-        return Err(Error::new(60));
-    }
-    /*error: windowsize smaller/larger than allowed*/
-    if (windowsize & (windowsize - 1)) != 0 {
-        return Err(Error::new(90)); /*error: must be power of two*/
-    }
-    let mut numzeros = 0;
-    let mut lazylength = 0;
-    let mut lazyoffset = 0;
-    let mut lazy = false;
-    let mut pos = inpos;
-    while pos < in_.len() {
-        let mut wpos = pos as u32 & (windowsize - 1);
-        let hashval = get_hash(in_, pos) as u32;
-        let usezeros = true;
-        /*not sure if setting it to false for windowsize < 8192 is better or worse*/
-        if usezeros && hashval == 0 {
-            if numzeros == 0 {
-                numzeros = count_zeros(in_, pos); /*the length and offset found for the current position*/
-            } else if pos + numzeros as usize > in_.len() || in_[pos + numzeros as usize - 1] != 0 {
-                numzeros -= 1; /*search for the longest string*/
-            };
-        } else {
-            numzeros = 0;
-        }
-        update_hash_chain(hash, wpos, hashval, numzeros as u16);
-        let mut length = 0;
-        let mut offset: u32 = 0;
-        let mut hashpos = u32::from(hash.chain[wpos as usize]);
-        let lastptr = in_.len().min(pos + MAX_SUPPORTED_DEFLATE_LENGTH) as u32;
-        let mut prev_offset = 0;
-        for _ in 0..maxchainlength {
-            let current_offset = if hashpos <= wpos {
-                wpos - hashpos
-            } else {
-                wpos + windowsize - hashpos
-            };
-            if current_offset < prev_offset {
-                break;
-            }
-            /*stop when went completely around the circular buffer*/
-            prev_offset = current_offset; /*test the next characters*/
-            if current_offset > 0 {
-                let mut foreptr = pos as u32; /*common case in PNGs is lots of zeros. Quickly skip over them as a speedup*/
-                let mut backptr = pos as u32 - current_offset;
-                if numzeros >= 3 {
-                    let mut skip = hash.zeros[hashpos as usize] as u32;
-                    if skip > numzeros {
-                        skip = numzeros;
-                    }
-                    backptr += skip;
-                    foreptr += skip;
-                }
-                let current_length = longest_match(&in_[foreptr as usize..lastptr as usize], &in_[backptr as usize..]) as u32;
-                if current_length > length {
-                    length = current_length;
-                    offset = current_offset;
-                    /*jump out once a length of max length is found (speed gain). This also jumps
-                              out if length is MAX_SUPPORTED_DEFLATE_LENGTH*/
-                    if current_length >= nicematch {
-                        break;
-                    };
-                }
-            }
-            if hashpos == hash.chain[hashpos as usize] as u32 {
-                break;
-            }
-            if numzeros >= 3 && length > numzeros {
-                hashpos = u32::from(hash.chainz[hashpos as usize]);
-                if hash.zeros[hashpos as usize] as u32 != numzeros {
-                    break;
-                };
-            } else {
-                hashpos = u32::from(hash.chain[hashpos as usize]);
-                /*outdated hash value, happens if particular value was not encountered in whole last window*/
-                if hash.val[hashpos as usize] as u32 != hashval {
-                    break; /*try the next byte*/
-                }; /*push the previous character as literal*/
-            };
-        }
-        if lazymatching {
-            if !lazy && length >= 3 && length <= maxlazymatch && length < MAX_SUPPORTED_DEFLATE_LENGTH as u32 {
-                lazy = true;
-                lazylength = length;
-                lazyoffset = offset;
-                pos += 1;
-                continue;
-            }
-            if lazy {
-                lazy = false;
-                if pos == 0 {
-                    return Err(Error::new(81));
-                }
-                if length > lazylength + 1 {
-                    out.push(in_[pos - 1] as u32);
-                } else {
-                    length = lazylength;
-                    offset = lazyoffset;
-                    hash.head[hashval as usize] = -1;
-                    /*the same hashchain update will be done, this ensures no wrong alteration*/
-                    hash.headz[numzeros as usize] = -1; /*idem*/
-                    pos -= 1; /*too big (or overflown negative) offset*/
-                }; /*encode it as length/distance pair or literal value*/
-            }; /*only lengths of 3 or higher are supported as length/distance pair*/
-        }
-        if length >= 3 && offset > windowsize {
-            return Err(Error::new(86));
-        }
-        if length < 3 || length < minmatch as u32 || (length == 3 && offset > 4096) {
-            /*compensate for the fact that longer offsets have more extra bits, a
-                  length of only 3 may be not worth it then*/
-            out.push(in_[pos] as u32);
-        } else {
-            add_length_distance(&mut out, length, offset);
-            for _ in 1..length {
-                pos += 1;
-                wpos = pos as u32 & (windowsize - 1);
-                let hashval = get_hash(in_, pos) as u32;
-                if usezeros && hashval == 0 {
-                    if numzeros == 0 {
-                        numzeros = count_zeros(in_, pos);
-                    } else if pos + numzeros as usize > in_.len() || in_[pos + numzeros as usize - 1] != 0 {
-                        numzeros -= 1;
-                    }
-                } else {
-                    numzeros = 0;
-                }
-                update_hash_chain(hash, wpos, hashval, numzeros as u16);
-            }
-        }
-        pos += 1;
-    }
-    Ok(out)
-}
-
 
 unsafe impl Sync for CompressSettings {}
 unsafe impl Sync for DecompressSettings {}

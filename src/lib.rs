@@ -9,7 +9,6 @@ use crate::rustimpl::*;
 
 mod error;
 pub use crate::error::*;
-mod huffman;
 mod iter;
 use crate::iter::*;
 
@@ -482,6 +481,10 @@ impl Encoder {
     /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
     pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         self.state.encode_file(filepath, image, w, h)
+    }
+
+    pub fn settings_mut(&mut self) -> &mut EncoderSettings {
+        &mut self.state.encoder
     }
 }
 
@@ -1112,14 +1115,15 @@ impl CompressSettings {
 }
 
 impl Default for CompressSettings {
+    #[allow(deprecated)]
     fn default() -> Self {
         Self {
-            btype: 2,
+            btype: 0,
             use_lz77: true,
-            windowsize: DEFAULT_WINDOWSIZE as _,
-            minmatch: 3,
-            nicematch: 128,
-            lazymatching: true,
+            windowsize: 0,
+            minmatch: 0,
+            nicematch: 0,
+            lazymatching: false,
             custom_zlib: None,
             custom_deflate: None,
             custom_context: ptr::null_mut(),
