@@ -639,11 +639,8 @@ impl State {
     #[deprecated(note = "Use Decoder type instead of State")]
     pub fn decode<Bytes: AsRef<[u8]>>(&mut self, input: Bytes) -> Result<Image, Error> {
         let input = input.as_ref();
-        unsafe {
-            let (v, w, h) = rustimpl::lodepng_decode(self, input)?;
-            let (data, _) = vec_into_raw(v)?;
-            Ok(new_bitmap(data, w, h, self.info_raw.colortype, self.info_raw.bitdepth))
-        }
+        let (data, w, h) = rustimpl::lodepng_decode(self, input)?;
+        Ok(new_bitmap(data, w, h, self.info_raw.colortype, self.info_raw.bitdepth))
     }
 
     #[deprecated(note = "Use Decoder type instead of State")]
@@ -734,11 +731,42 @@ pub struct Bitmap<PixelType> {
 }
 
 impl<PixelType: rgb::Pod> Bitmap<PixelType> {
-    unsafe fn from_buffer(out: *mut u8, w: usize, h: usize) -> Self {
+    /// Convert Vec<u8> to Vec<PixelType>
+    fn from_buffer(buffer: Vec<u8>, width: usize, height: usize) -> Self {
+        // Can only cast Vec if alignment doesn't change, and capacity is a round number of pixels
+        let is_safe_to_transmute = unsafe {
+            let whole_capacity_slice = std::slice::from_raw_parts(buffer.as_ptr(), buffer.capacity());
+            let (before, _, after) = whole_capacity_slice.align_to::<PixelType>();
+            1 == std::mem::align_of::<PixelType>() && before.is_empty() && after.is_empty()
+        };
+
+        let buffer = if is_safe_to_transmute {
+            debug_assert_eq!(0, buffer.capacity() % std::mem::size_of::<PixelType>());
+            debug_assert!((buffer.len() / std::mem::size_of::<PixelType>()) >= width * height);
+            unsafe {
+                let mut buffer = std::mem::ManuallyDrop::new(buffer);
+                Vec::from_raw_parts(buffer.as_mut_ptr() as *mut PixelType,
+                    buffer.len() / std::mem::size_of::<PixelType>(),
+                    buffer.capacity() / std::mem::size_of::<PixelType>())
+            }
+        } else {
+            // if it's not properly aligned (e.g. reading RGB<u16>), do it the hard way
+            let mut out = Vec::with_capacity(width * height);
+            assert!(buffer.len() >= width * height * std::mem::size_of::<PixelType>());
+            unsafe {
+                let mut ptr = buffer.as_ptr() as *const PixelType;
+                for _ in 0..width * height {
+                    let px = std::ptr::read_unaligned::<PixelType>(ptr);
+                    ptr = ptr.add(1);
+                    out.push(px);
+                }
+            }
+            out
+        };
         Self {
-            buffer: vec_from_malloced(out as *mut _, w * h),
-            width: w,
-            height: h,
+            buffer,
+            width,
+            height,
         }
     }
 }
@@ -753,28 +781,30 @@ fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> usi
     colortype.to_color_mode(bitdepth).raw_size(w as c_uint, h as c_uint)
 }
 
-unsafe fn vec_from_malloced<T>(ptr: *mut T, elts: usize) -> Vec<T> where T: Copy {
-    let v = Vec::from(std::slice::from_raw_parts(ptr, elts));
-    libc::free(ptr as *mut _);
-    v
-}
+fn new_bitmap(buffer: Vec<u8>, w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Image {
+    debug_assert!(buffer.len() >= required_size(w, h, colortype, bitdepth));
 
-unsafe fn new_bitmap(out: *mut u8, w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Image {
     match (colortype, bitdepth) {
-        (ColorType::RGBA, 8) => Image::RGBA(Bitmap::from_buffer(out, w, h)),
-        (ColorType::RGB, 8) => Image::RGB(Bitmap::from_buffer(out, w, h)),
-        (ColorType::RGBA, 16) => Image::RGBA16(Bitmap::from_buffer(out, w, h)),
-        (ColorType::RGB, 16) => Image::RGB16(Bitmap::from_buffer(out, w, h)),
-        (ColorType::GREY, 8) => Image::Grey(Bitmap::from_buffer(out, w, h)),
-        (ColorType::GREY, 16) => Image::Grey16(Bitmap::from_buffer(out, w, h)),
-        (ColorType::GREY_ALPHA, 8) => Image::GreyAlpha(Bitmap::from_buffer(out, w, h)),
-        (ColorType::GREY_ALPHA, 16) => Image::GreyAlpha16(Bitmap::from_buffer(out, w, h)),
-        (_, 0) => panic!("Invalid depth"),
-        (c, b) => Image::RawData(Bitmap {
-            buffer: vec_from_malloced(out, required_size(w, h, c, b)),
+        (ColorType::RGBA, 8) => Image::RGBA(Bitmap::from_buffer(buffer, w, h)),
+        (ColorType::RGB, 8) => Image::RGB(Bitmap::from_buffer(buffer, w, h)),
+        (ColorType::RGBA, 16) => Image::RGBA16(Bitmap::from_buffer(buffer, w, h)),
+        (ColorType::RGB, 16) => Image::RGB16(Bitmap::from_buffer(buffer, w, h)),
+        (ColorType::GREY, 8) => Image::Grey(Bitmap::from_buffer(buffer, w, h)),
+        (ColorType::GREY, 16) => Image::Grey16(Bitmap::from_buffer(buffer, w, h)),
+        (ColorType::GREY_ALPHA, 8) => Image::GreyAlpha(Bitmap::from_buffer(buffer, w, h)),
+        (ColorType::GREY_ALPHA, 16) => Image::GreyAlpha16(Bitmap::from_buffer(buffer, w, h)),
+        (ColorType::PALETTE, b) if b > 0 && b <= 8 => Image::RawData(Bitmap {
+            buffer,
             width: w,
             height: h,
         }),
+        // non-standard extension
+        (_, b) if b == 8 || b == 16 => Image::RawData(Bitmap {
+            buffer,
+            width: w,
+            height: h,
+        }),
+        _ => panic!("Invalid depth"),
     }
 }
 
@@ -795,12 +825,9 @@ fn save_file<P: AsRef<Path>>(filepath: P, data: &[u8]) -> Result<(), Error> {
 /// * `bitdepth`: the desired bit depth for the raw output image. 1, 2, 4, 8 or 16. Typically 8.
 pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
     let input = input.as_ref();
-    unsafe {
-        assert!(bitdepth > 0 && bitdepth <= 16);
-        let (v, w, h) = rustimpl::lodepng_decode_memory(input, colortype, bitdepth)?;
-        let (data, _) = vec_into_raw(v)?;
-        Ok(new_bitmap(data, w, h, colortype, bitdepth))
-    }
+    assert!(bitdepth > 0 && bitdepth <= 16);
+    let (data, w, h) = rustimpl::lodepng_decode_memory(input, colortype, bitdepth)?;
+    Ok(new_bitmap(data, w, h, colortype, bitdepth))
 }
 
 /// Same as `decode_memory`, but always decodes to 32-bit RGBA raw image
