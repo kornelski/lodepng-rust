@@ -1,6 +1,3 @@
-use crate::rustimpl::lodepng_free;
-use crate::rustimpl::lodepng_malloc;
-
 #[allow(non_camel_case_types)]
 pub mod ffi;
 
@@ -61,53 +58,29 @@ impl ColorMode {
     }
 
     pub fn palette_clear(&mut self) {
-        unsafe {
-            lodepng_free(self.palette as *mut _);
-        }
-        self.palette = ptr::null_mut();
+        self.palette = None;
         self.palettesize = 0;
     }
 
     /// add 1 color to the palette
     pub fn palette_add(&mut self, p: RGBA) -> Result<(), Error> {
-        unsafe {
-            /*the same resize technique as C++ std::vectors is used, and here it's made so that for a palette with
-              the max of 256 colors, it'll have the exact alloc size*/
-            if self.palette.is_null() {
-                /*allocate palette if empty*/
-                /*room for 256 colors with 4 bytes each*/
-                self.palette = lodepng_malloc(1024) as *mut _;
-                if self.palette.is_null() {
-                    return Err(Error::new(83));
-                }
-            }
-            if self.palettesize >= 256 {
-                return Err(Error::new(38));
-            }
-            *self.palette.offset(self.palettesize as isize) = p;
-            self.palettesize += 1;
+        if self.palettesize >= 256 {
+            return Err(Error::new(38));
         }
+        let pal = self.palette.get_or_insert_with(|| Box::new([RGBA::new(0,0,0,0); 256]));
+        pal[self.palettesize] = p;
+        self.palettesize += 1;
         Ok(())
     }
 
     pub fn palette(&self) -> &[RGBA] {
-        if self.palette.is_null() {
-            &[]
-        } else {
-            unsafe {
-                std::slice::from_raw_parts(self.palette, self.palettesize)
-            }
-        }
+        let len = self.palettesize;
+        self.palette.as_deref().and_then(|p| p.get(..len)).unwrap_or_default()
     }
 
     pub fn palette_mut(&mut self) -> &mut [RGBA] {
-        if self.palette.is_null() {
-            &mut []
-        } else {
-            unsafe {
-                std::slice::from_raw_parts_mut(self.palette as *mut _, self.palettesize)
-            }
-        }
+        let len = self.palettesize;
+        self.palette.as_deref_mut().and_then(|p| p.get_mut(..len)).unwrap_or_default()
     }
 
     /// get the total amount of bits per pixel, based on colortype and bitdepth in the struct
@@ -188,31 +161,6 @@ impl ColorMode {
     }
 }
 
-impl Drop for ColorMode {
-    fn drop(&mut self) {
-        self.palette_clear()
-    }
-}
-
-impl Clone for ColorMode {
-    fn clone(&self) -> Self {
-        let mut c = Self {
-            colortype: self.colortype,
-            bitdepth: self.bitdepth,
-            palette: ptr::null_mut(),
-            palettesize: 0,
-            key_defined: self.key_defined,
-            key_r: self.key_r,
-            key_g: self.key_g,
-            key_b: self.key_b,
-        };
-        for &p in self.palette() {
-            c.palette_add(p).unwrap();
-        }
-        c
-    }
-}
-
 impl Default for ColorMode {
     fn default() -> Self {
         Self {
@@ -222,7 +170,7 @@ impl Default for ColorMode {
             key_b: 0,
             colortype: ColorType::RGBA,
             bitdepth: 8,
-            palette: ptr::null_mut(),
+            palette: None,
             palettesize: 0,
         }
     }

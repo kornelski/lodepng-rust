@@ -100,7 +100,7 @@ pub enum ColorType {
 /// bits to RGBA colors. This information is the same as used in the PNG file
 /// format, and is used both for PNG and raw image data in LodePNG.
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct ColorMode {
     /// color type, see PNG standard
     pub colortype: ColorType,
@@ -117,7 +117,7 @@ pub struct ColorMode {
     /// fills the palette colors in the pixels of the raw RGBA output.
     ///
     /// The palette is only supported for color type 3.
-    pub(crate) palette: *mut RGBA,
+    pub(crate) palette: Option<Box<[RGBA; 256]>>,
     /// palette size in number of colors (amount of bytes is 4 * `palettesize`)
     pub(crate) palettesize: usize,
 
@@ -134,6 +134,21 @@ pub struct ColorMode {
     pub(crate) key_r: c_uint,
     pub(crate) key_g: c_uint,
     pub(crate) key_b: c_uint,
+}
+
+impl fmt::Debug for ColorMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut s = f.debug_struct("ColorMode");
+        s.field("colortype", &self.colortype);
+        s.field("bitdepth", &self.bitdepth);
+        s.field("palette", &self.palette.as_ref().map(|s| &s[..]));
+        s.field("palettesize", &self.palettesize);
+        s.field("key_defined", &self.key_defined);
+        s.field("key_r", &self.key_r);
+        s.field("key_g", &self.key_g);
+        s.field("key_b", &self.key_b);
+        s.finish()
+    }
 }
 
 pub type custom_compress_callback =   Option<fn(input: &[u8], output: &mut dyn io::Write, context: &CompressSettings) -> Result<(), crate::Error>>;
@@ -431,17 +446,17 @@ impl fmt::Debug for CompressSettings {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_malloc(size: usize) -> *mut c_void {
-    rustimpl::lodepng_malloc(size)
+    libc::malloc(size)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_realloc(ptr: *mut c_void, size: usize) -> *mut c_void {
-    libc::realloc(ptr as *mut _, size) as *mut _
+    libc::realloc(ptr, size)
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_free(ptr: *mut c_void) {
-    rustimpl::lodepng_free(ptr)
+    libc::free(ptr)
 }
 
 #[no_mangle]

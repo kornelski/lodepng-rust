@@ -24,19 +24,8 @@ pub use rgb::RGBA8 as RGBA;
 use std::collections::HashMap;
 use std::fs;
 use std::io::prelude::*;
-use std::os::raw::*;
 use std::path::*;
 use std::slice;
-
-pub(crate) fn lodepng_malloc(size: usize) -> *mut c_void {
-    unsafe {
-        libc::malloc(size) as *mut _
-    }
-}
-
-pub(crate) unsafe fn lodepng_free(ptr: *mut c_void) {
-    libc::free(ptr as *mut _)
-}
 
 /*8 bytes PNG signature, aka the magic bytes*/
 fn write_signature(out: &mut Vec<u8>) {
