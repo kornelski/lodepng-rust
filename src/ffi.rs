@@ -49,7 +49,9 @@ macro_rules! lode_try_state {
 
 
 unsafe fn vec_from_raw(data: *mut u8, len: usize) -> Vec<u8> {
-    assert!(!data.is_null());
+    if data.is_null() || 0 == len {
+        return Vec::new()
+    }
     slice::from_raw_parts_mut(data, len).to_owned()
 }
 
@@ -468,26 +470,31 @@ pub unsafe extern "C" fn lodepng_error_text(code: ErrorCode) -> *const u8 {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode32(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint) -> ErrorCode {
+    assert!(!image.is_null());
     to_vec(out, outsize, rustimpl::lodepng_encode_memory(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, ColorType::RGBA, 8))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode24(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint) -> ErrorCode {
+    assert!(!image.is_null());
     to_vec(out, outsize, rustimpl::lodepng_encode_memory(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, ColorType::RGB, 8))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> ErrorCode {
+    assert!(!image.is_null());
     lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, colortype, bitdepth))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode32_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint) -> ErrorCode {
+    assert!(!image.is_null());
     lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, ColorType::RGBA, 8))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode24_file(filename: *const c_char, image: *const u8, w: c_uint, h: c_uint) -> ErrorCode {
+    assert!(!image.is_null());
     lode_error!(rustimpl::lodepng_encode_file(&c_path(filename), slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, ColorType::RGB, 8))
 }
 
@@ -762,6 +769,7 @@ pub unsafe extern "C" fn lodepng_info_swap(a: &mut Info, b: &mut Info) {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_convert(out: *mut u8, image: *const u8, mode_out: &ColorMode, mode_in: &ColorMode, w: c_uint, h: c_uint) -> ErrorCode {
+    assert!(!image.is_null());
     lode_error!(rustimpl::lodepng_convert(slice::from_raw_parts_mut(out, 0x1FFF_FFFF), slice::from_raw_parts(image, 0x1FFF_FFFF), mode_out, mode_in, w, h))
 }
 
@@ -860,6 +868,7 @@ pub unsafe extern "C" fn lodepng_save_file(buffer: *const u8, buffersize: usize,
 pub unsafe extern "C" fn lodepng_encode(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint, state: &mut State) -> ErrorCode {
     *out = ptr::null_mut();
     *outsize = 0;
+    assert!(!image.is_null());
     let res = lode_try_state!(state.error, rustimpl::lodepng_encode(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, state));
     let (data, size) = lode_try!(vec_into_raw(res));
     *out = data;
@@ -869,6 +878,7 @@ pub unsafe extern "C" fn lodepng_encode(out: &mut *mut u8, outsize: &mut usize, 
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_get_color_profile(profile_out: *mut ColorProfile, image: *const u8, w: c_uint, h: c_uint, mode: &ColorMode) -> ErrorCode {
+    assert!(!image.is_null());
     let prof = lode_try!(rustimpl::get_color_profile(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, mode));
     ptr::write(profile_out, prof);
     ErrorCode(0)
@@ -876,6 +886,7 @@ pub unsafe extern "C" fn lodepng_get_color_profile(profile_out: *mut ColorProfil
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_auto_choose_color(mode_out: &mut ColorMode, image: *const u8, w: c_uint, h: c_uint, mode_in: &ColorMode) -> ErrorCode {
+    assert!(!image.is_null());
     let mode = lode_try!(rustimpl::auto_choose_color(slice::from_raw_parts(image, 0x1FFF_FFFF), w as usize, h as usize, mode_in));
     ptr::write(mode_out, mode);
     ErrorCode(0)
@@ -889,6 +900,7 @@ pub unsafe extern "C" fn lodepng_filesize(filename: *const c_char) -> c_long {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_encode_memory(out: &mut *mut u8, outsize: &mut usize, image: *const u8, w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -> ErrorCode {
+    assert!(!image.is_null());
     to_vec(out, outsize, rustimpl::lodepng_encode_memory(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, colortype, bitdepth))
 }
 

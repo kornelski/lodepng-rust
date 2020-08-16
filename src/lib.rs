@@ -91,14 +91,22 @@ impl ColorMode {
     }
 
     pub fn palette(&self) -> &[RGBA] {
-        unsafe {
-            std::slice::from_raw_parts(self.palette, self.palettesize)
+        if self.palette.is_null() {
+            &[]
+        } else {
+            unsafe {
+                std::slice::from_raw_parts(self.palette, self.palettesize)
+            }
         }
     }
 
     pub fn palette_mut(&mut self) -> &mut [RGBA] {
-        unsafe {
-            std::slice::from_raw_parts_mut(self.palette as *mut _, self.palettesize)
+        if self.palette.is_null() {
+            &mut []
+        } else {
+            unsafe {
+                std::slice::from_raw_parts_mut(self.palette as *mut _, self.palettesize)
+            }
         }
     }
 
@@ -223,12 +231,10 @@ impl Default for ColorMode {
 impl ColorType {
     /// Create color mode with given type and bitdepth
     pub fn to_color_mode(&self, bitdepth: c_uint) -> ColorMode {
-        unsafe {
-            ColorMode {
-                colortype: *self,
-                bitdepth,
-                ..mem::zeroed()
-            }
+        ColorMode {
+            colortype: *self,
+            bitdepth,
+            ..ColorMode::default()
         }
     }
 
@@ -367,9 +373,6 @@ impl Encoder {
     }
 
     /// Compress using another zlib implementation. It's gzip header + deflate + adler32 checksum.
-    ///
-    /// The callback returns 0 on success.
-    /// The callback MUST allocate memory using `libc::malloc`
     #[inline]
     #[allow(deprecated)]
     pub fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
@@ -378,9 +381,6 @@ impl Encoder {
     }
 
     /// Compress using another deflate implementation. It's just deflate, without headers or checksum.
-    ///
-    /// The callback returns 0 on success.
-    /// The callback MUST allocate memory using `libc::malloc`
     #[inline]
     #[allow(deprecated)]
     pub fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
@@ -627,7 +627,7 @@ impl State {
     /// Load PNG from buffer using State's settings
     ///
     ///  ```no_run
-    ///  # use lodepng::*; let mut state = State::new();
+    ///  # use lodepng::*; let mut state = Decoder::new();
     ///  # let slice = [0u8]; #[allow(unused_variables)] fn do_stuff<T>(_buf: T) {}
     ///
     ///  state.info_raw_mut().colortype = ColorType::RGBA;
@@ -876,7 +876,7 @@ fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize,
     }
 
     unsafe {
-        Ok(slice::from_raw_parts(image.as_ptr() as *const _, image_bytes))
+        Ok(slice::from_raw_parts(image.as_ptr() as *const u8, image_bytes))
     }
 }
 
@@ -940,6 +940,7 @@ pub struct ChunkRef<'a> {
 impl<'a> ChunkRef<'a> {
     #[inline]
     pub(crate) unsafe fn from_ptr(data: *const u8) -> Result<Self, Error> {
+        debug_assert!(!data.is_null());
         let head = std::slice::from_raw_parts(data, 4);
         let len = lodepng_chunk_length(head);
         let chunk = std::slice::from_raw_parts(data, len + 12);
