@@ -61,6 +61,11 @@ fn random() {
 }
 
 #[test]
+fn fourbit() {
+    decode_file("tests/4bitgray.png", ColorType::GREY, 4).unwrap();
+}
+
+#[test]
 fn bgra() {
     let png = encode(&[rgb::alt::BGRA{r:1u8,g:2,b:3,a:4u8}], ColorType::BGRA, ColorType::RGBA).unwrap();
     let img = decode32(&png).unwrap();

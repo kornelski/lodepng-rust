@@ -741,7 +741,7 @@ fn new_bitmap(buffer: Vec<u8>, w: usize, h: usize, colortype: ColorType, bitdept
         (ColorType::GREY, 16) => Image::Grey16(Bitmap::from_buffer(buffer, w, h)),
         (ColorType::GREY_ALPHA, 8) => Image::GreyAlpha(Bitmap::from_buffer(buffer, w, h)),
         (ColorType::GREY_ALPHA, 16) => Image::GreyAlpha16(Bitmap::from_buffer(buffer, w, h)),
-        (ColorType::PALETTE, b) if b > 0 && b <= 8 => Image::RawData(Bitmap {
+        (ColorType::PALETTE, b) | (ColorType::GREY, b) if b > 0 && b <= 8 => Image::RawData(Bitmap {
             buffer,
             width: w,
             height: h,
