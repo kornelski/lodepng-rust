@@ -691,7 +691,7 @@ pub unsafe extern "C" fn lodepng_chunk_generate_crc(chunk: *mut u8) {
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_append(out: &mut *mut u8, outsize: &mut usize, chunk: *const u8) -> ErrorCode {
     let mut v = vec_from_raw(*out, *outsize);
-    rustimpl::chunk_append(&mut v, slice::from_raw_parts(chunk, 0x7FFF_FFFF));
+    lode_try!(rustimpl::chunk_append(&mut v, slice::from_raw_parts(chunk, 0x7FFF_FFFF)));
     let (data, size) = lode_try!(vec_into_raw(v));
     *out = data;
     *outsize = size;
