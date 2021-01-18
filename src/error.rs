@@ -8,6 +8,8 @@ use crate::ffi::ErrorCode;
 #[derive(Copy, Clone)]
 pub struct Error(NonZeroU32);
 
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 impl ErrorCode {
     /// Returns an English description of the numerical error code.
     pub fn as_str(&self) -> &'static str {
@@ -188,5 +190,11 @@ impl ErrorCode {
             94 => "header chunk must have a size of 13 bytes\0",
             _ => "unknown error code\0",
         }.as_bytes()
+    }
+}
+
+impl From<fallible_collections::TryReserveError> for Error {
+    fn from(_: fallible_collections::TryReserveError) -> Self {
+        Self(NonZeroU32::new(83).unwrap())
     }
 }

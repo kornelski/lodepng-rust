@@ -6,10 +6,10 @@ To use the [lodepng crate](https://lib.rs/crates/lodepng), add to your `Cargo.to
 
 ```toml
 [dependencies]
-lodepng = "3"
+lodepng = "3.3"
 ```
 
-See [API reference](https://docs.rs/lodepng/) for details. Requires Rust 1.44 or later.
+See [API reference](https://docs.rs/lodepng/) for details. Requires Rust 1.46 or later.
 
 ### Loading image example
 

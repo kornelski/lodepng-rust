@@ -483,7 +483,7 @@ impl Info {
     }
 
     fn push_unknown_chunk(&mut self, critical_pos: ChunkPosition, chunk: &[u8]) -> Result<(), Error> {
-        self.unknown_chunks[critical_pos as usize].extend_from_slice(chunk);
+        self.unknown_chunks[critical_pos as usize].try_extend_from_slice(chunk)?;
         Ok(())
     }
 
@@ -1192,7 +1192,7 @@ fn add_chunk_text(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8]) -> Resul
     if keyword.is_empty() || keyword.len() > 79 {
         return Err(Error::new(89));
     }
-    let mut text = Vec::with_capacity(keyword.len()+1+textstring.len());
+    let mut text = Vec::try_with_capacity(keyword.len()+1+textstring.len())?;
     text.extend_from_slice(keyword);
     text.push(0);
     text.extend_from_slice(textstring);
@@ -1204,7 +1204,7 @@ fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8], zlibsett
         return Err(Error::new(89));
     }
     let v = zlib_compress(textstring, zlibsettings)?;
-    let mut data = Vec::with_capacity(keyword.len()+2+v.len());
+    let mut data = Vec::try_with_capacity(keyword.len()+2+v.len())?;
     data.extend_from_slice(keyword);
     data.push(0u8);
     data.push(0u8);
@@ -1341,7 +1341,7 @@ pub(crate) fn add_chunk(out: &mut Vec<u8>, type_: &[u8; 4], data: &[u8]) -> Resu
         return Err(Error::new(77));
     }
     let previous_length = out.len();
-    out.reserve(length + 12);
+    FallibleVec::try_reserve(out, length + 12)?;
     /*1: length*/
     lodepng_add32bit_int(out, length as u32);
     /*2: chunk name (4 letters)*/
@@ -1486,9 +1486,10 @@ pub fn lodepng_chunk_generate_crc(chunk: &mut [u8]) {
     lodepng_set32bit_int(&mut chunk[8 + length..], crc);
 }
 
-pub(crate) fn chunk_append(out: &mut Vec<u8>, chunk: &[u8]) {
+#[inline]
+pub(crate) fn chunk_append(out: &mut Vec<u8>, chunk: &[u8]) -> Result<(), Error> {
     let total_chunk_length = lodepng_chunk_length(chunk) as usize + 12;
-    out.extend_from_slice(&chunk[0..total_chunk_length]);
+    Ok(out.try_extend_from_slice(&chunk[0..total_chunk_length])?)
 }
 
 /* ////////////////////////////////////////////////////////////////////////// */
@@ -1558,14 +1559,14 @@ pub fn lodepng_zlib_decompress(inp: &[u8]) -> Result<Vec<u8>, Error> {
     }
 
     let mut z = ZlibDecoder::new(inp);
-    let mut out = Vec::with_capacity(inp.len()*3/2);
+    let mut out = Vec::try_with_capacity(inp.len()*3/2)?;
     z.read_to_end(&mut out).map_err(|_| Error::new(53))?;
     Ok(out)
 }
 
 pub fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
     if let Some(cb) = settings.custom_zlib {
-        let mut out = Vec::with_capacity(inp.len()*3/2);
+        let mut out = Vec::try_with_capacity(inp.len()*3/2)?;
         (cb)(inp, &mut out, settings)?;
         Ok(out)
     } else {
@@ -1590,7 +1591,7 @@ pub fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &Compress
 
 /* compress using the default or custom zlib function */
 pub fn zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    let mut out = Vec::with_capacity(inp.len()/2);
+    let mut out = Vec::try_with_capacity(inp.len()/2)?;
     if let Some(cb) = settings.custom_zlib {
         (cb)(inp, &mut out, settings)?;
         Ok(out)
@@ -2067,7 +2068,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     if numpixels > 268435455 {
         return Err(Error::new(92)); /*first byte of the first chunk after the header*/
     }
-    let mut idat = Vec::with_capacity(inp.len() - 33);
+    let mut idat = Vec::try_with_capacity(inp.len() - 33)?;
     let chunks = ChunksIterFallible {
         data: &inp[33..],
     };
@@ -2079,7 +2080,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
         let data = ch.data();
         match &ch.name() {
             b"IDAT" => {
-                idat.extend_from_slice(data);
+                idat.try_extend_from_slice(data)?;
                 critical_pos = ChunkPosition::IDAT;
             },
             b"IEND" => {
@@ -2220,7 +2221,7 @@ pub fn lodepng_save_file(buffer: &[u8], filename: &Path) -> Result<(), Error> {
 fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
     let chunks = ChunksIterFallible {data};
     for ch in chunks {
-        chunk_append(out, ch?.whole_chunk_data());
+        chunk_append(out, ch?.whole_chunk_data())?;
     }
     Ok(())
 }
