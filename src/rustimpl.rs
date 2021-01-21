@@ -39,6 +39,13 @@ fn write_signature(out: &mut Vec<u8>) {
     out.push(10u8);
 }
 
+#[inline]
+fn zero_vec(size: usize) -> Result<Vec<u8>, Error> {
+    let mut vec = Vec::try_with_capacity(size)?;
+    vec.resize(size, 0u8);
+    Ok(vec)
+}
+
 #[derive(Eq, PartialEq)]
 enum PaletteTranslucency {
     Opaque,
@@ -109,10 +116,10 @@ fn pre_process_scanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settin
     let bpp = info_png.color.bpp() as usize;
     if info_png.interlace_method == 0 {
         let outsize = h + (h * ((w * bpp + 7) / 8));
-        let mut out = vec![0u8; outsize];
+        let mut out = zero_vec(outsize)?;
         /*image size plus an extra byte per scanline + possible padding bits*/
         if bpp < 8 && w * bpp != ((w * bpp + 7) / 8) * 8 {
-            let mut padded = vec![0u8; h * ((w * bpp + 7) / 8)]; /*we can immediately filter into the out buffer, no other steps needed*/
+            let mut padded = zero_vec(h * ((w * bpp + 7) / 8))?; /*we can immediately filter into the out buffer, no other steps needed*/
             add_padding_bits(&mut padded, inp, ((w * bpp + 7) / 8) * 8, w * bpp, h);
             filter(&mut out, &padded, w, h, &info_png.color, settings)?;
         } else {
@@ -123,12 +130,12 @@ fn pre_process_scanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settin
         let (passw, passh, filter_passstart, padded_passstart, passstart) = adam7_get_pass_values(w, h, bpp);
         let outsize = filter_passstart[7];
         /*image size plus an extra byte per scanline + possible padding bits*/
-        let mut out = vec![0u8; outsize];
-        let mut adam7 = vec![0u8; passstart[7] + 1];
+        let mut out = zero_vec(outsize)?;
+        let mut adam7 = zero_vec(passstart[7] + 1)?;
         adam7_interlace(&mut adam7, inp, w, h, bpp);
         for i in 0..7 {
             if bpp < 8 {
-                let mut padded = vec![0u8; padded_passstart[i + 1] - padded_passstart[i]];
+                let mut padded = zero_vec(padded_passstart[i + 1] - padded_passstart[i])?;
                 add_padding_bits(
                     &mut padded,
                     &adam7[passstart[i]..],
@@ -197,11 +204,11 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
         FilterStrategy::MINSUM => {
             let mut sum: [usize; 5] = [0, 0, 0, 0, 0];
             let mut attempt = [
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
             ];
             let mut smallest = 0;
             let mut best_type = 0;
@@ -235,11 +242,11 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
             let mut smallest = 0.;
             let mut best_type = 0;
             let mut attempt = [
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
             ];
             for y in 0..h {
                 for type_ in 0..5 {
@@ -290,11 +297,11 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
             zlibsettings.custom_zlib = None;
             zlibsettings.custom_deflate = None; /*try the 5 filter types*/
             let mut attempt = [
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
-                vec![0u8; linebytes],
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
+                zero_vec(linebytes)?,
             ];
             for y in 0..h {
                 for type_ in 0..5 {
@@ -2156,11 +2163,10 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
         /*decompressed size doesn't match prediction*/
         return Err(Error::new(91));
     }
-    let mut out = vec![0; state.info_png.color.raw_size(w as u32, h as u32)];
+    let mut out = zero_vec(state.info_png.color.raw_size(w as u32, h as u32))?;
     postprocess_scanlines(&mut out, &mut scanlines, w, h, &state.info_png)?;
     Ok((out, w, h))
 }
-
 
 pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usize), Error> {
     let (decoded, w, h) = decode_generic(state, inp)?;
@@ -2179,7 +2185,7 @@ pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, 
         if !(state.info_raw.colortype == ColorType::RGB || state.info_raw.colortype == ColorType::RGBA) && (state.info_raw.bitdepth() != 8) {
             return Err(Error::new(56)); /*unsupported color mode conversion*/
         }
-        let mut out = vec![0; state.info_raw.raw_size(w as u32, h as u32)];
+        let mut out = zero_vec(state.info_raw.raw_size(w as u32, h as u32))?;
         lodepng_convert(&mut out, &decoded, &state.info_raw, &state.info_png.color, w as u32, h as u32)?;
         Ok((out, w, h))
     }
@@ -2246,8 +2252,8 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     check_lode_color_validity(state.info_raw.colortype, state.info_raw.bitdepth())?; /*LodePNG version id in text chunk */
 
     let data = if !lodepng_color_mode_equal(&state.info_raw, &info.color) {
-        let size = (w * h * (info.color.bpp() as usize) + 7) / 8;
-        let mut converted = vec![0u8; size];
+        let raw_size = (w * h * (info.color.bpp() as usize) + 7) / 8;
+        let mut converted = zero_vec(raw_size)?;
         lodepng_convert(&mut converted, image, &info.color, &state.info_raw, w as u32, h as u32)?;
         pre_process_scanlines(&converted, w, h, &info, &state.encoder)?
     } else {
