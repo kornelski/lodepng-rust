@@ -1565,9 +1565,17 @@ pub fn lodepng_zlib_decompress(inp: &[u8]) -> Result<Vec<u8>, Error> {
         return Err(Error::new(26));
     }
 
-    let mut z = ZlibDecoder::new(inp);
+    let mut buf = [0; 32 * 1024];
+    let mut z = ZlibDecoder::new_with_buf(inp, zero_vec(32 * 1024)?);
     let mut out = Vec::try_with_capacity(inp.len()*3/2)?;
-    z.read_to_end(&mut out).map_err(|_| Error::new(53))?;
+    loop {
+        let read = z.read(&mut buf)?;
+        if read > 0 {
+            out.try_extend_from_slice(&buf[0..read])?;
+        } else {
+            break;
+        }
+    }
     Ok(out)
 }
 
