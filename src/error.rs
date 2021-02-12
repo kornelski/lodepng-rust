@@ -13,7 +13,9 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 impl ErrorCode {
     /// Returns an English description of the numerical error code.
     pub fn as_str(&self) -> &'static str {
-        std::str::from_utf8(self.c_description()).unwrap()
+        let s = self.c_description();
+        let s = &s[..s.len()-1]; // trim \0
+        std::str::from_utf8(s).unwrap_or("")
     }
 
     /// Helper function for the library
@@ -197,4 +199,9 @@ impl From<fallible_collections::TryReserveError> for Error {
     fn from(_: fallible_collections::TryReserveError) -> Self {
         Self(NonZeroU32::new(83).unwrap())
     }
+}
+
+#[test]
+fn error_str() {
+    assert_eq!(ErrorCode(83).as_str(), "memory allocation failed");
 }
