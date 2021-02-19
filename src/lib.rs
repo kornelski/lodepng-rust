@@ -117,6 +117,8 @@ impl ColorMode {
     }
 
     /// is it a greyscale type? (only colortype 0 or 4)
+    #[cfg_attr(docsrs, doc(alias="is_grayscale_type"))]
+    #[cfg_attr(docsrs, doc(alias="is_gray"))]
     pub fn is_greyscale_type(&self) -> bool {
         self.colortype == ColorType::GREY || self.colortype == ColorType::GREY_ALPHA
     }
@@ -636,7 +638,9 @@ impl Default for State {
     }
 }
 
+#[cfg_attr(docsrs, doc(alias="Gray"))]
 pub use rgb::alt::Gray as Grey;
+#[cfg_attr(docsrs, doc(alias="GrayAlpha"))]
 pub use rgb::alt::GrayAlpha as GreyAlpha;
 
 /// Bitmap types.
@@ -647,11 +651,17 @@ pub use rgb::alt::GrayAlpha as GreyAlpha;
 pub enum Image {
     /// Bytes of the image. See bpp how many pixels per element there are
     RawData(Bitmap<u8>),
+    #[cfg_attr(docsrs, doc(alias="Gray"))]
     Grey(Bitmap<Grey<u8>>),
+    #[cfg_attr(docsrs, doc(alias="Gray16"))]
     Grey16(Bitmap<Grey<u16>>),
+    #[cfg_attr(docsrs, doc(alias="GrayAlpha"))]
     GreyAlpha(Bitmap<GreyAlpha<u8>>),
+    #[cfg_attr(docsrs, doc(alias="GrayAlpha16"))]
     GreyAlpha16(Bitmap<GreyAlpha<u16>>),
+    #[cfg_attr(docsrs, doc(alias="RGBA8"))]
     RGBA(Bitmap<RGBA>),
+    #[cfg_attr(docsrs, doc(alias="RGB8"))]
     RGB(Bitmap<RGB<u8>>),
     RGBA16(Bitmap<rgb::RGBA<u16>>),
     RGB16(Bitmap<RGB<u16>>),

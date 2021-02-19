@@ -10,7 +10,7 @@ license = "BSD-3-Clause"
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/kornelski/lodepng-rust.git"
-version = "3.4.4"
+version = "3.4.5"
 edition = "2018"
 
 [badges]
@@ -33,6 +33,7 @@ opt-level = 2
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["rust_backend"]

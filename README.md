@@ -6,12 +6,14 @@ To use the [lodepng crate](https://lib.rs/crates/lodepng), add to your `Cargo.to
 
 ```toml
 [dependencies]
-lodepng = "3.3"
+lodepng = "3.4"
 ```
 
 See [API reference](https://docs.rs/lodepng/) for details. Requires Rust 1.46 or later.
 
 ### Loading image example
+
+[There are more examples in the `examples/` dir](https://github.com/kornelski/lodepng-rust/tree/main/examples).
 
 ```rust
 let image = lodepng::decode32_file("in.png")?;
@@ -50,17 +52,17 @@ match state.decode("in.png") {
     Ok(lodepng::Image::RGB(image)) => {…}
     Ok(lodepng::Image::RGBA(image)) => {…}
     Ok(lodepng::Image::RGBA16(image)) => {…}
-    Ok(lodepng::Image::Gray(image)) => {…}
+    Ok(lodepng::Image::Grey(image)) => {…}
     Ok(_) => {…}
     Err(err) => {…}
 }
 
-for chunk in state.info_png().unknown_chunks() {
+for chunk in state.info_png().unknown_chunks(ChunkPosition::IHDR) {
     println!("{:?} = {:?}", chunk.name(), chunk.data());
 }
 
 // Color profile (to be used with e.g. LCMS2)
-let icc_data = state.info_png().get_icc();
+let icc_data = state.get_icc();
 ```
 
 See [load_image](https://lib.rs/load_image) crate for an example how to use lodepng with color profiles.
