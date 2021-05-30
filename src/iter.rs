@@ -11,6 +11,7 @@ pub struct TextKeysIter<'a> {
 impl<'a> Iterator for TextKeysIter<'a> {
     /// key value
     type Item = (&'a [u8], &'a [u8]);
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         if let Some((first, rest)) = self.s.split_first() {
             self.s = rest;
@@ -32,6 +33,7 @@ pub struct ITextKeysIter<'a> {
 impl<'a> Iterator for ITextKeysIter<'a> {
     /// key langtag transkey value
     type Item = (&'a str, &'a str, &'a str, &'a str);
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         if let Some((first, rest)) = self.s.split_first() {
             self.s = rest;
@@ -52,6 +54,7 @@ pub struct ChunksIter<'a> {
 }
 
 impl<'a> ChunksIter<'a> {
+    #[inline(always)]
     pub fn new(data: &'a [u8]) -> Self {
         Self {
             iter: ChunksIterFallible {
@@ -63,6 +66,7 @@ impl<'a> ChunksIter<'a> {
 
 impl<'a> Iterator for ChunksIter<'a> {
     type Item = ChunkRef<'a>;
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().and_then(|item| item.ok())
     }
@@ -75,6 +79,7 @@ pub struct ChunksIterFallible<'a> {
 impl<'a> Iterator for ChunksIterFallible<'a> {
     type Item = Result<ChunkRef<'a>, Error>;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         if self.data.is_empty() {
             return None;

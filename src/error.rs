@@ -19,6 +19,7 @@ impl ErrorCode {
     }
 
     /// Helper function for the library
+    #[inline]
     pub fn to_result(self) -> Result<(), Error> {
         match NonZeroU32::new(self.0) {
             None => Ok(()),
@@ -29,14 +30,14 @@ impl ErrorCode {
 
 impl Error {
     /// Panics if the code is 0
-    #[inline(always)]
+    #[cold]
     pub fn new(code: u32) -> Self {
         Self(NonZeroU32::new(code).unwrap())
     }
 }
 
 impl From<ErrorCode> for Result<(), Error> {
-    #[inline(always)]
+    #[cold]
     fn from(err: ErrorCode) -> Self {
         err.to_result()
     }
@@ -50,18 +51,21 @@ impl From<Error> for ErrorCode {
 }
 
 impl fmt::Debug for Error {
+    #[cold]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ({})", ErrorCode(self.0.get()).as_str(), self.0)
     }
 }
 
 impl fmt::Debug for ErrorCode {
+    #[cold]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ({})", self.as_str(), self.0)
     }
 }
 
 impl fmt::Display for Error {
+    #[cold]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(ErrorCode(self.0.get()).as_str())
     }
@@ -72,6 +76,7 @@ impl error::Error for Error {
 
 #[doc(hidden)]
 impl std::convert::From<io::Error> for Error {
+    #[cold]
     fn from(err: io::Error) -> Error {
         match err.kind() {
             io::ErrorKind::NotFound | io::ErrorKind::UnexpectedEof => Error::new(78),
@@ -85,6 +90,7 @@ This returns the description of a numerical error code in English. This is also
 the documentation of all the error codes.
 */
 impl ErrorCode {
+    #[cold]
     pub fn c_description(&self) -> &'static [u8] {
         match self.0 {
             0 => "no error, everything went ok\0",
@@ -196,6 +202,7 @@ impl ErrorCode {
 }
 
 impl From<fallible_collections::TryReserveError> for Error {
+    #[cold]
     fn from(_: fallible_collections::TryReserveError) -> Self {
         Self(NonZeroU32::new(83).unwrap())
     }

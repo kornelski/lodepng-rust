@@ -21,8 +21,7 @@ use std::mem;
 use std::ptr;
 use std::slice;
 use std::cmp;
-use std::fs::File;
-use std::io::Write;
+use std::fs;
 use std::path::Path;
 use std::os::raw::c_void;
 use std::convert::TryInto;
@@ -41,24 +40,28 @@ pub use crate::ffi::Info;
 pub use crate::ffi::ColorMode;
 
 impl ColorMode {
+    #[inline(always)]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[inline(always)]
     pub fn colortype(&self) -> ColorType {
         self.colortype
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn bitdepth(&self) -> u32 {
         self.bitdepth
     }
 
+    #[inline]
     pub fn set_bitdepth(&mut self, d: u32) {
         assert!(d >= 1 && d <= 16);
         self.bitdepth = d;
     }
 
+    #[inline]
     pub fn palette_clear(&mut self) {
         self.palette = None;
         self.palettesize = 0;
@@ -75,17 +78,20 @@ impl ColorMode {
         Ok(())
     }
 
+    #[inline]
     pub fn palette(&self) -> &[RGBA] {
         let len = self.palettesize;
         self.palette.as_deref().and_then(|p| p.get(..len)).unwrap_or_default()
     }
 
+    #[inline]
     pub fn palette_mut(&mut self) -> &mut [RGBA] {
         let len = self.palettesize;
         self.palette.as_deref_mut().and_then(|p| p.get_mut(..len)).unwrap_or_default()
     }
 
     /// get the total amount of bits per pixel, based on colortype and bitdepth in the struct
+    #[inline(always)]
     pub fn bpp(&self) -> u32 {
         lodepng_get_bpp_lct(self.colortype, self.bitdepth()) /*4 or 6*/
     }
@@ -95,6 +101,7 @@ impl ColorMode {
     }
 
     /// `tRNS` chunk
+    #[inline]
     pub fn set_key(&mut self, r: u16, g: u16, b: u16) {
         self.key_defined = 1;
         self.key_r = c_uint::from(r);
@@ -102,6 +109,7 @@ impl ColorMode {
         self.key_b = c_uint::from(b);
     }
 
+    #[inline]
     pub(crate) fn key(&self) -> Option<(u16, u16, u16)> {
         if self.key_defined != 0 {
             Some((self.key_r as u16, self.key_g as u16, self.key_b as u16))
@@ -112,6 +120,7 @@ impl ColorMode {
 
     /// get the amount of color channels used, based on colortype in the struct.
     /// If a palette is used, it counts as 1 channel.
+    #[inline(always)]
     pub fn channels(&self) -> u8 {
         self.colortype.channels()
     }
@@ -119,16 +128,19 @@ impl ColorMode {
     /// is it a greyscale type? (only colortype 0 or 4)
     #[cfg_attr(docsrs, doc(alias="is_grayscale_type"))]
     #[cfg_attr(docsrs, doc(alias="is_gray"))]
+    #[inline]
     pub fn is_greyscale_type(&self) -> bool {
         self.colortype == ColorType::GREY || self.colortype == ColorType::GREY_ALPHA
     }
 
     /// has it got an alpha channel? (only colortype 2 or 6)
+    #[inline]
     pub fn is_alpha_type(&self) -> bool {
         (self.colortype as u32 & 4) != 0
     }
 
     /// has it got a palette? (only colortype 3)
+    #[inline(always)]
     pub fn is_palette_type(&self) -> bool {
         self.colortype == ColorType::PALETTE
     }
@@ -149,6 +161,7 @@ impl ColorMode {
     }
 
     /// Returns the byte size of a raw image buffer with given width, height and color mode
+    #[inline]
     pub fn raw_size(&self, w: u32, h: u32) -> usize {
         /*will not overflow for any color type if roughly w * h < 268435455*/
         let bpp = self.bpp() as usize;
@@ -166,6 +179,7 @@ impl ColorMode {
 }
 
 impl Default for ColorMode {
+    #[inline]
     fn default() -> Self {
         Self {
             key_defined: 0,
@@ -182,6 +196,7 @@ impl Default for ColorMode {
 
 impl ColorType {
     /// Create color mode with given type and bitdepth
+    #[inline]
     pub fn to_color_mode(&self, bitdepth: c_uint) -> ColorMode {
         ColorMode {
             colortype: *self,
@@ -191,6 +206,7 @@ impl ColorType {
     }
 
     /// channels * bytes per channel = bytes per pixel
+    #[inline]
     pub fn channels(&self) -> u8 {
         match *self {
             ColorType::GREY | ColorType::PALETTE => 1,
@@ -205,12 +221,14 @@ impl ColorType {
 }
 
 impl Time {
+    #[inline(always)]
     pub fn new() -> Self {
         Self::default()
     }
 }
 
 impl Info {
+    #[inline]
     pub fn new() -> Self {
         Self {
             color: ColorMode::new(),
@@ -225,6 +243,7 @@ impl Info {
         }
     }
 
+    #[inline(always)]
     pub fn text_keys(&self) -> TextKeysIter<'_> {
         TextKeysIter {
             s: &self.texts,
@@ -236,6 +255,7 @@ impl Info {
         self.text_keys()
     }
 
+    #[inline(always)]
     pub fn itext_keys(&self) -> ITextKeysIter<'_> {
         ITextKeysIter {
             s: &self.itexts,
@@ -243,17 +263,20 @@ impl Info {
     }
 
     /// use this to clear the texts again after you filled them in
+    #[inline]
     pub fn clear_text(&mut self) {
         self.texts = Vec::new();
         self.itexts = Vec::new();
     }
 
     /// push back both texts at once
+    #[inline]
     pub fn add_text(&mut self, key: &str, str: &str) -> Result<(), Error> {
         self.push_text(key.as_bytes(), str.as_bytes())
     }
 
     /// use this to clear the itexts again after you filled them in
+    #[inline]
     pub fn clear_itext(&mut self) {
         self.itexts = Vec::new();
     }
@@ -268,6 +291,7 @@ impl Info {
         )
     }
 
+    #[inline]
     pub fn append_chunk(&mut self, position: ChunkPosition, chunk: ChunkRef<'_>) -> Result<(), Error> {
         self.unknown_chunks[position as usize].extend_from_slice(chunk.data);
         Ok(())
@@ -290,6 +314,7 @@ impl Info {
             .find(|c| c.is_type(index))
     }
 
+    #[inline]
     pub fn unknown_chunks(&self, position: ChunkPosition) -> ChunksIter<'_> {
         ChunksIter::new(&self.unknown_chunks[position as usize])
     }
@@ -302,30 +327,31 @@ pub struct Encoder {
 }
 
 impl Encoder {
+    #[inline(always)]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// If true, convert to output format
-    #[inline]
+    #[inline(always)]
     pub fn set_auto_convert(&mut self, mode: bool) {
         self.state.set_auto_convert(mode);
     }
 
     /// palette_filter_zero controls filtering for low-bitdepth images
-    #[inline]
+    #[inline(always)]
     pub fn set_filter_strategy(&mut self, mode: FilterStrategy, palette_filter_zero: bool) {
         self.state.set_filter_strategy(mode, palette_filter_zero);
     }
 
     /// gzip text metadata
-    #[inline]
+    #[inline(always)]
     pub fn set_text_compression(&mut self, compr: bool) {
         self.state.encoder.text_compression = compr;
     }
 
     /// Compress using another zlib implementation. It's gzip header + deflate + adler32 checksum.
-    #[inline]
+    #[inline(always)]
     #[allow(deprecated)]
     pub fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.state.encoder.zlibsettings.custom_zlib = callback;
@@ -333,49 +359,50 @@ impl Encoder {
     }
 
     /// Compress using another deflate implementation. It's just deflate, without headers or checksum.
-    #[inline]
+    #[inline(always)]
     #[allow(deprecated)]
     pub fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.state.encoder.zlibsettings.custom_deflate = callback;
         self.state.encoder.zlibsettings.custom_context = context;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn info_raw(&self) -> &ColorMode {
         self.state.info_raw()
     }
 
-    #[inline]
+    #[inline(always)]
     /// Color mode of the source bytes to be encoded
     pub fn info_raw_mut(&mut self) -> &mut ColorMode {
         self.state.info_raw_mut()
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn info_png(&self) -> &Info {
         self.state.info_png()
     }
 
-    #[inline]
+    #[inline(always)]
     /// Color mode of the file to be created
     pub fn info_png_mut(&mut self) -> &mut Info {
         self.state.info_png_mut()
     }
 
-    #[inline]
+    #[inline(always)]
     #[allow(deprecated)]
     /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
     pub fn encode<PixelType: rgb::Pod>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         self.state.encode(image, w, h)
     }
 
-    #[inline]
+    #[inline(always)]
     #[allow(deprecated)]
     /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
     pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         self.state.encode_file(filepath, image, w, h)
     }
 
+    #[inline(always)]
     pub fn settings_mut(&mut self) -> &mut EncoderSettings {
         &mut self.state.encoder
     }
@@ -388,53 +415,53 @@ pub struct Decoder {
 }
 
 impl Decoder {
-    #[inline]
+    #[inline(always)]
     pub fn new() -> Self {
         Self::default()
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn info_raw(&self) -> &ColorMode {
         self.state.info_raw()
     }
 
-    #[inline]
+    #[inline(always)]
     /// Preferred color mode for decoding
     pub fn info_raw_mut(&mut self) -> &mut ColorMode {
         self.state.info_raw_mut()
     }
 
-    #[inline]
+    #[inline(always)]
     /// Actual color mode of the decoded image or inspected file
     pub fn info_png(&self) -> &Info {
         self.state.info_png()
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn info_png_mut(&mut self) -> &mut Info {
         self.state.info_png_mut()
     }
 
     /// whether to convert the PNG to the color type you want. Default: yes
-    #[inline]
+    #[inline(always)]
     pub fn color_convert(&mut self, true_or_false: bool) {
         self.state.color_convert(true_or_false);
     }
 
     /// if false but remember_unknown_chunks is true, they're stored in the unknown chunks.
-    #[inline]
+    #[inline(always)]
     pub fn read_text_chunks(&mut self, true_or_false: bool) {
         self.state.read_text_chunks(true_or_false);
     }
 
     /// store all bytes from unknown chunks in the `Info` (off by default, useful for a png editor)
-    #[inline]
+    #[inline(always)]
     pub fn remember_unknown_chunks(&mut self, true_or_false: bool) {
         self.state.remember_unknown_chunks(true_or_false);
     }
 
     /// Decompress ICC profile from iCCP chunk
-    #[inline]
+    #[inline(always)]
     pub fn get_icc(&self) -> Result<Vec<u8>, Error> {
         self.state.get_icc()
     }
@@ -451,7 +478,7 @@ impl Decoder {
     ///      _ => panic!("¯\\_(ツ)_/¯")
     ///  }
     ///  ```
-    #[inline]
+    #[inline(always)]
     #[allow(deprecated)]
     pub fn decode<Bytes: AsRef<[u8]>>(&mut self, input: Bytes) -> Result<Image, Error> {
         self.state.decode(input)
@@ -459,18 +486,20 @@ impl Decoder {
 
     /// Decode a file from disk using Decoder's settings
     #[allow(deprecated)]
+    #[inline(always)]
     pub fn decode_file<P: AsRef<Path>>(&mut self, filepath: P) -> Result<Image, Error> {
         self.state.decode_file(filepath)
     }
 
     /// Updates `info_png`. Returns (width, height)
     #[allow(deprecated)]
-    #[inline]
+    #[inline(always)]
     pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
         self.state.inspect(input)
     }
 
     /// use custom zlib decoder instead of built in one
+    #[inline(always)]
     pub fn set_custom_zlib(&mut self, callback: ffi::custom_decompress_callback, context: *const c_void) {
         self.state.decoder.zlibsettings.custom_zlib = callback;
         self.state.decoder.zlibsettings.custom_context = context;
@@ -479,6 +508,7 @@ impl Decoder {
     /// use custom deflate decoder instead of built in one.
     ///
     /// If custom_zlib is used, custom_inflate is ignored since only the built in zlib function will call custom_inflate
+    #[inline(always)]
     pub fn set_custom_inflate(&mut self, callback: ffi::custom_decompress_callback, context: *const c_void) {
         self.state.decoder.zlibsettings.custom_inflate = callback;
         self.state.decoder.zlibsettings.custom_context = context;
@@ -491,11 +521,12 @@ impl State {
         Self::default()
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_auto_convert(&mut self, mode: bool) {
         self.encoder.auto_convert = mode;
     }
 
+    #[inline(always)]
     pub fn set_filter_strategy(&mut self, mode: FilterStrategy, palette_filter_zero: bool) {
         self.encoder.filter_strategy = mode;
         self.encoder.filter_palette_zero = palette_filter_zero;
@@ -515,40 +546,40 @@ impl State {
         self.encoder.zlibsettings.custom_context = context;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn info_raw(&self) -> &ColorMode {
         &self.info_raw
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn info_raw_mut(&mut self) -> &mut ColorMode {
         &mut self.info_raw
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn info_png(&self) -> &Info {
         &self.info_png
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn info_png_mut(&mut self) -> &mut Info {
         &mut self.info_png
     }
 
     /// whether to convert the PNG to the color type you want. Default: yes
-    #[inline]
+    #[inline(always)]
     pub fn color_convert(&mut self, true_or_false: bool) {
         self.decoder.color_convert = true_or_false;
     }
 
     /// if false but remember_unknown_chunks is true, they're stored in the unknown chunks.
-    #[inline]
+    #[inline(always)]
     pub fn read_text_chunks(&mut self, true_or_false: bool) {
         self.decoder.read_text_chunks = true_or_false;
     }
 
     /// store all bytes from unknown chunks in the `Info` (off by default, useful for a png editor)
-    #[inline]
+    #[inline(always)]
     pub fn remember_unknown_chunks(&mut self, true_or_false: bool) {
         self.decoder.remember_unknown_chunks = true_or_false;
     }
@@ -599,7 +630,7 @@ impl State {
     #[allow(deprecated)]
     #[inline]
     pub fn decode_file<P: AsRef<Path>>(&mut self, filepath: P) -> Result<Image, Error> {
-        self.decode(&std::fs::read(filepath)?)
+        self.decode(&fs::read(filepath)?)
     }
 
     /// Updates `info_png`. Returns (width, height)
@@ -622,7 +653,8 @@ impl State {
     #[inline]
     pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = self.encode(image, w, h)?;
-        save_file(filepath, buf.as_ref())
+        fs::write(filepath, &buf)?;
+        Ok(())
     }
 }
 
@@ -768,12 +800,6 @@ fn new_bitmap(buffer: Vec<u8>, w: usize, h: usize, colortype: ColorType, bitdept
     })
 }
 
-fn save_file<P: AsRef<Path>>(filepath: P, data: &[u8]) -> Result<(), Error> {
-    let mut file = File::create(filepath)?;
-    file.write_all(data)?;
-    Ok(())
-}
-
 /// Converts PNG data in memory to raw pixel data.
 ///
 /// `decode32` and `decode24` are more convenient if you want specific image format.
@@ -783,6 +809,7 @@ fn save_file<P: AsRef<Path>>(filepath: P, data: &[u8]) -> Result<(), Error> {
 /// * `in`: Memory buffer with the PNG file.
 /// * `colortype`: the desired color type for the raw output image. See `ColorType`.
 /// * `bitdepth`: the desired bit depth for the raw output image. 1, 2, 4, 8 or 16. Typically 8.
+#[inline]
 pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
     let input = input.as_ref();
     assert!(bitdepth > 0 && bitdepth <= 16);
@@ -825,9 +852,9 @@ pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Err
 ///      _ => panic!("¯\\_(ツ)_/¯")
 ///  }
 ///  ```
-#[inline]
+#[inline(always)]
 pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
-    decode_memory(&std::fs::read(filepath)?, colortype, bitdepth)
+    decode_memory(&fs::read(filepath)?, colortype, bitdepth)
 }
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
@@ -880,19 +907,20 @@ fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize,
 /// * `bitdepth`: the bit depth of the raw input image. 1, 2, 4, 8 or 16. Typically 8.
 ///
 /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
+#[inline]
 pub fn encode_memory<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
     let image = buffer_for_type(image, w, h, colortype, bitdepth)?;
     Ok(rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)?)
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
-#[inline]
+#[inline(always)]
 pub fn encode32<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
-#[inline]
+#[inline(always)]
 pub fn encode24<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGB, 8)
 }
@@ -901,19 +929,21 @@ pub fn encode24<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) ->
 /// Same as the other encode functions, but instead takes a file path as output.
 ///
 /// NOTE: This overwrites existing files without warning!
+#[inline]
 pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = encode_memory(image, w, h, colortype, bitdepth)?;
-    save_file(filepath, encoded.as_ref())
+    fs::write(filepath, &encoded)?;
+    Ok(())
 }
 
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
-#[inline]
+#[inline(always)]
 pub fn encode32_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
-#[inline]
+#[inline(always)]
 pub fn encode24_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGB, 8)
 }
@@ -952,7 +982,7 @@ impl<'a> ChunkRef<'a> {
         })
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn len(&self) -> usize {
         lodepng_chunk_length(self.data)
     }
@@ -1009,13 +1039,13 @@ impl<'a> ChunkRef<'a> {
 
     #[cfg(fuzzing)]
     /// Disable crc32 checks so that random data from fuzzer gets actually parsed
-    #[inline]
+    #[inline(always)]
     pub fn check_crc(&self) -> bool {
         true
     }
 
     /// header + data + crc
-    #[inline]
+    #[inline(always)]
     pub(crate) fn whole_chunk_data(&self) -> &[u8] {
         self.data
     }
@@ -1026,11 +1056,13 @@ pub struct ChunkRefMut<'a> {
 }
 
 impl<'a> ChunkRefMut<'a> {
+    #[inline]
     pub fn data_mut(&mut self) -> &mut [u8] {
         let len = ChunkRef::new(self.data).unwrap().len();
         &mut self.data[8..8 + len]
     }
 
+    #[inline]
     pub fn generate_crc(&mut self) {
         rustimpl::lodepng_chunk_generate_crc(self.data)
     }
@@ -1038,12 +1070,14 @@ impl<'a> ChunkRefMut<'a> {
 
 impl CompressSettings {
     /// Default compression settings
+    #[inline(always)]
     pub fn new() -> CompressSettings {
         Self::default()
     }
 }
 
 impl Default for CompressSettings {
+    #[inline]
     #[allow(deprecated)]
     fn default() -> Self {
         Self {
@@ -1061,12 +1095,14 @@ impl Default for CompressSettings {
 }
 
 impl DecompressSettings {
+    #[inline(always)]
     pub fn new() -> Self {
         Self::default()
     }
 }
 
 impl Default for DecompressSettings {
+    #[inline]
     fn default() -> Self {
         Self {
             custom_zlib: None,
@@ -1077,12 +1113,14 @@ impl Default for DecompressSettings {
 }
 
 impl DecoderSettings {
+    #[inline(always)]
     pub fn new() -> Self {
         Self::default()
     }
 }
 
 impl Default for DecoderSettings {
+    #[inline]
     fn default() -> Self {
         Self {
             color_convert: true,
@@ -1095,12 +1133,14 @@ impl Default for DecoderSettings {
 }
 
 impl EncoderSettings {
+    #[inline(always)]
     pub fn new() -> Self {
         Self::default()
     }
 }
 
 impl Default for EncoderSettings {
+    #[inline]
     fn default() -> Self {
         Self {
             zlibsettings: CompressSettings::new(),

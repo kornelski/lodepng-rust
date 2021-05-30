@@ -137,6 +137,7 @@ pub struct ColorMode {
 }
 
 impl fmt::Debug for ColorMode {
+    #[cold]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut s = f.debug_struct("ColorMode");
         s.field("colortype", &self.colortype);
@@ -417,6 +418,7 @@ pub struct ColorProfile {
 }
 
 impl fmt::Debug for ColorProfile {
+    #[cold]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ColorProfile")
             .field("colored", &self.colored)
@@ -433,6 +435,7 @@ impl fmt::Debug for ColorProfile {
 
 impl fmt::Debug for CompressSettings {
     #[allow(deprecated)]
+    #[cold]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = f.debug_struct("CompressSettings");
         s.field("minmatch", &self.minmatch);
