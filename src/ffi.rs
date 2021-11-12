@@ -8,10 +8,17 @@ use std::slice;
 use std::fmt;
 use std::os::raw::{c_char, c_uint, c_long, c_void};
 use std::ffi::CStr;
-use std::path::*;
 use std::io;
 
 use crate::rustimpl;
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+mod libc;
+
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+use std::path::{PathBuf};
+
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+use std::path::{Path};
 
 macro_rules! lode_error {
     ($e:expr) => {
