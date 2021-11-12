@@ -1,12 +1,12 @@
 #![cfg_attr(feature = "cargo-clippy", allow(needless_borrow))]
 #![allow(non_upper_case_globals)]
 use crate::ChunkRef;
-use crate::rustimpl::*;
+use crate::rustimpl::RGBA;
 use std::ptr;
 use std::mem;
 use std::slice;
 use std::fmt;
-use std::os::raw::*;
+use std::os::raw::{c_char, c_uint, c_long, c_void};
 use std::ffi::CStr;
 use std::path::*;
 use std::io;
