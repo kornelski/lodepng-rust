@@ -15,10 +15,10 @@ use crate::rustimpl;
 mod libc;
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-use std::path::{Path};
+use std::path::Path;
 
 macro_rules! lode_error {
     ($e:expr) => {
