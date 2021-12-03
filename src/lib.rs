@@ -41,6 +41,8 @@ pub use crate::ffi::Time;
 pub use crate::ffi::ColorMode;
 pub use crate::ffi::Info;
 
+pub use iter::ChunksIter;
+
 impl ColorMode {
     #[inline(always)]
     pub fn new() -> Self {
@@ -296,12 +298,14 @@ impl Info {
         )
     }
 
+    /// Add literal PNG-data chunk unmodified to the unknown chunks
     #[inline]
     pub fn append_chunk(&mut self, position: ChunkPosition, chunk: ChunkRef<'_>) -> Result<(), Error> {
         self.unknown_chunks[position as usize].extend_from_slice(chunk.data);
         Ok(())
     }
 
+    /// Add custom chunk data to the file (if writing one)
     pub fn create_chunk<C: AsRef<[u8]>>(&mut self, position: ChunkPosition, chtype: C, data: &[u8]) -> Result<(), Error> {
         let chtype = chtype.as_ref();
         let chtype = match chtype.try_into() {
@@ -311,16 +315,24 @@ impl Info {
         rustimpl::add_chunk(&mut self.unknown_chunks[position as usize], &chtype, data)
     }
 
-    pub fn get<Name: AsRef<[u8]>>(&self, index: Name) -> Option<ChunkRef<'_>> {
+    /// Uses linear search to find a given chunk. You can use `b"PLTE"` syntax.
+    pub fn get<NameBytes: AsRef<[u8]>>(&self, index: NameBytes) -> Option<ChunkRef<'_>> {
         let index = index.as_ref();
-        self.unknown_chunks(ChunkPosition::IHDR)
-            .chain(self.unknown_chunks(ChunkPosition::PLTE))
-            .chain(self.unknown_chunks(ChunkPosition::IDAT))
+        self.try_unknown_chunks(ChunkPosition::IHDR)
+            .chain(self.try_unknown_chunks(ChunkPosition::PLTE))
+            .chain(self.try_unknown_chunks(ChunkPosition::IDAT))
+            .filter_map(|c| c.ok())
             .find(|c| c.is_type(index))
     }
 
+    #[deprecated(note = "use try_unknown_chunks")]
+    pub fn unknown_chunks(&self, position: ChunkPosition) -> ChunksIterFragile<'_> {
+        ChunksIterFragile::new(&self.unknown_chunks[position as usize])
+    }
+
+    /// Iterate over chunks that aren't part of image data. Only available if `remember_unknown_chunks` was set.
     #[inline]
-    pub fn unknown_chunks(&self, position: ChunkPosition) -> ChunksIter<'_> {
+    pub fn try_unknown_chunks(&self, position: ChunkPosition) -> ChunksIter<'_> {
         ChunksIter::new(&self.unknown_chunks[position as usize])
     }
 }
@@ -465,7 +477,7 @@ impl Decoder {
         self.state.remember_unknown_chunks(true_or_false);
     }
 
-    /// Decompress ICC profile from iCCP chunk
+    /// Decompress ICC profile from iCCP chunk. Only available if `remember_unknown_chunks` was set.
     #[inline(always)]
     pub fn get_icc(&self) -> Result<Vec<u8>, Error> {
         self.state.get_icc()
@@ -589,7 +601,7 @@ impl State {
         self.decoder.remember_unknown_chunks = true_or_false;
     }
 
-    /// Decompress ICC profile from iCCP chunk
+    /// Decompress ICC profile from iCCP chunk. Only available if `remember_unknown_chunks` was set.
     pub fn get_icc(&self) -> Result<Vec<u8>, Error> {
         let iccp = self.info_png().get("iCCP");
         if iccp.is_none() {
@@ -1202,21 +1214,21 @@ mod test {
         let mut state = Encoder::new();
         {
             let info = state.info_png_mut();
-            for _ in info.unknown_chunks(ChunkPosition::IHDR) {
+            for _ in info.try_unknown_chunks(ChunkPosition::IHDR) {
                 panic!("no chunks yet");
             }
 
             let testdata = &[1, 2, 3];
             info.create_chunk(ChunkPosition::PLTE, &[255, 0, 100, 32], testdata).unwrap();
-            assert_eq!(1, info.unknown_chunks(ChunkPosition::PLTE).count());
+            assert_eq!(1, info.try_unknown_chunks(ChunkPosition::PLTE).count());
 
             info.create_chunk(ChunkPosition::IHDR, "foob", testdata).unwrap();
-            assert_eq!(1, info.unknown_chunks(ChunkPosition::IHDR).count());
+            assert_eq!(1, info.try_unknown_chunks(ChunkPosition::IHDR).count());
             info.create_chunk(ChunkPosition::IHDR, "foob", testdata).unwrap();
-            assert_eq!(2, info.unknown_chunks(ChunkPosition::IHDR).count());
+            assert_eq!(2, info.try_unknown_chunks(ChunkPosition::IHDR).count());
 
-            for _ in info.unknown_chunks(ChunkPosition::IDAT) {}
-            let chunk = info.unknown_chunks(ChunkPosition::IHDR).next().unwrap();
+            for _ in info.try_unknown_chunks(ChunkPosition::IDAT) {}
+            let chunk = info.try_unknown_chunks(ChunkPosition::IHDR).next().unwrap().unwrap();
             assert_eq!("foob".as_bytes(), chunk.name());
             assert!(chunk.is_type("foob"));
             assert!(!chunk.is_type("foobar"));
@@ -1231,7 +1243,7 @@ mod test {
         let mut dec = Decoder::new();
         dec.remember_unknown_chunks(true);
         dec.decode(img).unwrap();
-        let chunk = dec.info_png().unknown_chunks(ChunkPosition::IHDR).next().unwrap();
+        let chunk = dec.info_png().try_unknown_chunks(ChunkPosition::IHDR).next().unwrap().unwrap();
         assert_eq!("foob".as_bytes(), chunk.name());
         dec.info_png().get("foob").unwrap();
     }

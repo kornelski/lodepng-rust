@@ -49,22 +49,29 @@ impl<'a> Iterator for ITextKeysIter<'a> {
     }
 }
 
-pub struct ChunksIter<'a> {
-    pub(crate) iter: ChunksIterFallible<'a>,
+/// Iterator of chunk metadata, returns `ChunkRef` which is like a slice of PNG metadata.
+/// Stops on the first error. Use `ChunksIter` instead.
+pub struct ChunksIterFragile<'a> {
+    pub(crate) iter: ChunksIter<'a>,
+}
+
+impl<'a> ChunksIterFragile<'a> {
+    #[inline(always)]
+    pub fn new(data: &'a [u8]) -> Self {
+        Self {
+            iter: ChunksIter::new(data),
+        }
+    }
 }
 
 impl<'a> ChunksIter<'a> {
     #[inline(always)]
     pub fn new(data: &'a [u8]) -> Self {
-        Self {
-            iter: ChunksIterFallible {
-                data
-            }
-        }
+        Self { data }
     }
 }
 
-impl<'a> Iterator for ChunksIter<'a> {
+impl<'a> Iterator for ChunksIterFragile<'a> {
     type Item = ChunkRef<'a>;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -72,11 +79,12 @@ impl<'a> Iterator for ChunksIter<'a> {
     }
 }
 
-pub struct ChunksIterFallible<'a> {
+/// Iterator of chunk metadata, returns `ChunkRef` which is like a slice of PNG metadata
+pub struct ChunksIter<'a> {
     pub(crate) data: &'a [u8],
 }
 
-impl<'a> Iterator for ChunksIterFallible<'a> {
+impl<'a> Iterator for ChunksIter<'a> {
     type Item = Result<ChunkRef<'a>, Error>;
 
     #[inline]

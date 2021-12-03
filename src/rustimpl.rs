@@ -1991,7 +1991,7 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool)
         /*error: the first 8 bytes are not the correct PNG signature*/
         return Err(Error::new(28));
     }
-    let mut chunks = ChunksIterFallible { data: &inp[8..] };
+    let mut chunks = ChunksIter { data: &inp[8..] };
     let ihdr = chunks.next().ok_or(Error::new(28))??;
     if &ihdr.name() != b"IHDR" {
         /*error: it doesn't start with a IHDR chunk!*/
@@ -2073,7 +2073,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
         return Err(Error::new(92)); /*first byte of the first chunk after the header*/
     }
     let mut idat = Vec::try_with_capacity(inp.len() - 33)?;
-    let chunks = ChunksIterFallible {
+    let chunks = ChunksIter {
         data: &inp[33..],
     };
     /*loop through the chunks, ignoring unknown chunks and stopping at IEND chunk.
@@ -2219,7 +2219,7 @@ pub fn lodepng_save_file(buffer: &[u8], filename: &Path) -> Result<(), Error> {
 }
 
 fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
-    let chunks = ChunksIterFallible { data };
+    let chunks = ChunksIter { data };
     for ch in chunks {
         chunk_append(out, ch?.whole_chunk_data())?;
     }
