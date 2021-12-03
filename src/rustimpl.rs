@@ -1,15 +1,15 @@
-#![cfg_attr(feature = "cargo-clippy", allow(identity_op))]
-#![cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
-#![cfg_attr(feature = "cargo-clippy", allow(unreadable_literal))]
-#![cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::identity_op))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::unreadable_literal))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::doc_markdown))]
 #![cfg_attr(feature = "cargo-clippy", allow(new_without_default_derive))]
-#![cfg_attr(feature = "cargo-clippy", allow(new_without_default))]
-#![cfg_attr(feature = "cargo-clippy", allow(verbose_bit_mask))]
-#![cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
-#![cfg_attr(feature = "cargo-clippy", allow(trivially_copy_pass_by_ref))]
-#![cfg_attr(feature = "cargo-clippy", allow(type_complexity))]
-#![cfg_attr(feature = "cargo-clippy", allow(if_same_then_else))]
-#![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::new_without_default))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::verbose_bit_mask))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::many_single_char_names))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::trivially_copy_pass_by_ref))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::if_same_then_else))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::too_many_arguments))]
 #![cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
 
 
@@ -398,7 +398,7 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, len
                 out[i] = scanline[i].wrapping_sub(scanline[i - bytewidth]);
             }
         },
-        _ => return,
+        _ => {},
     };
 }
 
@@ -2032,7 +2032,7 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool)
     if w == 0 || h == 0 {
         return Err(Error::new(93));
     }
-    if decoder.ignore_crc == false && !ihdr.check_crc() {
+    if !decoder.ignore_crc && !ihdr.check_crc() {
         return Err(Error::new(57));
     }
     if info_png.interlace_method > 1 {
@@ -2136,7 +2136,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
                 }
             },
         };
-        if state.decoder.ignore_crc == false && !unknown && !ch.check_crc() {
+        if !state.decoder.ignore_crc && !unknown && !ch.check_crc() {
             return Err(Error::new(57));
         }
         if found_iend {
@@ -2179,10 +2179,10 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
 pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usize), Error> {
     let (decoded, w, h) = decode_generic(state, inp)?;
 
-    if state.decoder.color_convert == false || lodepng_color_mode_equal(&state.info_raw, &state.info_png.color) {
+    if !state.decoder.color_convert || lodepng_color_mode_equal(&state.info_raw, &state.info_png.color) {
         /*store the info_png color settings on the info_raw so that the info_raw still reflects what colortype
             the raw image has to the end user*/
-        if state.decoder.color_convert == false {
+        if !state.decoder.color_convert {
             /*color conversion needed; sort of copy of the data*/
             state.info_raw = state.info_png.color.clone();
         }
@@ -2377,7 +2377,7 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
                     profile.alpha = true;
                     profile.key = false;
                     alpha_done = true;
-                } else if a == 0 && profile.alpha == false && profile.key == false {
+                } else if a == 0 && !profile.alpha && !profile.key {
                     profile.key = true;
                     profile.key_r = r;
                     profile.key_g = g;
@@ -2392,7 +2392,7 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
                 break;
             };
         }
-        if profile.key && profile.alpha == false {
+        if profile.key && !profile.alpha {
             for i in 0..numpixels {
                 let (r, g, b, a) = get_pixel_color_rgba16(inp, i, mode);
                 if a != 0 && r == profile.key_r && g == profile.key_g && b == profile.key_b {
@@ -2430,7 +2430,7 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
                         profile.bits = 8;
                     };
                 /*PNG has no alphachannel modes with less than 8-bit per channel*/
-                } else if a == 0 && profile.alpha == false && profile.key == false {
+                } else if a == 0 && !profile.alpha && !profile.key {
                     profile.key = true;
                     profile.key_r = r as u16;
                     profile.key_g = g as u16;
@@ -2457,7 +2457,7 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
                 break;
             };
         }
-        if profile.key && profile.alpha == false {
+        if profile.key && !profile.alpha {
             for i in 0..numpixels {
                 let (r, g, b, a) = get_pixel_color_rgba8(inp, i, mode);
                 if a != 0 && r as u16 == profile.key_r && g as u16 == profile.key_g && b as u16 == profile.key_b {

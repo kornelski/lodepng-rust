@@ -1,4 +1,5 @@
-#![cfg_attr(feature = "cargo-clippy", allow(needless_borrow))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::needless_borrow))]
+#![allow(clippy::missing_safety_doc)]
 #![allow(non_upper_case_globals)]
 use crate::ChunkRef;
 use crate::rustimpl::RGBA;
@@ -287,6 +288,7 @@ pub struct Info {
     /// The 3 buffers are the unknown chunks between certain critical chunks:
     /// 0: IHDR-`PLTE`, 1: `PLTE`-IDAT, 2: IDAT-IEND
     /// Must be boxed for FFI hack.
+    #[allow(clippy::box_collection)]
     pub(crate) unknown_chunks: [Box<Vec<u8>>; 3],
     /// Ugly hack for back-compat with C FFI
     pub(crate) always_zero_for_ffi_hack: [usize; 3],

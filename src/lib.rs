@@ -1,3 +1,5 @@
+#![allow(clippy::manual_range_contains)]
+
 #[allow(non_camel_case_types)]
 pub mod ffi;
 
@@ -224,6 +226,13 @@ impl Time {
     #[inline(always)]
     pub fn new() -> Self {
         Self::default()
+    }
+}
+
+impl Default for Info {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -645,7 +654,7 @@ impl State {
     #[deprecated(note = "Use Encoder type instead of State")]
     pub fn encode<PixelType: rgb::Pod>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         let image = buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth)?;
-        Ok(rustimpl::lodepng_encode(image, w as c_uint, h as c_uint, self)?)
+        rustimpl::lodepng_encode(image, w as c_uint, h as c_uint, self)
     }
 
     #[deprecated(note = "Use Encoder type instead of State")]
@@ -910,7 +919,7 @@ fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize,
 #[inline]
 pub fn encode_memory<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
     let image = buffer_for_type(image, w, h, colortype, bitdepth)?;
-    Ok(rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)?)
+    rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)
 }
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
@@ -983,6 +992,7 @@ impl<'a> ChunkRef<'a> {
     }
 
     #[inline(always)]
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         lodepng_chunk_length(self.data)
     }
@@ -1179,8 +1189,8 @@ mod test {
     fn create_and_destroy2() {
         Encoder::new().info_png();
         Encoder::new().info_png_mut();
-        Encoder::new().clone().info_raw();
-        Encoder::new().clone().info_raw_mut();
+        Encoder::new().info_raw();
+        Encoder::new().info_raw_mut();
     }
 
     #[test]
