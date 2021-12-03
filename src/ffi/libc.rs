@@ -1,7 +1,7 @@
 pub type size_t = usize;
 
-const MALLOC_HEADER : isize = 8;
-const MALLOC_ALIGN : usize = 8;
+const MALLOC_HEADER: isize = 8;
+const MALLOC_ALIGN: usize = 8;
 
 use super::c_void;
 use std::alloc::{self, Layout};
@@ -35,4 +35,3 @@ pub unsafe fn realloc(p: *mut c_void, new_size: size_t) -> *mut c_void {
     *(p as *mut size_t) = new_size;
     p.offset(MALLOC_HEADER) as *mut c_void
 }
-

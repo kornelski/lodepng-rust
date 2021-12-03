@@ -1,16 +1,16 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::needless_borrow))]
 #![allow(clippy::missing_safety_doc)]
 #![allow(non_upper_case_globals)]
-use crate::ChunkRef;
 use crate::rustimpl::RGBA;
-use std::ptr;
-use std::mem;
-use std::slice;
-use std::fmt;
-use std::os::raw::{c_char, c_uint, c_long, c_void};
+use crate::ChunkRef;
 use std::ffi::CStr;
-use std::path::*;
+use std::fmt;
 use std::io;
+use std::mem;
+use std::os::raw::{c_char, c_long, c_uint, c_void};
+use std::path::*;
+use std::ptr;
+use std::slice;
 
 use crate::rustimpl;
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
@@ -23,7 +23,7 @@ macro_rules! lode_error {
         } else {
             ErrorCode(0)
         }
-    }
+    };
 }
 
 macro_rules! lode_try {
@@ -32,7 +32,7 @@ macro_rules! lode_try {
             Err(e) => return ErrorCode::from(e),
             Ok(o) => o,
         }
-    }}
+    }};
 }
 
 macro_rules! lode_try_state {
@@ -47,13 +47,12 @@ macro_rules! lode_try_state {
                 ok
             }
         }
-    }}
+    }};
 }
-
 
 unsafe fn vec_from_raw(data: *mut u8, len: usize) -> Vec<u8> {
     if data.is_null() || 0 == len {
-        return Vec::new()
+        return Vec::new();
     }
     slice::from_raw_parts_mut(data, len).to_owned()
 }
@@ -70,7 +69,6 @@ fn vec_into_raw(v: Vec<u8>) -> Result<(*mut u8, usize), crate::Error> {
         }
     }
 }
-
 
 #[repr(C)]
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -92,11 +90,11 @@ pub enum ColorType {
     RGBA = 6,
 
     /// Not PNG standard, for internal use only. BGRA with alpha, 8 bit
-    BGRA = 6|64,
+    BGRA = 6 | 64,
     /// Not PNG standard, for internal use only. BGR no alpha, 8 bit
-    BGR = 2|64,
+    BGR = 2 | 64,
     /// Not PNG standard, for internal use only. BGR no alpha, padded, 8 bit
-    BGRX = 3|64,
+    BGRX = 3 | 64,
 }
 
 /// Color mode of an image. Contains all information required to decode the pixel
@@ -141,7 +139,7 @@ pub struct ColorMode {
 
 impl fmt::Debug for ColorMode {
     #[cold]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = f.debug_struct("ColorMode");
         s.field("colortype", &self.colortype);
         s.field("bitdepth", &self.bitdepth);
@@ -155,7 +153,7 @@ impl fmt::Debug for ColorMode {
     }
 }
 
-pub type custom_compress_callback =   Option<fn(input: &[u8], output: &mut dyn io::Write, context: &CompressSettings) -> Result<(), crate::Error>>;
+pub type custom_compress_callback = Option<fn(input: &[u8], output: &mut dyn io::Write, context: &CompressSettings) -> Result<(), crate::Error>>;
 pub type custom_decompress_callback = Option<fn(input: &[u8], output: &mut dyn io::Write, context: &DecompressSettings) -> Result<(), crate::Error>>;
 
 #[repr(C)]
@@ -221,7 +219,7 @@ impl CompressSettings {
     pub fn level(&self) -> u8 {
         if self.use_lz77 {
             if self.minmatch > 0 && self.minmatch <= 9 {
-            self.minmatch as _
+                self.minmatch as _
             } else {
                 7
             }
@@ -577,7 +575,7 @@ pub unsafe extern "C" fn lodepng_palette_clear(info: &mut ColorMode) {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_palette_add(info: &mut ColorMode, r: u8, g: u8, b: u8, a: u8) -> ErrorCode {
-    lode_error!(info.palette_add(RGBA{r, g, b, a}))
+    lode_error!(info.palette_add(RGBA { r, g, b, a }))
 }
 
 #[no_mangle]
@@ -956,7 +954,6 @@ pub static lodepng_default_decompress_settings: DecompressSettings = DecompressS
     custom_inflate: None,
     custom_context: 0usize as *mut _,
 };
-
 
 #[cfg(unix)]
 unsafe fn c_path<'meh>(filename: *const c_char) -> &'meh Path {

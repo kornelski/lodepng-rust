@@ -12,11 +12,10 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::too_many_arguments))]
 #![cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
 
-
-use crate::ffi::IntlText;
-use crate::ffi::LatinText;
 use super::*;
 use crate::ffi::ColorProfile;
+use crate::ffi::IntlText;
+use crate::ffi::LatinText;
 use crate::ffi::State;
 use crate::ChunkPosition;
 
@@ -328,8 +327,8 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
 
 #[test]
 fn test_filter() {
-    let mut line1 = Vec::with_capacity(1<<16);
-    let mut line2 = Vec::with_capacity(1<<16);
+    let mut line1 = Vec::with_capacity(1 << 16);
+    let mut line2 = Vec::with_capacity(1 << 16);
     for p in 0..256 {
         for q in 0..256 {
             line1.push(q as u8);
@@ -337,8 +336,8 @@ fn test_filter() {
         }
     }
 
-    let mut filtered = vec![99u8; 1<<16];
-    let mut unfiltered = vec![66u8; 1<<16];
+    let mut filtered = vec![99u8; 1 << 16];
+    let mut unfiltered = vec![66u8; 1 << 16];
     for filter_type in 0..5 {
         let len = filtered.len();
         filter_scanline(&mut filtered, &line1, Some(&line2), len, 1, filter_type);
@@ -442,7 +441,6 @@ pub fn lodepng_get_raw_size_lct(w: u32, h: u32, colortype: ColorType, bitdepth: 
     ((n / 8) * bpp) + ((n & 7) * bpp + 7) / 8
 }
 
-
 #[inline]
 pub(crate) fn lodepng_read32bit_int(buffer: &[u8]) -> u32 {
     ((buffer[0] as u32) << 24) | ((buffer[1] as u32) << 16) | ((buffer[2] as u32) << 8) | buffer[3] as u32
@@ -493,7 +491,6 @@ impl Info {
         self.unknown_chunks[critical_pos as usize].try_extend_from_slice(chunk)?;
         Ok(())
     }
-
 }
 
 fn add_color_bits(out: &mut [u8], index: usize, bits: u32, mut inp: u32) {
@@ -513,7 +510,7 @@ fn add_color_bits(out: &mut [u8], index: usize, bits: u32, mut inp: u32) {
     }
 }
 
-pub type ColorTree = HashMap<(u8,u8,u8,u8), u16>;
+pub type ColorTree = HashMap<(u8, u8, u8, u8), u16>;
 
 #[inline(always)]
 fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTree, /*for palette*/ r: u8, g: u8, b: u8, a: u8) -> Result<(), Error> {
@@ -629,9 +626,8 @@ fn rgba16_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, r: u16, g: u16, b
     };
 }
 
-
 /*Get RGBA8 color of pixel with index i (y * width + x) from the raw image with given color type.*/
-fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8,u8,u8,u8) {
+fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8, u8, u8, u8) {
     match mode.colortype {
         ColorType::GREY => {
             if mode.bitdepth() == 8 {
@@ -947,7 +943,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], numpixels: usize, has_alpha: bool, 
 /*Get RGBA16 color of pixel with index i (y * width + x) from the raw image with
 given color type, but the given color type must be 16-bit itself.*/
 #[inline(always)]
-fn get_pixel_color_rgba16(inp: &[u8], i: usize, mode: &ColorMode) -> (u16,u16,u16,u16) {
+fn get_pixel_color_rgba16(inp: &[u8], i: usize, mode: &ColorMode) -> (u16, u16, u16, u16) {
     match mode.colortype {
         ColorType::GREY => {
             let t = 256 * inp[i * 2 + 0] as u16 + inp[i * 2 + 1] as u16;
@@ -996,7 +992,6 @@ fn read_bits_from_reversed_stream(bitpointer: &mut usize, bitstream: &[u8], nbit
     }
     result
 }
-
 
 fn read_chunk_plte(color: &mut ColorMode, data: &[u8]) -> Result<(), Error> {
     color.palette_clear();
@@ -1184,7 +1179,6 @@ fn read_chunk_phys(info: &mut Info, data: &[u8]) -> Result<(), Error> {
     Ok(())
 }
 
-
 fn add_chunk_idat(out: &mut Vec<u8>, data: &[u8], zlibsettings: &CompressSettings) -> Result<(), Error> {
     let zlib = zlib_compress(data, zlibsettings)?;
     add_chunk(out, b"IDAT", &zlib)?;
@@ -1199,7 +1193,7 @@ fn add_chunk_text(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8]) -> Resul
     if keyword.is_empty() || keyword.len() > 79 {
         return Err(Error::new(89));
     }
-    let mut text = Vec::try_with_capacity(keyword.len()+1+textstring.len())?;
+    let mut text = Vec::try_with_capacity(keyword.len() + 1 + textstring.len())?;
     text.extend_from_slice(keyword);
     text.push(0);
     text.extend_from_slice(textstring);
@@ -1211,7 +1205,7 @@ fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8], zlibsett
         return Err(Error::new(89));
     }
     let v = zlib_compress(textstring, zlibsettings)?;
-    let mut data = Vec::try_with_capacity(keyword.len()+2+v.len())?;
+    let mut data = Vec::try_with_capacity(keyword.len() + 2 + v.len())?;
     data.extend_from_slice(keyword);
     data.push(0u8);
     data.push(0u8);
@@ -1241,7 +1235,6 @@ fn add_chunk_itxt(
     }
     add_chunk(out, b"iTXt", &data)
 }
-
 
 fn add_chunk_bkgd(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
     let mut bkgd = Vec::with_capacity(16);
@@ -1339,7 +1332,6 @@ fn add_chunk_phys(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
     data.push(info.phys_unit as u8);
     add_chunk(out, b"pHYs", &data)
 }
-
 
 /*chunk_name must be string of 4 characters*/
 pub(crate) fn add_chunk(out: &mut Vec<u8>, type_: &[u8; 4], data: &[u8]) -> Result<(), Error> {
@@ -1468,7 +1460,6 @@ fn set_bit_of_reversed_stream0(bitpointer: &mut usize, bitstream: &mut [u8], bit
     *bitpointer += 1;
 }
 
-
 fn set_bit_of_reversed_stream(bitpointer: &mut usize, bitstream: &mut [u8], bit: u8) {
     /*the current bit in bitstream may be 0 or 1 for this to work*/
     if bit == 0 {
@@ -1537,7 +1528,6 @@ pub fn lodepng_color_mode_equal(a: &ColorMode, b: &ColorMode) -> bool {
     a.palette() == b.palette()
 }
 
-
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / Zlib                                                                   / */
 /* ////////////////////////////////////////////////////////////////////////// */
@@ -1567,7 +1557,7 @@ pub fn lodepng_zlib_decompress(inp: &[u8]) -> Result<Vec<u8>, Error> {
 
     let mut buf = [0; 32 * 1024];
     let mut z = ZlibDecoder::new_with_buf(inp, zero_vec(32 * 1024)?);
-    let mut out = Vec::try_with_capacity(inp.len()*3/2)?;
+    let mut out = Vec::try_with_capacity(inp.len() * 3 / 2)?;
     loop {
         let read = z.read(&mut buf)?;
         if read > 0 {
@@ -1581,14 +1571,13 @@ pub fn lodepng_zlib_decompress(inp: &[u8]) -> Result<Vec<u8>, Error> {
 
 pub fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
     if let Some(cb) = settings.custom_zlib {
-        let mut out = Vec::try_with_capacity(inp.len()*3/2)?;
+        let mut out = Vec::try_with_capacity(inp.len() * 3 / 2)?;
         (cb)(inp, &mut out, settings)?;
         Ok(out)
     } else {
         lodepng_zlib_decompress(inp)
     }
 }
-
 
 pub fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
     use flate2::write::ZlibEncoder;
@@ -1606,7 +1595,7 @@ pub fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &Compress
 
 /* compress using the default or custom zlib function */
 pub fn zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    let mut out = Vec::try_with_capacity(inp.len()/2)?;
+    let mut out = Vec::try_with_capacity(inp.len() / 2)?;
     if let Some(cb) = settings.custom_zlib {
         (cb)(inp, &mut out, settings)?;
         Ok(out)
@@ -2002,7 +1991,7 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool)
         /*error: the first 8 bytes are not the correct PNG signature*/
         return Err(Error::new(28));
     }
-    let mut chunks = ChunksIterFallible {data: &inp[8..]};
+    let mut chunks = ChunksIterFallible { data: &inp[8..] };
     let ihdr = chunks.next().ok_or(Error::new(28))??;
     if &ihdr.name() != b"IHDR" {
         /*error: it doesn't start with a IHDR chunk!*/
@@ -2199,7 +2188,6 @@ pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, 
     }
 }
 
-
 pub fn lodepng_decode_memory(inp: &[u8], colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
     let mut state = Decoder::new();
     state.info_raw_mut().colortype = colortype;
@@ -2211,8 +2199,6 @@ pub fn lodepng_decode_file(filename: &Path, colortype: ColorType, bitdepth: u32)
     let buf = lodepng_load_file(filename)?;
     lodepng_decode_memory(&buf, colortype, bitdepth)
 }
-
-
 
 /* load file into buffer that already has the correct allocated size. Returns error code.*/
 pub fn lodepng_buffer_file(out: &mut [u8], filename: &Path) -> Result<(), Error> {
@@ -2233,7 +2219,7 @@ pub fn lodepng_save_file(buffer: &[u8], filename: &Path) -> Result<(), Error> {
 }
 
 fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
-    let chunks = ChunksIterFallible {data};
+    let chunks = ChunksIterFallible { data };
     for ch in chunks {
         chunk_append(out, ch?.whole_chunk_data())?;
     }

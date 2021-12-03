@@ -1,8 +1,8 @@
-use std::num::NonZeroU32;
+use crate::ffi::ErrorCode;
 use std::error;
 use std::fmt;
 use std::io;
-use crate::ffi::ErrorCode;
+use std::num::NonZeroU32;
 
 #[derive(Copy, Clone)]
 pub struct Error(NonZeroU32);
@@ -13,7 +13,7 @@ impl ErrorCode {
     /// Returns an English description of the numerical error code.
     pub fn as_str(&self) -> &'static str {
         let s = self.c_description();
-        let s = &s[..s.len()-1]; // trim \0
+        let s = &s[..s.len() - 1]; // trim \0
         std::str::from_utf8(s).unwrap_or("")
     }
 
@@ -70,8 +70,7 @@ impl fmt::Display for Error {
     }
 }
 
-impl error::Error for Error {
-}
+impl error::Error for Error {}
 
 #[doc(hidden)]
 impl std::convert::From<io::Error> for Error {

@@ -13,33 +13,33 @@ use crate::iter::*;
 
 use fallible_collections::FallibleVec;
 
+pub use rgb::Pod;
 pub use rgb::RGB;
 pub use rgb::RGBA8 as RGBA;
-pub use rgb::Pod;
 
-use std::os::raw::c_uint;
+use std::cmp;
+use std::convert::TryInto;
 use std::fmt;
+use std::fs;
 use std::mem;
+use std::os::raw::c_uint;
+use std::os::raw::c_void;
+use std::path::Path;
 use std::ptr;
 use std::slice;
-use std::cmp;
-use std::fs;
-use std::path::Path;
-use std::os::raw::c_void;
-use std::convert::TryInto;
 
-pub use crate::ffi::State;
 pub use crate::ffi::ColorType;
 pub use crate::ffi::CompressSettings;
-pub use crate::ffi::DecompressSettings;
-pub use crate::ffi::Time;
 pub use crate::ffi::DecoderSettings;
-pub use crate::ffi::FilterStrategy;
+pub use crate::ffi::DecompressSettings;
 pub use crate::ffi::EncoderSettings;
 pub use crate::ffi::ErrorCode;
+pub use crate::ffi::FilterStrategy;
+pub use crate::ffi::State;
+pub use crate::ffi::Time;
 
-pub use crate::ffi::Info;
 pub use crate::ffi::ColorMode;
+pub use crate::ffi::Info;
 
 impl ColorMode {
     #[inline(always)]
@@ -128,8 +128,8 @@ impl ColorMode {
     }
 
     /// is it a greyscale type? (only colortype 0 or 4)
-    #[cfg_attr(docsrs, doc(alias="is_grayscale_type"))]
-    #[cfg_attr(docsrs, doc(alias="is_gray"))]
+    #[cfg_attr(docsrs, doc(alias = "is_grayscale_type"))]
+    #[cfg_attr(docsrs, doc(alias = "is_gray"))]
     #[inline]
     pub fn is_greyscale_type(&self) -> bool {
         self.colortype == ColorType::GREY || self.colortype == ColorType::GREY_ALPHA
@@ -254,21 +254,17 @@ impl Info {
 
     #[inline(always)]
     pub fn text_keys(&self) -> TextKeysIter<'_> {
-        TextKeysIter {
-            s: &self.texts,
-        }
+        TextKeysIter { s: &self.texts }
     }
 
-    #[deprecated(note="use text_keys")]
+    #[deprecated(note = "use text_keys")]
     pub fn text_keys_cstr(&self) -> TextKeysIter<'_> {
         self.text_keys()
     }
 
     #[inline(always)]
     pub fn itext_keys(&self) -> ITextKeysIter<'_> {
-        ITextKeysIter {
-            s: &self.itexts,
-        }
+        ITextKeysIter { s: &self.itexts }
     }
 
     /// use this to clear the texts again after you filled them in
@@ -679,9 +675,9 @@ impl Default for State {
     }
 }
 
-#[cfg_attr(docsrs, doc(alias="Gray"))]
+#[cfg_attr(docsrs, doc(alias = "Gray"))]
 pub use rgb::alt::Gray as Grey;
-#[cfg_attr(docsrs, doc(alias="GrayAlpha"))]
+#[cfg_attr(docsrs, doc(alias = "GrayAlpha"))]
 pub use rgb::alt::GrayAlpha as GreyAlpha;
 
 /// Bitmap types.
@@ -692,17 +688,17 @@ pub use rgb::alt::GrayAlpha as GreyAlpha;
 pub enum Image {
     /// Bytes of the image. See bpp how many pixels per element there are
     RawData(Bitmap<u8>),
-    #[cfg_attr(docsrs, doc(alias="Gray"))]
+    #[cfg_attr(docsrs, doc(alias = "Gray"))]
     Grey(Bitmap<Grey<u8>>),
-    #[cfg_attr(docsrs, doc(alias="Gray16"))]
+    #[cfg_attr(docsrs, doc(alias = "Gray16"))]
     Grey16(Bitmap<Grey<u16>>),
-    #[cfg_attr(docsrs, doc(alias="GrayAlpha"))]
+    #[cfg_attr(docsrs, doc(alias = "GrayAlpha"))]
     GreyAlpha(Bitmap<GreyAlpha<u8>>),
-    #[cfg_attr(docsrs, doc(alias="GrayAlpha16"))]
+    #[cfg_attr(docsrs, doc(alias = "GrayAlpha16"))]
     GreyAlpha16(Bitmap<GreyAlpha<u16>>),
-    #[cfg_attr(docsrs, doc(alias="RGBA8"))]
+    #[cfg_attr(docsrs, doc(alias = "RGBA8"))]
     RGBA(Bitmap<RGBA>),
-    #[cfg_attr(docsrs, doc(alias="RGB8"))]
+    #[cfg_attr(docsrs, doc(alias = "RGB8"))]
     RGB(Bitmap<RGB<u8>>),
     RGBA16(Bitmap<rgb::RGBA<u16>>),
     RGB16(Bitmap<RGB<u16>>),
@@ -764,11 +760,7 @@ impl<PixelType: rgb::Pod> Bitmap<PixelType> {
             }
             out
         };
-        Ok(Self {
-            buffer,
-            width,
-            height,
-        })
+        Ok(Self { buffer, width, height })
     }
 }
 
@@ -1167,8 +1159,8 @@ impl Default for EncoderSettings {
 
 #[cfg(test)]
 mod test {
-    use std::mem;
     use super::*;
+    use std::mem;
 
     #[test]
     fn pixel_sizes() {
@@ -1214,8 +1206,8 @@ mod test {
                 panic!("no chunks yet");
             }
 
-            let testdata = &[1,2,3];
-            info.create_chunk(ChunkPosition::PLTE, &[255,0,100,32], testdata).unwrap();
+            let testdata = &[1, 2, 3];
+            info.create_chunk(ChunkPosition::PLTE, &[255, 0, 100, 32], testdata).unwrap();
             assert_eq!(1, info.unknown_chunks(ChunkPosition::PLTE).count());
 
             info.create_chunk(ChunkPosition::IHDR, "foob", testdata).unwrap();

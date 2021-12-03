@@ -1,11 +1,9 @@
-extern crate png;
-extern crate lodepng;
 extern crate glob;
 extern crate rgb;
-use rgb::*;
 use png::HasParameters;
-use std::path::*;
+use rgb::*;
 use std::fs::*;
+use std::path::*;
 fn decode(path: &Path) -> Vec<RGBA8> {
     let mut p = png::Decoder::new(File::open(path).unwrap());
     p.set(png::Transformations::EXPAND);

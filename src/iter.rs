@@ -1,6 +1,6 @@
-use crate::ffi::LatinText;
-use crate::ffi::IntlText;
 use super::ChunkRef;
+use crate::ffi::IntlText;
+use crate::ffi::LatinText;
 use crate::Error;
 
 pub struct TextKeysIter<'a> {
