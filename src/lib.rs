@@ -55,6 +55,11 @@ impl ColorMode {
     }
 
     #[inline(always)]
+    pub fn set_colortype(&mut self, color: ColorType) {
+        self.colortype = color;
+    }
+
+    #[inline(always)]
     pub fn bitdepth(&self) -> u32 {
         self.bitdepth
     }
@@ -65,6 +70,18 @@ impl ColorMode {
         self.bitdepth = d;
     }
 
+    /// Set color depth to 8-bit palette and set the colors
+    pub fn set_palette(&mut self, palette: &[RGBA]) -> Result<(), Error> {
+        for &c in palette {
+            self.palette_add(c)?;
+        }
+        self.colortype = ColorType::PALETTE;
+        self.set_bitdepth(8);
+        self.palette_clear();
+        Ok(())
+    }
+
+    /// Reset to 0 colors
     #[inline]
     pub fn palette_clear(&mut self) {
         self.palette = None;
@@ -347,6 +364,12 @@ impl Encoder {
     #[inline(always)]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Switch color mode to 8-bit palette and set the colors
+    pub fn set_palette(&mut self, palette: &[RGBA]) -> Result<(), Error> {
+        self.state.info_raw_mut().set_palette(palette)?;
+        self.state.info_png_mut().color.set_palette(palette)
     }
 
     /// If true, convert to output format
