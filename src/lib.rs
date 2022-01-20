@@ -1059,6 +1059,12 @@ impl<'a> ChunkRef<'a> {
         &self.data[8..8 + len]
     }
 
+    #[inline]
+    pub fn crc(&self) -> u32 {
+        let length = self.len();
+        crc32fast::hash(&self.data[4..length + 8])
+    }
+
     #[cfg(not(fuzzing))]
     pub fn check_crc(&self) -> bool {
         let length = self.len();
@@ -1066,12 +1072,6 @@ impl<'a> ChunkRef<'a> {
         let crc = rustimpl::lodepng_read32bit_int(&self.data[length + 8..]);
         let checksum = self.crc();
         crc == checksum
-    }
-
-    #[inline]
-    pub fn crc(&self) -> u32 {
-        let length = self.len();
-        lodepng_crc32(&self.data[4..length + 8])
     }
 
     #[cfg(fuzzing)]

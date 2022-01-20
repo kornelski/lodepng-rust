@@ -1608,6 +1608,10 @@ pub fn zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>,
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / CRC32                                                                  / */
 /* ////////////////////////////////////////////////////////////////////////// */
+
+#[test]
+fn check_crc_impl() {
+
 /* CRC polynomial: 0xedb88320 */
 const LODEPNG_CRC32_TABLE: [u32; 256] = [
            0, 1996959894, 3993919788, 2567524794,  124634137, 1886057615, 3915621685, 2657392035,
@@ -1644,13 +1648,16 @@ const LODEPNG_CRC32_TABLE: [u32; 256] = [
   3009837614, 3294710456, 1567103746,  711928724, 3020668471, 3272380065, 1510334235,  755167117
 ];
 
-/*Return the CRC of the bytes buf[0..len-1].*/
-pub fn lodepng_crc32(data: &[u8]) -> u32 {
-    let mut r = 4294967295u32;
-    for &d in data {
-        r = LODEPNG_CRC32_TABLE[((r ^ d as u32) & 255) as usize] ^ (r >> 8);
+    pub fn lodepng_crc32_old(data: &[u8]) -> u32 {
+        let mut r = 4294967295u32;
+        for &d in data {
+            r = LODEPNG_CRC32_TABLE[((r ^ d as u32) & 255) as usize] ^ (r >> 8);
+        }
+        r ^ 4294967295
     }
-    r ^ 4294967295
+    for data in [&b"hello world"[..], b"aaaaaaaaaaaaaaaaaaa", b"", b"123456123456123456123456123456123456123456\0\0\0\0\0\0\0\0\0"] {
+        assert_eq!(lodepng_crc32_old(data), crc32fast::hash(data));
+    }
 }
 
 pub fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, mode_in: &ColorMode, w: u32, h: u32) -> Result<(), Error> {

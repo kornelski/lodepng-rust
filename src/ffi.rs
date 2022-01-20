@@ -762,7 +762,7 @@ pub unsafe extern "C" fn lodepng_decompress_settings_init(settings: *mut Decompr
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_crc32(data: *const u8, length: usize) -> c_uint {
-    rustimpl::lodepng_crc32(slice::from_raw_parts(data, length))
+    crc32fast::hash(slice::from_raw_parts(data, length))
 }
 
 #[no_mangle]

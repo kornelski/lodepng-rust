@@ -10,7 +10,7 @@ license = "BSD-3-Clause"
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/kornelski/lodepng-rust.git"
-version = "3.5.0"
+version = "3.5.1"
 edition = "2018"
 
 [badges]
@@ -21,6 +21,7 @@ libc = "0.2.112"
 rgb = { version = "0.8.31", features = ["as-bytes"] }
 flate2 = { version = "1.0.22", default-features = false }
 fallible_collections = "0.4.4"
+crc32fast = "1.3.0"
 
 [workspace]
 members = ["lodepng_unittest"]
