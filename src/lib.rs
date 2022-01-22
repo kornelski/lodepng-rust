@@ -72,12 +72,12 @@ impl ColorMode {
 
     /// Set color depth to 8-bit palette and set the colors
     pub fn set_palette(&mut self, palette: &[RGBA]) -> Result<(), Error> {
+        self.palette_clear();
         for &c in palette {
             self.palette_add(c)?;
         }
         self.colortype = ColorType::PALETTE;
         self.set_bitdepth(8);
-        self.palette_clear();
         Ok(())
     }
 
