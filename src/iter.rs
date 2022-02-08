@@ -15,10 +15,7 @@ impl<'a> Iterator for TextKeysIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some((first, rest)) = self.s.split_first() {
             self.s = rest;
-            Some((
-                &first.key,
-                &first.value,
-            ))
+            Some((&first.key, &first.value))
         } else {
             None
         }
@@ -66,6 +63,7 @@ impl<'a> ChunksIterFragile<'a> {
 
 impl<'a> ChunksIter<'a> {
     #[inline(always)]
+    #[must_use]
     pub fn new(data: &'a [u8]) -> Self {
         Self { data }
     }

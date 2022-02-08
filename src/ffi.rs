@@ -8,7 +8,7 @@ use std::fmt;
 use std::io;
 use std::mem;
 use std::os::raw::{c_char, c_long, c_uint, c_void};
-use std::path::*;
+use std::path::Path;
 use std::ptr;
 use std::slice;
 
@@ -60,7 +60,7 @@ unsafe fn vec_from_raw(data: *mut u8, len: usize) -> Vec<u8> {
 fn vec_into_raw(v: Vec<u8>) -> Result<(*mut u8, usize), crate::Error> {
     unsafe {
         let len = v.len();
-        let data = lodepng_malloc(len) as *mut u8;
+        let data = lodepng_malloc(len).cast::<u8>();
         if data.is_null() {
             Err(crate::Error::new(83))
         } else {
@@ -216,6 +216,7 @@ impl CompressSettings {
 
     /// zlib compression level
     #[allow(deprecated)]
+    #[must_use]
     pub fn level(&self) -> u8 {
         if self.use_lz77 {
             if self.minmatch > 0 && self.minmatch <= 9 {
@@ -536,27 +537,27 @@ pub unsafe extern "C" fn lodepng_get_channels(info: &ColorMode) -> c_uint {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_is_greyscale_type(info: &ColorMode) -> c_uint {
-    info.is_greyscale_type() as c_uint
+    c_uint::from(info.is_greyscale_type())
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_is_alpha_type(info: &ColorMode) -> c_uint {
-    info.is_alpha_type() as c_uint
+    c_uint::from(info.is_alpha_type())
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_is_palette_type(info: &ColorMode) -> c_uint {
-    info.is_palette_type() as c_uint
+    c_uint::from(info.is_palette_type())
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_has_palette_alpha(info: &ColorMode) -> c_uint {
-    info.has_palette_alpha() as c_uint
+    c_uint::from(info.has_palette_alpha())
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_can_have_alpha(info: &ColorMode) -> c_uint {
-    info.can_have_alpha() as c_uint
+    c_uint::from(info.can_have_alpha())
 }
 
 #[no_mangle]
@@ -644,7 +645,7 @@ pub unsafe extern "C" fn lodepng_chunk_type_equals(chunk: *const u8, name: &[u8;
         return 0;
     }
     let ch = ChunkRef::from_ptr(chunk).unwrap();
-    (name == &ch.name()) as u8
+    u8::from(name == &ch.name())
 }
 
 #[no_mangle]
@@ -686,7 +687,7 @@ pub unsafe extern "C" fn lodepng_chunk_data(chunk_data: *mut u8) -> *mut u8 {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_check_crc(chunk: *const u8) -> c_uint {
-    ChunkRef::from_ptr(chunk).unwrap().check_crc() as c_uint
+    c_uint::from(ChunkRef::from_ptr(chunk).unwrap().check_crc())
 }
 
 #[no_mangle]
@@ -717,7 +718,7 @@ pub unsafe extern "C" fn lodepng_color_mode_cleanup(info: &mut ColorMode) {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_color_mode_equal(a: &ColorMode, b: &ColorMode) -> c_uint {
-    rustimpl::lodepng_color_mode_equal(a, b) as c_uint
+    c_uint::from(rustimpl::lodepng_color_mode_equal(a, b))
 }
 
 #[no_mangle]

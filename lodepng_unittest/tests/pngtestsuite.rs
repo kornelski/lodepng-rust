@@ -1,5 +1,3 @@
-extern crate glob;
-extern crate rgb;
 use png::HasParameters;
 use rgb::*;
 use std::fs::*;

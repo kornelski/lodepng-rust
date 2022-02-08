@@ -11,6 +11,7 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 impl ErrorCode {
     /// Returns an English description of the numerical error code.
+    #[must_use]
     pub fn as_str(&self) -> &'static str {
         let s = self.c_description();
         let s = &s[..s.len() - 1]; // trim \0
@@ -30,6 +31,7 @@ impl ErrorCode {
 impl Error {
     /// Panics if the code is 0
     #[cold]
+    #[must_use]
     pub fn new(code: u32) -> Self {
         Self(NonZeroU32::new(code).unwrap())
     }
@@ -89,6 +91,7 @@ the documentation of all the error codes.
 */
 impl ErrorCode {
     #[cold]
+    #[must_use]
     pub fn c_description(&self) -> &'static [u8] {
         match self.0 {
             0 => "no error, everything went ok\0",

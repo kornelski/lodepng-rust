@@ -23,7 +23,7 @@ pub use rgb::RGBA8 as RGBA;
 use std::collections::HashMap;
 use std::fs;
 use std::io::prelude::*;
-use std::path::*;
+use std::path::Path;
 use std::slice;
 
 /*8 bytes PNG signature, aka the magic bytes*/
@@ -2289,7 +2289,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     if info.time_defined {
         add_chunk_time(&mut outv, &info.time)?;
     }
-    for t in info.texts.iter() {
+    for t in &info.texts {
         if t.key.len() > 79 {
             return Err(Error::new(66));
         }
@@ -2564,6 +2564,7 @@ impl EncoderSettings {
 }
 
 impl ColorProfile {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             colored: false,
