@@ -358,6 +358,7 @@ impl Info {
 /// Make an image with custom settings
 pub struct Encoder {
     state: State,
+    predefined_filters: Option<Box<[u8]>>,
 }
 
 impl Encoder {
@@ -381,7 +382,20 @@ impl Encoder {
     /// palette_filter_zero controls filtering for low-bitdepth images
     #[inline(always)]
     pub fn set_filter_strategy(&mut self, mode: FilterStrategy, palette_filter_zero: bool) {
+        if mode != FilterStrategy::PREDEFINED {
+            self.predefined_filters = None;
+        }
         self.state.set_filter_strategy(mode, palette_filter_zero);
+    }
+
+    /// Filters are 0-5, one per row.
+    /// <https://www.w3.org/TR/PNG-Filters.html>
+    #[inline(always)]
+    pub fn set_predefined_filters(&mut self, filters: impl Into<Box<[u8]>>) {
+        self.state.set_filter_strategy(FilterStrategy::PREDEFINED, true);
+        let filters = filters.into();
+        self.settings_mut().predefined_filters = filters.as_ptr();
+        self.predefined_filters = Some(filters);
     }
 
     /// gzip text metadata
@@ -432,6 +446,11 @@ impl Encoder {
     #[allow(deprecated)]
     /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
     pub fn encode<PixelType: rgb::Pod>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+        if let Some(filters) = &self.predefined_filters {
+            if filters.len() < h {
+                return Err(Error::new(88))
+            }
+        }
         self.state.encode(image, w, h)
     }
 
@@ -439,6 +458,11 @@ impl Encoder {
     #[allow(deprecated)]
     /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
     pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+        if let Some(filters) = &self.predefined_filters {
+            if filters.len() < h {
+                return Err(Error::new(88))
+            }
+        }
         self.state.encode_file(filepath, image, w, h)
     }
 

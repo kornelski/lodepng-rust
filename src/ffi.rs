@@ -348,7 +348,8 @@ pub enum FilterStrategy {
     /// Brute-force-search PNG filters by compressing each filter for each scanline.
     /// Experimental, very slow, and only rarely gives better compression than MINSUM.
     BRUTE_FORCE,
-    /// use predefined_filters buffer: you specify the filter type for each scanline
+    /// use predefined_filters buffer: you specify the filter type for each scanline.
+    /// See `Encoder::set_predefined_filters`.
     PREDEFINED,
 }
 
