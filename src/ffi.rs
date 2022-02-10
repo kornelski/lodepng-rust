@@ -8,7 +8,10 @@ use std::fmt;
 use std::io;
 use std::mem;
 use std::os::raw::{c_char, c_long, c_uint, c_void};
+#[cfg(unix)]
 use std::path::Path;
+#[cfg(not(unix))]
+use std::path::PathBuf;
 use std::ptr;
 use std::slice;
 
