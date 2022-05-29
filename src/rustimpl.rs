@@ -2076,7 +2076,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     };
     /*multiplication overflow possible further below. Allows up to 2^31-1 pixel
       bytes with 16-bit RGBA, the rest is room for filter bytes.*/
-    if numpixels > 268435455 {
+    if numpixels > (isize::MAX as usize - 1) / 4 / 2 {
         return Err(Error::new(92)); /*first byte of the first chunk after the header*/
     }
     let mut idat = Vec::try_with_capacity(inp.len() - 33)?;
@@ -2143,24 +2143,11 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
       If the decompressed size does not match the prediction, the image must be corrupt.*/
     let predict = if state.info_png.interlace_method == 0 {
         /*The extra *h is added because this are the filter bytes every scanline starts with*/
-        state.info_png.color.raw_size_idat(w, h) + h
+        state.info_png.color.raw_size_idat(w, h).ok_or(Error::new(91))? + h
     } else {
         /*Adam-7 interlaced: predicted size is the sum of the 7 sub-images sizes*/
         let color = &state.info_png.color;
-        let mut predict = color.raw_size_idat((w + 7) >> 3, (h + 7) >> 3) + ((h + 7) >> 3) as usize;
-        if w > 4 {
-            predict += color.raw_size_idat((w + 3) >> 3, (h + 7) >> 3) + ((h + 7) >> 3) as usize;
-        }
-        predict += color.raw_size_idat((w + 3) >> 2, (h + 3) >> 3) + ((h + 3) >> 3) as usize;
-        if w > 2 {
-            predict += color.raw_size_idat((w + 1) >> 2, (h + 3) >> 2) + ((h + 3) >> 2) as usize;
-        }
-        predict += color.raw_size_idat((w + 1) >> 1, (h + 1) >> 2) + ((h + 1) >> 2) as usize;
-        if w > 1 {
-            predict += color.raw_size_idat((w + 0) >> 1, (h + 1) >> 1) + ((h + 1) >> 1) as usize;
-        }
-        predict += color.raw_size_idat(w + 0, (h + 0) >> 1) + ((h + 0) >> 1) as usize;
-        predict
+        adam7_expected_size(color, w, h).ok_or(Error::new(91))?
     };
     let mut scanlines = zlib_decompress(&idat, &state.decoder.zlibsettings)?;
     if scanlines.len() != predict {
@@ -2170,6 +2157,23 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     let mut out = zero_vec(state.info_png.color.raw_size(w as u32, h as u32))?;
     postprocess_scanlines(&mut out, &mut scanlines, w, h, &state.info_png)?;
     Ok((out, w, h))
+}
+
+fn adam7_expected_size(color: &ColorMode, w: usize, h: usize) -> Option<usize> {
+    let mut predict = color.raw_size_idat((w + 7) >> 3, (h + 7) >> 3)? + ((h + 7) >> 3);
+    if w > 4 {
+        predict += color.raw_size_idat((w + 3) >> 3, (h + 7) >> 3)? + ((h + 7) >> 3);
+    }
+    predict += color.raw_size_idat((w + 3) >> 2, (h + 3) >> 3)? + ((h + 3) >> 3);
+    if w > 2 {
+        predict += color.raw_size_idat((w + 1) >> 2, (h + 3) >> 2)? + ((h + 3) >> 2);
+    }
+    predict += color.raw_size_idat((w + 1) >> 1, (h + 1) >> 2)? + ((h + 1) >> 2);
+    if w > 1 {
+        predict += color.raw_size_idat((w + 0) >> 1, (h + 1) >> 1)? + ((h + 1) >> 1);
+    }
+    predict += color.raw_size_idat(w + 0, (h + 0) >> 1)? + ((h + 0) >> 1);
+    Some(predict)
 }
 
 pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usize), Error> {

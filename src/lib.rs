@@ -196,18 +196,20 @@ impl ColorMode {
     #[inline]
     #[must_use]
     pub fn raw_size(&self, w: u32, h: u32) -> usize {
-        /*will not overflow for any color type if roughly w * h < 268435455*/
+        self.raw_size_opt(w, h).expect("overflow")
+    }
+
+    fn raw_size_opt(&self, w: u32, h: u32) -> Option<usize> {
         let bpp = self.bpp() as usize;
-        let n = w as usize * h as usize;
-        ((n / 8) * bpp) + ((n & 7) * bpp + 7) / 8
+        let n = (w as usize).checked_mul(h as usize)?;
+        (n / 8).checked_mul(bpp)?.checked_add(((n & 7) * bpp + 7) / 8)
     }
 
     /*in an idat chunk, each scanline is a multiple of 8 bits, unlike the lodepng output buffer*/
-    pub(crate) fn raw_size_idat(&self, w: usize, h: usize) -> usize {
-        /*will not overflow for any color type if roughly w * h < 268435455*/
+    pub(crate) fn raw_size_idat(&self, w: usize, h: usize) -> Option<usize> {
         let bpp = self.bpp() as usize;
-        let line = ((w / 8) * bpp) + ((w & 7) * bpp + 7) / 8;
-        h * line
+        let line = (w / 8).checked_mul(bpp)?.checked_add(((w & 7) * bpp + 7) / 8)?;
+        h.checked_mul(line)
     }
 }
 
