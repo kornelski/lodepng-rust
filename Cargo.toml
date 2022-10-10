@@ -21,7 +21,6 @@ travis-ci = { repository = "kornelski/lodepng-rust" }
 libc = "0.2.126"
 rgb = { version = "0.8.33", features = ["as-bytes"] }
 flate2 = { version = "1.0.24", default-features = false }
-fallible_collections = { version = "0.4.4", default-features = false, features = ["std_io", "rust_1_57"] }
 crc32fast = "1.3.2"
 
 [workspace]

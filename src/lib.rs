@@ -11,8 +11,6 @@ pub use crate::error::*;
 mod iter;
 use crate::iter::{ChunksIterFragile, ITextKeysIter, TextKeysIter};
 
-use fallible_collections::FallibleVec;
-
 pub use rgb::Pod;
 pub use rgb::RGB;
 pub use rgb::RGBA8 as RGBA;
@@ -843,7 +841,7 @@ impl<PixelType: rgb::Pod> Bitmap<PixelType> {
             }
         } else {
             // if it's not properly aligned (e.g. reading RGB<u16>), do it the hard way
-            let mut out = Vec::try_with_capacity(width * height)?;
+            let mut out = Vec::new(); out.try_reserve(width * height)?;
             assert!(buffer.len() >= width * height * std::mem::size_of::<PixelType>());
             unsafe {
                 let mut ptr = buffer.as_ptr().cast::<PixelType>();

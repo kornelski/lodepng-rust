@@ -1,3 +1,4 @@
+use std::collections::TryReserveError;
 use crate::ffi::ErrorCode;
 use std::error;
 use std::fmt;
@@ -202,9 +203,9 @@ impl ErrorCode {
     }
 }
 
-impl From<fallible_collections::TryReserveError> for Error {
+impl From<TryReserveError> for Error {
     #[cold]
-    fn from(_: fallible_collections::TryReserveError) -> Self {
+    fn from(_: TryReserveError) -> Self {
         Self(NonZeroU32::new(83).unwrap())
     }
 }
