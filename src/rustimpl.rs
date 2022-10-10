@@ -41,7 +41,7 @@ fn write_signature(out: &mut Vec<u8>) {
 #[inline]
 fn zero_vec(size: usize) -> Result<Vec<u8>, Error> {
     let mut vec = Vec::new(); vec.try_reserve(size)?;
-    vec.resize(size, 0u8);
+    vec.resize(size, 0);
     Ok(vec)
 }
 
@@ -97,7 +97,7 @@ fn add_padding_bits(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usi
             set_bit_of_reversed_stream(&mut obp, out, bit);
         }
         for _ in 0..diff {
-            set_bit_of_reversed_stream(&mut obp, out, 0u8);
+            set_bit_of_reversed_stream(&mut obp, out, 0);
         }
     }
 }
@@ -201,8 +201,8 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
         FilterStrategy::ZERO => {
             let mut prevline = None;
             for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
-                out[0] = 0u8;
-                filter_scanline(&mut out[1..], inp, prevline, bytewidth, 0u8);
+                out[0] = 0;
+                filter_scanline(&mut out[1..], inp, prevline, bytewidth, 0);
                 prevline = Some(inp);
             }
         },
@@ -256,24 +256,26 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
             for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
                 for type_ in 0..5 {
                     filter_scanline(&mut attempt[type_], inp, prevline, bytewidth, type_ as u8);
-                    let mut count: [u32; 256] = [0; 256];
-                    for x in 0..linebytes {
-                        count[attempt[type_][x] as usize] += 1;
+                    let mut count = [0u32; 256];
+                    for &byte in &attempt[type_] {
+                        count[byte as usize] += 1;
                     }
-                    count[type_] += 1;
+                    count[type_] += 1; /*the extra filterbyte added to each row*/
                     sum[type_] = 0.;
                     for &c in count.iter() {
-                        let p = c as f32 / ((linebytes + 1) as f32);
-                        sum[type_] += if c == 0 { 0. } else { (1. / p).log2() * p };
+                        if c > 0 {
+                            let p = c as f32 / ((linebytes + 1) as f32);
+                            sum[type_] += (1. / p).log2() * p;
+                        }
                     }
                     /*check if this is smallest sum (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || sum[type_] < smallest {
-                        best_type = type_; /*now fill the out values*/
-                        smallest = sum[type_]; /*the first byte of a scanline will be the filter type*/
-                    }; /*the extra filterbyte added to each row*/
+                        best_type = type_;
+                        smallest = sum[type_];
+                    };
                 }
                 prevline = Some(inp);
-                out[0] = best_type as u8;
+                out[0] = best_type as u8; /*the first byte of a scanline will be the filter type*/
                 out[1..].copy_from_slice(&attempt[best_type]);
             }
         },
@@ -1194,8 +1196,8 @@ fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8], zlibsett
     }
     let mut data = ChunkBuilder::new(out, b"zTXt");
     data.extend_from_slice(keyword)?;
-    data.push(0u8);
-    data.push(0u8);
+    data.push(0);
+    data.push(0);
     data.zlib_compress(textstring, zlibsettings)?;
     data.finish()
 }
@@ -1241,8 +1243,8 @@ fn add_chunk_ihdr(out: &mut Vec<u8>, w: u32, h: u32, colortype: ColorType, bitde
     header.write_u32be(h);
     header.push(bitdepth as u8);
     header.push(colortype as u8);
-    header.push(0u8);
-    header.push(0u8);
+    header.push(0);
+    header.push(0);
     header.push(interlace_method);
     header.finish()
 }
