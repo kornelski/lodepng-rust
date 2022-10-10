@@ -114,7 +114,7 @@ fn pre_process_scanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settin
       */
     let bpp = info_png.color.bpp() as usize;
     if info_png.interlace_method == 0 {
-        let outsize = h + (h * ((w * bpp + 7) / 8));
+        let outsize = h + (h * ((w * bpp as usize + 7) / 8));
         let mut out = zero_vec(outsize)?;
         /*image size plus an extra byte per scanline + possible padding bits*/
         if bpp < 8 && w * bpp != ((w * bpp + 7) / 8) * 8 {
@@ -126,12 +126,12 @@ fn pre_process_scanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settin
         }
         Ok(out)
     } else {
-        let AdamPasses { sizes, offsets } = adam7_get_pass_values(w, h, bpp);
+        let AdamPasses { sizes, offsets } = adam7_get_pass_values(w, h, bpp as u8);
         let outsize = offsets[7].filtered;
         /*image size plus an extra byte per scanline + possible padding bits*/
         let mut out = zero_vec(outsize)?;
         let mut adam7 = zero_vec(offsets[7].normal + 1)?;
-        adam7_interlace(&mut adam7, inp, w, h, bpp);
+        adam7_interlace(&mut adam7, inp, w, h, bpp as u8);
         for i in 0..7 {
             if bpp < 8 {
                 let mut padded = zero_vec(offsets[i + 1].padded - offsets[i].padded)?;
@@ -164,7 +164,7 @@ fn pre_process_scanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settin
   the scanlines with 1 extra byte per scanline
   */
 fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, settings: &EncoderSettings) -> Result<(), Error> {
-    let bpp = info.bpp() as usize;
+    let bpp = info.bpp() as u8;
     if bpp == 0 {
         return Err(Error::new(31));
     }
@@ -172,12 +172,13 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
         debug_assert_eq!(h, 0);
         return Ok(()); // WTF?
     }
+    /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
+    let bytewidth = (bpp + 7) / 8;
+    let bpp = bpp as usize;
 
     /*the width of a scanline in bytes, not including the filter type*/
     let linebytes = ((w * bpp + 7) / 8) as usize;
     debug_assert!(linebytes > 0);
-    /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
-    let bytewidth = (bpp + 7) / 8;
     /*
       There is a heuristic called the minimum sum of absolute differences heuristic, suggested by the PNG standard:
        *  If the image type is Palette, or the bit depth is smaller than 8, then do not filter the image (i.e.
@@ -357,10 +358,11 @@ fn test_filter() {
     }
 }
 
-fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, bytewidth: usize, filter_type: u8) {
+fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8) {
     debug_assert_eq!(out.len(), scanline.len());
     debug_assert!(prevline.map_or(true, |p| p.len() == out.len()));
     let length = out.len();
+    let bytewidth = bytewidth as usize;
     match filter_type {
         0 => {
             out.copy_from_slice(&scanline);
@@ -1402,7 +1404,7 @@ struct AdamPasses {
     offsets: [AdamOffset; 8],
 }
 
-fn adam7_get_pass_values(w: usize, h: usize, bpp: usize) -> AdamPasses {
+fn adam7_get_pass_values(w: usize, h: usize, bpp: u8) -> AdamPasses {
     let mut p = AdamPasses::default();
 
     /*the offsets va.normallues have 8 values: the 8th one indicates the byte after the end of the 7th (= last) pass*/
@@ -1420,6 +1422,7 @@ fn adam7_get_pass_values(w: usize, h: usize, bpp: usize) -> AdamPasses {
     p.offsets[0].filtered = 0;
     p.offsets[0].padded = 0;
     p.offsets[0].normal = 0;
+    let bpp = bpp as usize;
     for i in 0..7 {
         p.offsets[i + 1].filtered = p.offsets[i].filtered + if p.sizes[i].w != 0 && p.sizes[i].h != 0 {
             p.sizes[i].h as usize * (1 + (p.sizes[i].w as usize * bpp + 7) / 8)
@@ -1443,8 +1446,9 @@ out must be big enough AND must be 0 everywhere if bpp < 8 in the current implem
 (because that's likely a little bit faster)
 NOTE: comments about padding bits are only relevant if bpp < 8
 */
-fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: usize) {
+fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
     let AdamPasses { sizes, offsets, .. } = adam7_get_pass_values(w, h, bpp);
+    let bpp = bpp as usize;
     if bpp >= 8 {
         for i in 0..7 {
             let bytewidth = bpp / 8;
@@ -1763,15 +1767,15 @@ fn postprocess_scanlines(out: &mut [u8], inp: &mut [u8], w: usize, h: usize, inf
     }
     if info_png.interlace_method == 0 {
         if bpp < 8 && w as usize * bpp != ((w as usize * bpp + 7) / 8) * 8 {
-            unfilter_aliased(inp, 0, 0, w, h, bpp)?;
+            unfilter_aliased(inp, 0, 0, w, h, bpp as u8)?;
             remove_padding_bits(out, inp, w as usize * bpp, ((w as usize * bpp + 7) / 8) * 8, h);
         } else {
-            unfilter(out, inp, w, h, bpp)?;
+            unfilter(out, inp, w, h, bpp as u8)?;
         };
     } else {
-        let AdamPasses { sizes, offsets } = adam7_get_pass_values(w, h, bpp);
+        let AdamPasses { sizes, offsets } = adam7_get_pass_values(w, h, bpp as u8);
         for (offset, size) in offsets.iter().zip(sizes) {
-            unfilter_aliased(inp, offset.padded, offset.filtered, size.w as usize, size.h as usize, bpp)?;
+            unfilter_aliased(inp, offset.padded, offset.filtered, size.w as usize, size.h as usize, bpp as u8)?;
             if bpp < 8 {
                 /*remove padding bits in scanlines; after this there still may be padding
                         bits between the different reduced images: each reduced image still starts nicely at a byte*/
@@ -1785,7 +1789,7 @@ fn postprocess_scanlines(out: &mut [u8], inp: &mut [u8], w: usize, h: usize, inf
                 );
             };
         }
-        adam7_deinterlace(out, inp, w, h, bpp);
+        adam7_deinterlace(out, inp, w, h, bpp as u8);
     }
     Ok(())
 }
@@ -1797,12 +1801,12 @@ fn postprocess_scanlines(out: &mut [u8], inp: &mut [u8], w: usize, h: usize, inf
   w and h are image dimensions or dimensions of reduced image, bpp is bits per pixel
   in and out are allowed to be the same memory address (but aren't the same size since in has the extra filter bytes)
   */
-fn unfilter(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: usize) -> Result<(), Error> {
+fn unfilter(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) -> Result<(), Error> {
     let mut prevline = None;
 
     /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
     let bytewidth = (bpp + 7) / 8;
-    let linebytes = (w * bpp + 7) / 8;
+    let linebytes = (w * bpp as usize + 7) / 8;
     let in_linebytes = 1 + linebytes; /*the extra filterbyte added to each row*/
 
     for (out_line, in_line) in out.chunks_mut(linebytes).zip(inp.chunks(in_linebytes)).take(h) {
@@ -1813,11 +1817,11 @@ fn unfilter(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: usize) -> Resul
     Ok(())
 }
 
-fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h: usize, bpp: usize) -> Result<(), Error> {
+fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h: usize, bpp: u8) -> Result<(), Error> {
     let mut prevline = None;
     /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
     let bytewidth = (bpp + 7) / 8;
-    let linebytes = (w * bpp + 7) / 8;
+    let linebytes = (w * bpp as usize + 7) / 8;
     for y in 0..h as usize {
         let outindex = linebytes * y;
         let inindex = (1 + linebytes) * y; /*the extra filterbyte added to each row*/
@@ -1836,9 +1840,10 @@ fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h
   the incoming scanlines do NOT include the filter_type byte, that one is given in the parameter filter_type instead
   recon and scanline MAY be the same memory address! precon must be disjoint.
   */
-fn unfilter_scanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, bytewidth: usize, filter_type: u8, length: usize) -> Result<(), Error> {
+fn unfilter_scanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, bytewidth: u8, filter_type: u8, length: usize) -> Result<(), Error> {
     debug_assert_eq!(recon.len(), scanline.len());
     debug_assert!(precon.map_or(true, |p| p.len() == recon.len()));
+    let bytewidth = bytewidth as usize;
     match filter_type {
         0 => recon.copy_from_slice(scanline),
         1 => {
@@ -1890,7 +1895,8 @@ fn unfilter_scanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, b
     Ok(())
 }
 
-fn unfilter_scanline_aliased(inout: &mut [u8], recon: usize, scanline: usize, precon: Option<usize>, bytewidth: usize, filter_type: u8, length: usize) -> Result<(), Error> {
+fn unfilter_scanline_aliased(inout: &mut [u8], recon: usize, scanline: usize, precon: Option<usize>, bytewidth: u8, filter_type: u8, length: usize) -> Result<(), Error> {
+    let bytewidth = bytewidth as usize;
     match filter_type {
         0 => for i in 0..length {
             inout[recon + i] = inout[scanline + i];
@@ -1998,9 +2004,9 @@ in has the following size in bits: w * h * bpp.
 out is possibly bigger due to padding bits between reduced images
 NOTE: comments about padding bits are only relevant if bpp < 8
 */
-fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: usize) {
+fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
     let AdamPasses { sizes, offsets, .. } = adam7_get_pass_values(w, h, bpp);
-    let bpp = bpp;
+    let bpp = bpp as usize;
     if bpp >= 8 {
         for i in 0..7 {
             let bytewidth = bpp / 8;
