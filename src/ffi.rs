@@ -756,7 +756,7 @@ pub unsafe extern "C" fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut 
 
 #[no_mangle]
 pub unsafe extern "C" fn zlib_compress(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, settings: &CompressSettings) -> ErrorCode {
-    to_vec(out, outsize, rustimpl::zlib_compress(slice::from_raw_parts(inp, insize), settings))
+    to_vec(out, outsize, rustimpl::old_ffi_zlib_compress(slice::from_raw_parts(inp, insize), settings))
 }
 
 #[no_mangle]

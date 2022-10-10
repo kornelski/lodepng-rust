@@ -302,12 +302,15 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
                 zero_vec(linebytes)?,
                 zero_vec(linebytes)?,
             ];
+            let mut temp_buf = Vec::with_capacity(linebytes);
             for y in 0..h {
                 for type_ in 0..5 {
                     /*it already works good enough by testing a part of the row*/
                     filter_scanline(&mut attempt[type_], &inp[(y * linebytes)..], prevline, linebytes, bytewidth, type_ as u8);
                     size[type_] = 0;
-                    let _ = zlib_compress(&attempt[type_], &zlibsettings)?;
+                    temp_buf.clear();
+                    zlib_compress_into(&mut temp_buf, &attempt[type_], &zlibsettings)?;
+                    size[type_] = temp_buf.len();
                     /*check if this is smallest size (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || size[type_] < smallest {
                         best_type = type_; /*the first byte of a scanline will be the filter type*/
@@ -414,7 +417,7 @@ fn paeth_predictor(a: i16, b: i16, c: i16) -> u8 {
     }
 }
 
-pub fn lodepng_encode_file(filename: &Path, image: &[u8], w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> Result<(), Error> {
+pub(crate) fn lodepng_encode_file(filename: &Path, image: &[u8], w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> Result<(), Error> {
     let v = lodepng_encode_memory(image, w, h, colortype, bitdepth)?;
     lodepng_save_file(&v, filename)
 }
@@ -434,7 +437,7 @@ pub(crate) fn lodepng_get_bpp_lct(colortype: ColorType, bitdepth: u32) -> u32 {
     }
 }
 
-pub fn lodepng_get_raw_size_lct(w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> usize {
+pub(crate) fn lodepng_get_raw_size_lct(w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> usize {
     /*will not overflow for any color type if roughly w * h < 268435455*/
     let bpp = lodepng_get_bpp_lct(colortype, bitdepth) as usize;
     let n = w as usize * h as usize;
@@ -1154,9 +1157,8 @@ fn read_chunk_phys(info: &mut Info, data: &[u8]) -> Result<(), Error> {
 }
 
 fn add_chunk_idat(out: &mut Vec<u8>, data: &[u8], zlibsettings: &CompressSettings) -> Result<(), Error> {
-    let zlib = zlib_compress(data, zlibsettings)?;
     let mut ch = ChunkBuilder::new(out, b"IDAT");
-    ch.extend_from_slice(&zlib);
+    ch.zlib_compress(data, zlibsettings)?;
     ch.finish()
 }
 
@@ -1179,12 +1181,11 @@ fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8], zlibsett
     if keyword.is_empty() || keyword.len() > 79 {
         return Err(Error::new(89));
     }
-    let v = zlib_compress(textstring, zlibsettings)?;
     let mut data = ChunkBuilder::new(out, b"zTXt");
     data.extend_from_slice(keyword)?;
     data.push(0u8);
     data.push(0u8);
-    data.extend_from_slice(&v);
+    data.zlib_compress(textstring, zlibsettings)?;
     data.finish()
 }
 
@@ -1202,8 +1203,7 @@ fn add_chunk_itxt(
     data.extend_from_slice(langtag.as_bytes())?; data.push(0);
     data.extend_from_slice(transkey.as_bytes())?; data.push(0);
     if compressed {
-        let compressed_data = zlib_compress(textstring.as_bytes(), zlibsettings)?;
-        data.extend_from_slice(&compressed_data);
+        data.zlib_compress(textstring.as_bytes(), zlibsettings)?;
     } else {
         data.extend_from_slice(textstring.as_bytes())?;
     }
@@ -1326,6 +1326,11 @@ impl<'buf> ChunkBuilder<'buf> {
     #[inline]
     pub fn write_u16be(&mut self, num: u16) {
         self.buf.extend_from_slice(&num.to_be_bytes());
+    }
+
+    #[inline]
+    pub fn zlib_compress(&mut self, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
+        zlib_compress_into(self.buf, inp, settings)
     }
 
     #[inline]
@@ -1481,11 +1486,11 @@ fn set_bit_of_reversed_stream(bitpointer: &mut usize, bitstream: &mut [u8], bit:
 /* / PNG chunks                                                             / */
 /* ////////////////////////////////////////////////////////////////////////// */
 #[inline]
-pub fn lodepng_chunk_length(chunk: &[u8]) -> usize {
+pub(crate) fn lodepng_chunk_length(chunk: &[u8]) -> usize {
     u32::from_be_bytes(chunk[..4].try_into().unwrap()) as usize
 }
 
-pub fn lodepng_chunk_generate_crc(chunk: &mut [u8]) {
+pub(crate) fn lodepng_chunk_generate_crc(chunk: &mut [u8]) {
     let ch = ChunkRef::new(chunk).unwrap();
     let length = ch.len();
     let crc = ch.crc();
@@ -1529,7 +1534,7 @@ fn check_lode_color_validity(colortype: ColorType, bd: u32) -> Result<(), Error>
     }
 }
 
-pub fn lodepng_color_mode_equal(a: &ColorMode, b: &ColorMode) -> bool {
+pub(crate) fn lodepng_color_mode_equal(a: &ColorMode, b: &ColorMode) -> bool {
     a.colortype == b.colortype &&
     a.bitdepth() == b.bitdepth() &&
     a.key() == b.key() &&
@@ -1539,7 +1544,7 @@ pub fn lodepng_color_mode_equal(a: &ColorMode, b: &ColorMode) -> bool {
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / Zlib                                                                   / */
 /* ////////////////////////////////////////////////////////////////////////// */
-pub fn lodepng_zlib_decompress(inp: &[u8]) -> Result<Vec<u8>, Error> {
+pub(crate) fn lodepng_zlib_decompress(inp: &[u8]) -> Result<Vec<u8>, Error> {
     use flate2::read::ZlibDecoder;
 
     if inp.len() < 2 {
@@ -1577,7 +1582,7 @@ pub fn lodepng_zlib_decompress(inp: &[u8]) -> Result<Vec<u8>, Error> {
     Ok(out)
 }
 
-pub fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
+pub(crate) fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
     if let Some(cb) = settings.custom_zlib {
         let mut out = Vec::try_with_capacity(inp.len() * 3 / 2)?;
         (cb)(inp, &mut out, settings)?;
@@ -1587,7 +1592,7 @@ pub fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<
     }
 }
 
-pub fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
+pub(crate) fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
     use flate2::write::ZlibEncoder;
     use flate2::Compression;
     let level = settings.level();
@@ -1602,15 +1607,19 @@ pub fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &Compress
 }
 
 /* compress using the default or custom zlib function */
-pub fn zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
+pub(crate) fn old_ffi_zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
     let mut out = Vec::try_with_capacity(inp.len() / 2)?;
+    zlib_compress_into(&mut out, inp, settings)?;
+    Ok(out)
+}
+
+fn zlib_compress_into(out: &mut Vec<u8>, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
     if let Some(cb) = settings.custom_zlib {
-        (cb)(inp, &mut out, settings)?;
-        Ok(out)
+        (cb)(inp, out, settings)?;
     } else {
-        lodepng_zlib_compress(&mut out, inp, settings)?;
-        Ok(out)
+        lodepng_zlib_compress(out, inp, settings)?;
     }
+    Ok(())
 }
 
 /* ////////////////////////////////////////////////////////////////////////// */
@@ -1656,7 +1665,7 @@ const LODEPNG_CRC32_TABLE: [u32; 256] = [
   3009837614, 3294710456, 1567103746,  711928724, 3020668471, 3272380065, 1510334235,  755167117
 ];
 
-    pub fn lodepng_crc32_old(data: &[u8]) -> u32 {
+    fn lodepng_crc32_old(data: &[u8]) -> u32 {
         let mut r = 4294967295u32;
         for &d in data {
             r = LODEPNG_CRC32_TABLE[((r ^ d as u32) & 255) as usize] ^ (r >> 8);
@@ -1668,7 +1677,7 @@ const LODEPNG_CRC32_TABLE: [u32; 256] = [
     }
 }
 
-pub fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, mode_in: &ColorMode, w: u32, h: u32) -> Result<(), Error> {
+pub(crate) fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, mode_in: &ColorMode, w: u32, h: u32) -> Result<(), Error> {
     let numpixels = w as usize * h as usize;
     if lodepng_color_mode_equal(mode_out, mode_in) {
         let numbytes = mode_in.raw_size(w, h);
@@ -1995,7 +2004,7 @@ fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: usize) {
 /* / PNG Decoder                                                            / */
 /* ////////////////////////////////////////////////////////////////////////// */
 /*read the information from the header and store it in the Info. return value is error*/
-pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool) -> Result<(Info, usize, usize), Error> {
+pub(crate) fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool) -> Result<(Info, usize, usize), Error> {
     if inp.len() < 33 {
         /*error: the data length is smaller than the length of a PNG header*/
         return Err(Error::new(27));
@@ -2184,7 +2193,7 @@ fn adam7_expected_size(color: &ColorMode, w: usize, h: usize) -> Option<usize> {
     Some(predict)
 }
 
-pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usize), Error> {
+pub(crate) fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usize), Error> {
     let (decoded, w, h) = decode_generic(state, inp)?;
 
     if !state.decoder.color_convert || lodepng_color_mode_equal(&state.info_raw, &state.info_png.color) {
@@ -2207,32 +2216,32 @@ pub fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, 
     }
 }
 
-pub fn lodepng_decode_memory(inp: &[u8], colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
+pub(crate) fn lodepng_decode_memory(inp: &[u8], colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
     let mut state = Decoder::new();
     state.info_raw_mut().colortype = colortype;
     state.info_raw_mut().set_bitdepth(bitdepth);
     lodepng_decode(&mut state.state, inp)
 }
 
-pub fn lodepng_decode_file(filename: &Path, colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
+pub(crate) fn lodepng_decode_file(filename: &Path, colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
     let buf = lodepng_load_file(filename)?;
     lodepng_decode_memory(&buf, colortype, bitdepth)
 }
 
 /* load file into buffer that already has the correct allocated size. Returns error code.*/
-pub fn lodepng_buffer_file(out: &mut [u8], filename: &Path) -> Result<(), Error> {
+pub(crate) fn lodepng_buffer_file(out: &mut [u8], filename: &Path) -> Result<(), Error> {
     fs::File::open(filename)
         .and_then(|mut f| f.read_exact(out))
         .map_err(|_| Error::new(78))?;
     Ok(())
 }
 
-pub fn lodepng_load_file(filename: &Path) -> Result<Vec<u8>, Error> {
+pub(crate) fn lodepng_load_file(filename: &Path) -> Result<Vec<u8>, Error> {
     fs::read(filename).map_err(|_| Error::new(78)) // Requires Rust 1.28. If you see an error here, upgrade your Rust.
 }
 
 /*write given buffer to the file, overwriting the file, it doesn't append to it.*/
-pub fn lodepng_save_file(buffer: &[u8], filename: &Path) -> Result<(), Error> {
+pub(crate) fn lodepng_save_file(buffer: &[u8], filename: &Path) -> Result<(), Error> {
     fs::write(filename, buffer) // Requires Rust 1.28. If you see an error here, upgrade your Rust.
         .map_err(|_| Error::new(79))
 }
@@ -2247,7 +2256,7 @@ fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
 
 pub const LODEPNG_VERSION_STRING: &[u8] = b"20161127-Rust-3.0\0";
 
-pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result<Vec<u8>, Error> {
+pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result<Vec<u8>, Error> {
     let w = w as usize;
     let h = h as usize;
 
