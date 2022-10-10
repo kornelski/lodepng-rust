@@ -441,32 +441,6 @@ pub fn lodepng_get_raw_size_lct(w: u32, h: u32, colortype: ColorType, bitdepth: 
     ((n / 8) * bpp) + ((n & 7) * bpp + 7) / 8
 }
 
-#[inline]
-pub(crate) fn lodepng_read32bit_int(buffer: &[u8]) -> u32 {
-    ((buffer[0] as u32) << 24) | ((buffer[1] as u32) << 16) | ((buffer[2] as u32) << 8) | buffer[3] as u32
-}
-
-#[inline(always)]
-fn lodepng_set32bit_int(buffer: &mut [u8], value: u32) {
-    buffer[0] = ((value >> 24) & 255) as u8;
-    buffer[1] = ((value >> 16) & 255) as u8;
-    buffer[2] = ((value >> 8) & 255) as u8;
-    buffer[3] = ((value) & 255) as u8;
-}
-
-#[inline(always)]
-fn add32bit_int(buffer: &mut Vec<u8>, value: u32) {
-    buffer.push(((value >> 24) & 255) as u8);
-    buffer.push(((value >> 16) & 255) as u8);
-    buffer.push(((value >> 8) & 255) as u8);
-    buffer.push(((value) & 255) as u8);
-}
-
-#[inline]
-fn lodepng_add32bit_int(buffer: &mut Vec<u8>, value: u32) {
-    add32bit_int(buffer, value);
-}
-
 impl Info {
     /// It's supposed to be in UTF-8, but trusting chunk data to be valid would be naive
     pub(crate) fn push_itext(&mut self, key: &[u8], langtag: &[u8], transkey: &[u8], value: &[u8]) -> Result<(), Error> {
@@ -1254,10 +1228,10 @@ fn add_chunk_bkgd(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
     add_chunk(out, b"bKGD", &bkgd)
 }
 
-fn add_chunk_ihdr(out: &mut Vec<u8>, w: usize, h: usize, colortype: ColorType, bitdepth: usize, interlace_method: u8) -> Result<(), Error> {
+fn add_chunk_ihdr(out: &mut Vec<u8>, w: u32, h: u32, colortype: ColorType, bitdepth: u8, interlace_method: u8) -> Result<(), Error> {
     let mut header = Vec::with_capacity(16);
-    add32bit_int(&mut header, w as u32);
-    add32bit_int(&mut header, h as u32);
+    header.extend_from_slice(&w.to_be_bytes());
+    header.extend_from_slice(&h.to_be_bytes());
     header.push(bitdepth as u8);
     header.push(colortype as u8);
     header.push(0u8);
@@ -1327,8 +1301,8 @@ fn add_chunk_time(out: &mut Vec<u8>, time: &Time) -> Result<(), Error> {
 
 fn add_chunk_phys(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
     let mut data = Vec::with_capacity(16);
-    add32bit_int(&mut data, info.phys_x);
-    add32bit_int(&mut data, info.phys_y);
+    data.extend_from_slice(&info.phys_x.to_be_bytes());
+    data.extend_from_slice(&info.phys_y.to_be_bytes());
     data.push(info.phys_unit as u8);
     add_chunk(out, b"pHYs", &data)
 }
@@ -1340,15 +1314,14 @@ pub(crate) fn add_chunk(out: &mut Vec<u8>, type_: &[u8; 4], data: &[u8]) -> Resu
         return Err(Error::new(77));
     }
     let previous_length = out.len();
-    FallibleVec::try_reserve(out, length + 12)?;
     /*1: length*/
-    lodepng_add32bit_int(out, length as u32);
+    out.extend_from_slice(&(length as u32).to_be_bytes());
     /*2: chunk name (4 letters)*/
     out.extend_from_slice(&type_[..]);
     /*3: the data*/
     out.extend_from_slice(data);
     /*4: CRC (of the chunkname characters and the data)*/
-    lodepng_add32bit_int(out, 0);
+    out.extend_from_slice(&[0,0,0,0]);
     lodepng_chunk_generate_crc(&mut out[previous_length..]);
     Ok(())
 }
@@ -1474,14 +1447,14 @@ fn set_bit_of_reversed_stream(bitpointer: &mut usize, bitstream: &mut [u8], bit:
 /* ////////////////////////////////////////////////////////////////////////// */
 #[inline]
 pub fn lodepng_chunk_length(chunk: &[u8]) -> usize {
-    lodepng_read32bit_int(chunk) as usize
+    u32::from_be_bytes(chunk[..4].try_into().unwrap()) as usize
 }
 
 pub fn lodepng_chunk_generate_crc(chunk: &mut [u8]) {
     let ch = ChunkRef::new(chunk).unwrap();
     let length = ch.len();
     let crc = ch.crc();
-    lodepng_set32bit_int(&mut chunk[8 + length..], crc);
+    chunk[8 + length..].copy_from_slice(&crc.to_be_bytes());
 }
 
 #[inline]
@@ -2009,8 +1982,11 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool)
         return Err(Error::new(94));
     }
     /*read the values given in the header*/
-    let w = lodepng_read32bit_int(&inp[16..]) as usize;
-    let h = lodepng_read32bit_int(&inp[20..]) as usize;
+    let w = u32::from_be_bytes(inp[16..][..4].try_into().unwrap());
+    let h = u32::from_be_bytes(inp[20..][..4].try_into().unwrap());
+    if w == 0 || h == 0 {
+        return Err(Error::new(93));
+    }
     let bitdepth = inp[24];
     if bitdepth == 0 || bitdepth > 16 {
         return Err(Error::new(29));
@@ -2025,9 +2001,6 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool)
         _ => return Err(Error::new(31)),
     };
     info_png.interlace_method = inp[28];
-    if w == 0 || h == 0 {
-        return Err(Error::new(93));
-    }
     if !decoder.ignore_crc && !ihdr.check_crc() {
         return Err(Error::new(57));
     }
@@ -2054,7 +2027,7 @@ pub fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool)
         }
     }
     check_png_color_validity(info_png.color.colortype, info_png.color.bitdepth())?;
-    Ok((info_png, w, h))
+    Ok((info_png, w as usize, h as usize))
 }
 
 /*read a PNG, the result will be in the same color type as the PNG (hence "generic")*/
@@ -2268,7 +2241,7 @@ pub fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result
     let mut outv = Vec::with_capacity(1024);
     write_signature(&mut outv);
 
-    add_chunk_ihdr(&mut outv, w, h, info.color.colortype, info.color.bitdepth() as usize, info.interlace_method as u8)?;
+    add_chunk_ihdr(&mut outv, w as u32, h as u32, info.color.colortype, info.color.bitdepth() as u8, info.interlace_method as u8)?;
     add_unknown_chunks(&mut outv, &info.unknown_chunks[ChunkPosition::IHDR as usize])?;
     if info.color.colortype == ColorType::PALETTE {
         add_chunk_plte(&mut outv, &info.color)?;

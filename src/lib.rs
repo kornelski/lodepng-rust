@@ -1135,7 +1135,7 @@ impl<'a> ChunkRef<'a> {
     pub fn check_crc(&self) -> bool {
         let length = self.len();
         /*the CRC is taken of the data and the 4 chunk type letters, not the length*/
-        let crc = rustimpl::lodepng_read32bit_int(&self.data[length + 8..]);
+        let crc = u32::from_be_bytes(self.data[length + 8.. length + 8 + 4].try_into().unwrap());
         let checksum = self.crc();
         crc == checksum
     }
