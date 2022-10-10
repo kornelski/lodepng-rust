@@ -255,7 +255,7 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
             let mut prevline = None;
             for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
                 for type_ in 0..5 {
-                    filter_scanline(&mut attempt[type_], &inp, prevline, bytewidth, type_ as u8);
+                    filter_scanline(&mut attempt[type_], inp, prevline, bytewidth, type_ as u8);
                     let mut count: [u32; 256] = [0; 256];
                     for x in 0..linebytes {
                         count[attempt[type_][x] as usize] += 1;
@@ -272,7 +272,7 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
                         smallest = sum[type_]; /*the first byte of a scanline will be the filter type*/
                     }; /*the extra filterbyte added to each row*/
                 }
-                prevline = Some(&inp);
+                prevline = Some(inp);
                 out[0] = best_type as u8;
                 out[1..].copy_from_slice(&attempt[best_type]);
             }
@@ -282,8 +282,8 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
             let filters = unsafe { settings.predefined_filters(h)? };
             for ((out, inp), &type_) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)).zip(filters) {
                 out[0] = type_;
-                filter_scanline(&mut out[1..], &inp, prevline, bytewidth, type_);
-                prevline = Some(&inp);
+                filter_scanline(&mut out[1..], inp, prevline, bytewidth, type_);
+                prevline = Some(inp);
             }
         },
         FilterStrategy::BRUTE_FORCE => {
@@ -311,7 +311,7 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
             for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
                 for type_ in 0..5 {
                     /*it already works good enough by testing a part of the row*/
-                    filter_scanline(&mut attempt[type_], &inp, prevline, bytewidth, type_ as u8);
+                    filter_scanline(&mut attempt[type_], inp, prevline, bytewidth, type_ as u8);
                     size[type_] = 0;
                     temp_buf.clear();
                     zlib_compress_into(&mut temp_buf, &attempt[type_], &zlibsettings)?;
@@ -322,7 +322,7 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
                         smallest = size[type_]; /* unknown filter strategy */
                     }
                 }
-                prevline = Some(&inp);
+                prevline = Some(inp);
                 out[0] = best_type as u8;
                 out[1..].copy_from_slice(&attempt[best_type]);
             }
@@ -365,7 +365,7 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
     let bytewidth = bytewidth as usize;
     match filter_type {
         0 => {
-            out.copy_from_slice(&scanline);
+            out.copy_from_slice(scanline);
         },
         1 => {
             let (out_start, out) = out.split_at_mut(bytewidth);
@@ -381,7 +381,7 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
                 *out = s.wrapping_sub(prev);
             }
         } else {
-            out.copy_from_slice(&scanline);
+            out.copy_from_slice(scanline);
         },
         3 => if let Some(prevline) = prevline {
             for i in 0..bytewidth {

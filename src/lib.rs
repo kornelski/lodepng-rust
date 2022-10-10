@@ -688,7 +688,7 @@ impl State {
             return Err(Error::new(89));
         }
         let iccp = iccp.as_ref().unwrap().data();
-        if iccp.get(0).cloned().unwrap_or(255) == 0 { // text min length is 1
+        if iccp.first().cloned().unwrap_or(255) == 0 { // text min length is 1
             return Err(Error::new(89));
         }
 
@@ -1312,7 +1312,7 @@ mod test {
             }
 
             let testdata = &[1, 2, 3];
-            info.create_chunk(ChunkPosition::PLTE, &[255, 0, 100, 32], testdata).unwrap();
+            info.create_chunk(ChunkPosition::PLTE, [255, 0, 100, 32], testdata).unwrap();
             assert_eq!(1, info.try_unknown_chunks(ChunkPosition::PLTE).count());
 
             info.create_chunk(ChunkPosition::IHDR, "foob", testdata).unwrap();

@@ -6,7 +6,7 @@ fn main() {
 
     let mut state = lodepng::Decoder::new();
 
-    match state.decode_file(&path) {
+    match state.decode_file(path) {
         Ok(image) => match image {
             lodepng::Image::RGBA(bitmap) => {
                 println!("Decoded image {} x {}", bitmap.width, bitmap.height);

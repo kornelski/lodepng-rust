@@ -715,7 +715,8 @@ pub unsafe extern "C" fn lodepng_chunk_append(out: &mut *mut u8, outsize: &mut u
 fn chunk_append(out: &mut Vec<u8>, chunk: &[u8]) -> Result<(), crate::Error> {
     let total_chunk_length = rustimpl::chunk_length(chunk) as usize + 12;
     out.try_reserve(total_chunk_length)?;
-    Ok(out.extend_from_slice(&chunk[0..total_chunk_length]))
+    out.extend_from_slice(&chunk[0..total_chunk_length]);
+    Ok(())
 }
 
 #[no_mangle]

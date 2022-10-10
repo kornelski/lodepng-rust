@@ -28,7 +28,7 @@ fn test_pngtestsuite() {
             continue;
         }
 
-        if file_name.starts_with("x") {
+        if file_name.starts_with('x') {
             if file_name.starts_with("xcs") { // just checksum, meh
                 continue;
             }
