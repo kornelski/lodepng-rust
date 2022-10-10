@@ -165,12 +165,19 @@ fn pre_process_scanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settin
   */
 fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, settings: &EncoderSettings) -> Result<(), Error> {
     let bpp = info.bpp() as usize;
+    if bpp == 0 {
+        return Err(Error::new(31));
+    }
+    if w == 0 {
+        debug_assert_eq!(h, 0);
+        return Ok(()); // WTF?
+    }
 
     /*the width of a scanline in bytes, not including the filter type*/
     let linebytes = ((w * bpp + 7) / 8) as usize;
+    debug_assert!(linebytes > 0);
     /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
     let bytewidth = (bpp + 7) / 8;
-    let mut prevline = None;
     /*
       There is a heuristic called the minimum sum of absolute differences heuristic, suggested by the PNG standard:
        *  If the image type is Palette, or the bit depth is smaller than 8, then do not filter the image (i.e.
@@ -189,16 +196,14 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
     } else {
         settings.filter_strategy
     };
-    if bpp == 0 {
-        return Err(Error::new(31));
-    }
     match strategy {
-        FilterStrategy::ZERO => for y in 0..h {
-            let outindex = (1 + linebytes) * y;
-            let inindex = linebytes * y;
-            out[outindex] = 0u8;
-            filter_scanline(&mut out[(outindex + 1)..], &inp[inindex..], prevline, linebytes, bytewidth, 0u8);
-            prevline = Some(&inp[inindex..]);
+        FilterStrategy::ZERO => {
+            let mut prevline = None;
+            for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
+                out[0] = 0u8;
+                filter_scanline(&mut out[1..], inp, prevline, bytewidth, 0u8);
+                prevline = Some(inp);
+            }
         },
         FilterStrategy::MINSUM => {
             let mut sum: [usize; 5] = [0, 0, 0, 0, 0];
@@ -211,16 +216,18 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
             ];
             let mut smallest = 0;
             let mut best_type = 0;
-            for y in 0..h {
+            let mut prevline = None;
+            debug_assert!(linebytes > 0);
+            for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
                 for type_ in 0..5 {
-                    filter_scanline(&mut attempt[type_], &inp[(y * linebytes)..], prevline, linebytes, bytewidth, type_ as u8);
+                    filter_scanline(&mut attempt[type_], inp, prevline, bytewidth, type_ as u8);
                     sum[type_] = if type_ == 0 {
-                        attempt[type_][0..linebytes].iter().map(|&s| s as usize).sum()
+                        attempt[type_].iter().map(|&s| s as usize).sum()
                     } else {
                         /*For differences, each byte should be treated as signed, values above 127 are negative
                           (converted to signed char). filter_type 0 isn't a difference though, so use unsigned there.
                           This means filter_type 0 is almost never chosen, but that is justified.*/
-                        attempt[type_][0..linebytes].iter().map(|&s| if s < 128 { s } else { 255 - s } as usize).sum()
+                        attempt[type_].iter().map(|&s| if s < 128 { s } else { 255 - s } as usize).sum()
                     };
                     /*check if this is smallest sum (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || sum[type_] < smallest {
@@ -228,13 +235,10 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
                         smallest = sum[type_];
                     };
                 }
-                prevline = Some(&inp[(y * linebytes)..]);
-                out[y * (linebytes + 1)] = best_type as u8;
-                /*the first byte of a scanline will be the filter type*/
-                for x in 0..linebytes {
-                    out[y * (linebytes + 1) + 1 + x] = attempt[best_type][x];
-                } /*try the 5 filter types*/
-            } /*the filter type itself is part of the scanline*/
+                prevline = Some(inp);
+                out[0] = best_type as u8;
+                out[1..].copy_from_slice(&attempt[best_type]);
+            }
         },
         FilterStrategy::ENTROPY => {
             let mut sum: [f32; 5] = [0., 0., 0., 0., 0.];
@@ -247,9 +251,10 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
                 zero_vec(linebytes)?,
                 zero_vec(linebytes)?,
             ];
-            for y in 0..h {
+            let mut prevline = None;
+            for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
                 for type_ in 0..5 {
-                    filter_scanline(&mut attempt[type_], &inp[(y * linebytes)..], prevline, linebytes, bytewidth, type_ as u8);
+                    filter_scanline(&mut attempt[type_], &inp, prevline, bytewidth, type_ as u8);
                     let mut count: [u32; 256] = [0; 256];
                     for x in 0..linebytes {
                         count[attempt[type_][x] as usize] += 1;
@@ -266,21 +271,19 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
                         smallest = sum[type_]; /*the first byte of a scanline will be the filter type*/
                     }; /*the extra filterbyte added to each row*/
                 }
-                prevline = Some(&inp[(y * linebytes)..]);
-                out[y * (linebytes + 1)] = best_type as u8;
-                for x in 0..linebytes {
-                    out[y * (linebytes + 1) + 1 + x] = attempt[best_type][x];
-                }
+                prevline = Some(&inp);
+                out[0] = best_type as u8;
+                out[1..].copy_from_slice(&attempt[best_type]);
             }
         },
-        FilterStrategy::PREDEFINED => for y in 0..h {
-            let outindex = (1 + linebytes) * y;
-            let inindex = linebytes * y;
+        FilterStrategy::PREDEFINED => {
+            let mut prevline = None;
             let filters = unsafe { settings.predefined_filters(h)? };
-            let type_ = filters[y];
-            out[outindex] = type_;
-            filter_scanline(&mut out[(outindex + 1)..], &inp[inindex..], prevline, linebytes, bytewidth, type_);
-            prevline = Some(&inp[inindex..]);
+            for ((out, inp), &type_) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)).zip(filters) {
+                out[0] = type_;
+                filter_scanline(&mut out[1..], &inp, prevline, bytewidth, type_);
+                prevline = Some(&inp);
+            }
         },
         FilterStrategy::BRUTE_FORCE => {
             /*brute force filter chooser.
@@ -303,10 +306,11 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
                 zero_vec(linebytes)?,
             ];
             let mut temp_buf = Vec::with_capacity(linebytes);
-            for y in 0..h {
+            let mut prevline = None;
+            for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
                 for type_ in 0..5 {
                     /*it already works good enough by testing a part of the row*/
-                    filter_scanline(&mut attempt[type_], &inp[(y * linebytes)..], prevline, linebytes, bytewidth, type_ as u8);
+                    filter_scanline(&mut attempt[type_], &inp, prevline, bytewidth, type_ as u8);
                     size[type_] = 0;
                     temp_buf.clear();
                     zlib_compress_into(&mut temp_buf, &attempt[type_], &zlibsettings)?;
@@ -317,11 +321,9 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
                         smallest = size[type_]; /* unknown filter strategy */
                     }
                 }
-                prevline = Some(&inp[(y * linebytes)..]);
-                out[y * (linebytes + 1)] = best_type as u8;
-                for x in 0..linebytes {
-                    out[y * (linebytes + 1) + 1 + x] = attempt[best_type][x];
-                }
+                prevline = Some(&inp);
+                out[0] = best_type as u8;
+                out[1..].copy_from_slice(&attempt[best_type]);
             }
         },
     };
@@ -343,35 +345,41 @@ fn test_filter() {
     let mut unfiltered = vec![66u8; 1 << 16];
     for filter_type in 0..5 {
         let len = filtered.len();
-        filter_scanline(&mut filtered, &line1, Some(&line2), len, 1, filter_type);
+        filter_scanline(&mut filtered, &line1, Some(&line2), 1, filter_type);
         unfilter_scanline(&mut unfiltered, &filtered, Some(&line2), 1, filter_type, len).unwrap();
         assert_eq!(unfiltered, line1, "prev+filter={}", filter_type);
     }
     for filter_type in 0..5 {
         let len = filtered.len();
-        filter_scanline(&mut filtered, &line1, None, len, 1, filter_type);
+        filter_scanline(&mut filtered, &line1, None, 1, filter_type);
         unfilter_scanline(&mut unfiltered, &filtered, None, 1, filter_type, len).unwrap();
         assert_eq!(unfiltered, line1, "none+filter={}", filter_type);
     }
 }
 
-fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, length: usize, bytewidth: usize, filter_type: u8) {
+fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, bytewidth: usize, filter_type: u8) {
+    debug_assert_eq!(out.len(), scanline.len());
+    debug_assert!(prevline.map_or(true, |p| p.len() == out.len()));
+    let length = out.len();
     match filter_type {
         0 => {
-            out[..length].clone_from_slice(&scanline[..length]);
+            out.copy_from_slice(&scanline);
         },
         1 => {
-            out[..bytewidth].clone_from_slice(&scanline[..bytewidth]);
-            for i in bytewidth..length {
-                out[i] = scanline[i].wrapping_sub(scanline[i - bytewidth]);
+            let (out_start, out) = out.split_at_mut(bytewidth);
+            let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
+            out_start.copy_from_slice(scanline_start);
+
+            for (out, (s_next, s_prev)) in out.iter_mut().zip(scanline_next.iter().copied().zip(scanline.iter().copied())) {
+                *out = s_next.wrapping_sub(s_prev);
             }
         },
         2 => if let Some(prevline) = prevline {
-            for i in 0..length {
-                out[i] = scanline[i].wrapping_sub(prevline[i]);
+            for (out, (s, prev)) in out.iter_mut().zip(scanline.iter().copied().zip(prevline.iter().copied())) {
+                *out = s.wrapping_sub(prev);
             }
         } else {
-            out[..length].clone_from_slice(&scanline[..length]);
+            out.copy_from_slice(&scanline);
         },
         3 => if let Some(prevline) = prevline {
             for i in 0..bytewidth {
@@ -382,7 +390,7 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, len
                 out[i] = scanline[i].wrapping_sub((s >> 1) as u8);
             }
         } else {
-            out[..bytewidth].clone_from_slice(&scanline[..bytewidth]);
+            out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
             for i in bytewidth..length {
                 out[i] = scanline[i].wrapping_sub(scanline[i - bytewidth] >> 1);
             }
@@ -395,7 +403,7 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, len
                 out[i] = scanline[i].wrapping_sub(paeth_predictor(scanline[i - bytewidth].into(), prevline[i].into(), prevline[i - bytewidth].into()));
             }
         } else {
-            out[..bytewidth].clone_from_slice(&scanline[..bytewidth]);
+            out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
             for i in bytewidth..length {
                 out[i] = scanline[i].wrapping_sub(scanline[i - bytewidth]);
             }
@@ -1432,7 +1440,7 @@ fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: usize)
                     let pixeloutstart = ((ADAM7_IY[i] + y * ADAM7_DY[i]) as usize * w + ADAM7_IX[i] as usize + x as usize * ADAM7_DX[i] as usize) * bytewidth;
 
                     out[pixeloutstart..(bytewidth + pixeloutstart)]
-                        .clone_from_slice(&inp[pixelinstart..(bytewidth + pixelinstart)])
+                        .copy_from_slice(&inp[pixelinstart..(bytewidth + pixelinstart)])
                 }
             }
         }
@@ -1677,7 +1685,7 @@ pub(crate) fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, 
     let numpixels = w as usize * h as usize;
     if lodepng_color_mode_equal(mode_out, mode_in) {
         let numbytes = mode_in.raw_size(w, h);
-        out[..numbytes].clone_from_slice(&inp[..numbytes]);
+        out[..numbytes].copy_from_slice(&inp[..numbytes]);
         return Ok(());
     }
     let mut tree = ColorTree::new();
@@ -1773,8 +1781,8 @@ fn unfilter(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: usize) -> Resul
     let in_linebytes = 1 + linebytes; /*the extra filterbyte added to each row*/
 
     for (out_line, in_line) in out.chunks_mut(linebytes).zip(inp.chunks(in_linebytes)).take(h) {
-        let filter_type = in_line[0];
-        unfilter_scanline(out_line, &in_line[1..], prevline, bytewidth, filter_type, linebytes)?;
+        let (&filter_type, in_line) = in_line.split_first().ok_or_else(|| Error::new(91))?;
+        unfilter_scanline(out_line, in_line, prevline, bytewidth, filter_type, linebytes)?;
         prevline = Some(out_line);
     }
     Ok(())
@@ -1804,20 +1812,22 @@ fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h
   recon and scanline MAY be the same memory address! precon must be disjoint.
   */
 fn unfilter_scanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, bytewidth: usize, filter_type: u8, length: usize) -> Result<(), Error> {
+    debug_assert_eq!(recon.len(), scanline.len());
+    debug_assert!(precon.map_or(true, |p| p.len() == recon.len()));
     match filter_type {
-        0 => recon.clone_from_slice(scanline),
+        0 => recon.copy_from_slice(scanline),
         1 => {
-            recon[0..bytewidth].clone_from_slice(&scanline[0..bytewidth]);
+            recon[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
             for i in bytewidth..length {
                 recon[i] = scanline[i].wrapping_add(recon[i - bytewidth]);
             }
         },
         2 => if let Some(precon) = precon {
-            for i in 0..length {
-                recon[i] = scanline[i].wrapping_add(precon[i]);
+            for (recon, (scanline, precon)) in recon.iter_mut().zip(scanline.iter().copied().zip(precon.iter().copied())) {
+                *recon = scanline.wrapping_add(precon);
             }
         } else {
-            recon.clone_from_slice(scanline);
+            recon.copy_from_slice(scanline);
         },
         3 => if let Some(precon) = precon {
             for i in 0..bytewidth {
@@ -1828,7 +1838,7 @@ fn unfilter_scanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, b
                 recon[i] = scanline[i].wrapping_add((t >> 1) as u8);
             }
         } else {
-            recon[0..bytewidth].clone_from_slice(&scanline[0..bytewidth]);
+            recon[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
             for i in bytewidth..length {
                 recon[i] = scanline[i].wrapping_add(recon[i - bytewidth] >> 1);
             }
@@ -1845,7 +1855,7 @@ fn unfilter_scanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, b
                 ));
             }
         } else {
-            recon[0..bytewidth].clone_from_slice(&scanline[0..bytewidth]);
+            recon[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
             for i in bytewidth..length {
                 recon[i] = scanline[i].wrapping_add(recon[i - bytewidth]);
             }
@@ -1974,7 +1984,7 @@ fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: usize) {
                     let pixelinstart = ((ADAM7_IY[i] as usize + y * ADAM7_DY[i] as usize) * w as usize + ADAM7_IX[i] as usize + x * ADAM7_DX[i] as usize) * bytewidth;
                     let pixeloutstart = passstart[i] + (y * passw[i] as usize + x) * bytewidth;
                     out[pixeloutstart..(bytewidth + pixeloutstart)]
-                        .clone_from_slice(&inp[pixelinstart..(bytewidth + pixelinstart)]);
+                        .copy_from_slice(&inp[pixelinstart..(bytewidth + pixelinstart)]);
                 }
             }
         }
