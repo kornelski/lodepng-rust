@@ -1561,8 +1561,9 @@ pub(crate) fn lodepng_color_mode_equal(a: &ColorMode, b: &ColorMode) -> bool {
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / Zlib                                                                   / */
 /* ////////////////////////////////////////////////////////////////////////// */
-pub(crate) fn lodepng_zlib_decompress(inp: &[u8]) -> Result<Vec<u8>, Error> {
-    use flate2::read::ZlibDecoder;
+
+use flate2::read::ZlibDecoder;
+fn zlib_decompressor(inp: &[u8]) -> Result<ZlibDecoder<&[u8]>, Error> {
 
     if inp.len() < 2 {
         return Err(Error::new(53));
@@ -1585,29 +1586,39 @@ pub(crate) fn lodepng_zlib_decompress(inp: &[u8]) -> Result<Vec<u8>, Error> {
         return Err(Error::new(26));
     }
 
-    let mut buf = [0; 32 * 1024];
-    let mut z = ZlibDecoder::new_with_buf(inp, zero_vec(32 * 1024)?);
-    let mut out = Vec::new(); out.try_reserve(inp.len() * 3 / 2)?;
+    Ok(ZlibDecoder::new_with_buf(inp, zero_vec(32 * 1024)?))
+}
+
+pub(crate) fn decompress_into_vec(inp: &[u8], out: &mut Vec<u8>) -> Result<(), Error> {
+    let mut z = zlib_decompressor(inp)?;
+    out.try_reserve((inp.len() * 3 / 2).max(16*1024))?;
+    let mut actual_len = out.len();
+    out.resize(out.capacity(), 0);
     loop {
-        let read = z.read(&mut buf)?;
+        let read = z.read(&mut out[actual_len..])?;
         if read > 0 {
-            out.try_reserve(read)?;
-            out.extend_from_slice(&buf[0..read]);
+            actual_len += read;
+            if out.capacity() < actual_len + 64 * 1024 {
+                out.truncate(actual_len); // copy less
+                out.try_reserve(64 * 1024)?;
+                out.resize(out.capacity(), 0);
+            }
         } else {
             break;
         }
     }
-    Ok(out)
+    out.truncate(actual_len);
+    Ok(())
 }
 
 pub(crate) fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
+    let mut out = Vec::new(); out.try_reserve(inp.len() * 3 / 2)?;
     if let Some(cb) = settings.custom_zlib {
-        let mut out = Vec::new(); out.try_reserve(inp.len() * 3 / 2)?;
         (cb)(inp, &mut out, settings)?;
-        Ok(out)
     } else {
-        lodepng_zlib_decompress(inp)
+        decompress_into_vec(inp, &mut out)?;
     }
+    Ok(out)
 }
 
 pub(crate) fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {

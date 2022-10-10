@@ -742,7 +742,9 @@ pub unsafe extern "C" fn lodepng_color_mode_copy(dest: *mut ColorMode, source: &
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_zlib_decompress(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, _: &DecompressSettings) -> ErrorCode {
-    to_vec(out, outsize, rustimpl::lodepng_zlib_decompress(slice::from_raw_parts(inp, insize)))
+    let mut vec = Vec::new();
+    lode_try!(rustimpl::decompress_into_vec(slice::from_raw_parts(inp, insize), &mut vec));
+    to_vec(out, outsize, Ok(vec))
 }
 
 #[no_mangle]
@@ -985,6 +987,7 @@ unsafe fn c_path(filename: *const c_char) -> PathBuf {
     tmp.to_string_lossy().to_string().into()
 }
 
+#[inline]
 unsafe fn to_vec(out: &mut *mut u8, outsize: &mut usize, result: Result<Vec<u8>, crate::Error>) -> ErrorCode {
     match result.and_then(vec_into_raw) {
         Ok((data, len)) => {

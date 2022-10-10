@@ -4,7 +4,7 @@
 pub mod ffi;
 
 mod rustimpl;
-use crate::rustimpl::{chunk_length, lodepng_get_bpp_lct, lodepng_zlib_decompress};
+use crate::rustimpl::{chunk_length, lodepng_get_bpp_lct, zlib_decompress};
 
 mod error;
 pub use crate::error::*;
@@ -698,7 +698,7 @@ impl State {
                 if iccp.get(i+1).cloned().unwrap_or(255) != 0 { // compression type
                     return Err(Error::new(72));
                 }
-                return lodepng_zlib_decompress(&iccp[i+2 ..]);
+                return zlib_decompress(&iccp[i+2 ..], &self.decoder.zlibsettings);
             }
         }
         Err(Error::new(75))
