@@ -350,7 +350,9 @@ impl Info {
             Ok(c) => c,
             Err(_) => return Err(Error::new(67)),
         };
-        rustimpl::add_chunk(&mut self.unknown_chunks[position as usize], &chtype, data)
+        let mut ch = rustimpl::ChunkBuilder::new(&mut self.unknown_chunks[position as usize], &chtype);
+        ch.extend_from_slice(data)?;
+        ch.finish()
     }
 
     /// Uses linear search to find a given chunk. You can use `b"PLTE"` syntax.

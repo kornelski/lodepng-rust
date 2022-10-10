@@ -1155,23 +1155,24 @@ fn read_chunk_phys(info: &mut Info, data: &[u8]) -> Result<(), Error> {
 
 fn add_chunk_idat(out: &mut Vec<u8>, data: &[u8], zlibsettings: &CompressSettings) -> Result<(), Error> {
     let zlib = zlib_compress(data, zlibsettings)?;
-    add_chunk(out, b"IDAT", &zlib)?;
-    Ok(())
+    let mut ch = ChunkBuilder::new(out, b"IDAT");
+    ch.extend_from_slice(&zlib);
+    ch.finish()
 }
 
 fn add_chunk_iend(out: &mut Vec<u8>) -> Result<(), Error> {
-    add_chunk(out, b"IEND", &[])
+    ChunkBuilder::new(out, b"IEND").finish()
 }
 
 fn add_chunk_text(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8]) -> Result<(), Error> {
     if keyword.is_empty() || keyword.len() > 79 {
         return Err(Error::new(89));
     }
-    let mut text = Vec::try_with_capacity(keyword.len() + 1 + textstring.len())?;
-    text.extend_from_slice(keyword);
+    let mut text = ChunkBuilder::new(out, b"tEXt");
+    text.extend_from_slice(keyword)?;
     text.push(0);
-    text.extend_from_slice(textstring);
-    add_chunk(out, b"tEXt", &text)
+    text.extend_from_slice(textstring)?;
+    text.finish()
 }
 
 fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8], zlibsettings: &CompressSettings) -> Result<(), Error> {
@@ -1179,13 +1180,12 @@ fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8], zlibsett
         return Err(Error::new(89));
     }
     let v = zlib_compress(textstring, zlibsettings)?;
-    let mut data = Vec::try_with_capacity(keyword.len() + 2 + v.len())?;
-    data.extend_from_slice(keyword);
+    let mut data = ChunkBuilder::new(out, b"zTXt");
+    data.extend_from_slice(keyword)?;
     data.push(0u8);
     data.push(0u8);
     data.extend_from_slice(&v);
-    add_chunk(out, b"zTXt", &data)?;
-    Ok(())
+    data.finish()
 }
 
 fn add_chunk_itxt(
@@ -1195,53 +1195,49 @@ fn add_chunk_itxt(
     if k_len < 1 || k_len > 79 {
         return Err(Error::new(89));
     }
-    let mut data = Vec::with_capacity(2048);
-    data.extend_from_slice(keyword.as_bytes()); data.push(0);
+    let mut data = ChunkBuilder::new(out, b"iTXt");
+    data.extend_from_slice(keyword.as_bytes())?; data.push(0);
     data.push(compressed as u8);
     data.push(0);
-    data.extend_from_slice(langtag.as_bytes()); data.push(0);
-    data.extend_from_slice(transkey.as_bytes()); data.push(0);
+    data.extend_from_slice(langtag.as_bytes())?; data.push(0);
+    data.extend_from_slice(transkey.as_bytes())?; data.push(0);
     if compressed {
         let compressed_data = zlib_compress(textstring.as_bytes(), zlibsettings)?;
         data.extend_from_slice(&compressed_data);
     } else {
-        data.extend_from_slice(textstring.as_bytes());
+        data.extend_from_slice(textstring.as_bytes())?;
     }
-    add_chunk(out, b"iTXt", &data)
+    data.finish()
 }
 
 fn add_chunk_bkgd(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
-    let mut bkgd = Vec::with_capacity(16);
+    let mut bkgd = ChunkBuilder::new(out, b"bKGD");
     if info.color.colortype == ColorType::GREY || info.color.colortype == ColorType::GREY_ALPHA {
-        bkgd.push((info.background_r >> 8) as u8);
-        bkgd.push((info.background_r & 255) as u8);
+        bkgd.write_u16be(info.background_r);
     } else if info.color.colortype == ColorType::RGB || info.color.colortype == ColorType::RGBA {
-        bkgd.push((info.background_r >> 8) as u8);
-        bkgd.push((info.background_r & 255) as u8);
-        bkgd.push((info.background_g >> 8) as u8);
-        bkgd.push((info.background_g & 255) as u8);
-        bkgd.push((info.background_b >> 8) as u8);
-        bkgd.push((info.background_b & 255) as u8);
+        bkgd.write_u16be(info.background_r);
+        bkgd.write_u16be(info.background_g);
+        bkgd.write_u16be(info.background_b);
     } else if info.color.colortype == ColorType::PALETTE {
         bkgd.push((info.background_r & 255) as u8);
     }
-    add_chunk(out, b"bKGD", &bkgd)
+    bkgd.finish()
 }
 
 fn add_chunk_ihdr(out: &mut Vec<u8>, w: u32, h: u32, colortype: ColorType, bitdepth: u8, interlace_method: u8) -> Result<(), Error> {
-    let mut header = Vec::with_capacity(16);
-    header.extend_from_slice(&w.to_be_bytes());
-    header.extend_from_slice(&h.to_be_bytes());
+    let mut header = ChunkBuilder::new(out, b"IHDR");
+    header.write_u32be(w);
+    header.write_u32be(h);
     header.push(bitdepth as u8);
     header.push(colortype as u8);
     header.push(0u8);
     header.push(0u8);
     header.push(interlace_method);
-    add_chunk(out, b"IHDR", &header)
+    header.finish()
 }
 
 fn add_chunk_trns(out: &mut Vec<u8>, info: &ColorMode) -> Result<(), Error> {
-    let mut trns = Vec::with_capacity(32);
+    let mut trns = ChunkBuilder::new(out, b"tRNS");
     if info.colortype == ColorType::PALETTE {
         let palette = info.palette();
         let mut amount = palette.len();
@@ -1260,70 +1256,109 @@ fn add_chunk_trns(out: &mut Vec<u8>, info: &ColorMode) -> Result<(), Error> {
         }
     } else if info.colortype == ColorType::GREY {
         if let Some((r, _, _)) = info.key() {
-            trns.push((r >> 8) as u8);
-            trns.push((r & 255) as u8);
+            trns.write_u16be(r);
         };
     } else if info.colortype == ColorType::RGB {
         if let Some((r, g, b)) = info.key() {
-            trns.push((r >> 8) as u8);
-            trns.push((r & 255) as u8);
-            trns.push((g >> 8) as u8);
-            trns.push((g & 255) as u8);
-            trns.push((b >> 8) as u8);
-            trns.push((b & 255) as u8);
+            trns.write_u16be(r);
+            trns.write_u16be(g);
+            trns.write_u16be(b);
         };
     }
-    add_chunk(out, b"tRNS", &trns)
+    trns.finish()
 }
 
 fn add_chunk_plte(out: &mut Vec<u8>, info: &ColorMode) -> Result<(), Error> {
-    let mut plte = Vec::with_capacity(1024);
+    let mut plte = ChunkBuilder::new(out, b"PLTE");
     for p in info.palette() {
         plte.push(p.r);
         plte.push(p.g);
         plte.push(p.b);
     }
-    add_chunk(out, b"PLTE", &plte)
+    plte.finish()
 }
 
 fn add_chunk_time(out: &mut Vec<u8>, time: &Time) -> Result<(), Error> {
-    let data = [
-        (time.year >> 8) as u8,
-        (time.year & 255) as u8,
+    let mut c = ChunkBuilder::new(out, b"tIME");
+    c.write_u16be(time.year);
+    c.extend_from_slice(&[
         time.month as u8,
         time.day as u8,
         time.hour as u8,
         time.minute as u8,
         time.second as u8,
-    ];
-    add_chunk(out, b"tIME", &data)
+    ])?;
+    c.finish()
 }
 
 fn add_chunk_phys(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
-    let mut data = Vec::with_capacity(16);
-    data.extend_from_slice(&info.phys_x.to_be_bytes());
-    data.extend_from_slice(&info.phys_y.to_be_bytes());
+    let mut data = ChunkBuilder::new(out, b"pHYs");
+    data.write_u32be(info.phys_x);
+    data.write_u32be(info.phys_y);
     data.push(info.phys_unit as u8);
-    add_chunk(out, b"pHYs", &data)
+    data.finish()
 }
 
-/*chunk_name must be string of 4 characters*/
-pub(crate) fn add_chunk(out: &mut Vec<u8>, type_: &[u8; 4], data: &[u8]) -> Result<(), Error> {
-    let length = data.len() as usize;
-    if length > (1 << 31) {
-        return Err(Error::new(77));
+pub(crate) struct ChunkBuilder<'buf> {
+    buf: &'buf mut Vec<u8>,
+    buf_start: usize,
+}
+
+impl<'buf> ChunkBuilder<'buf> {
+    #[inline]
+    #[must_use]
+    pub fn new(buf: &'buf mut Vec<u8>, type_: &[u8; 4]) -> Self {
+        let mut new = Self {
+            buf_start: buf.len(),
+            buf,
+        };
+        new.write_u32be(0); // this will be length
+        new.buf.extend_from_slice(&type_[..]);
+        debug_assert_eq!(8, new.buf.len() - new.buf_start);
+        new
     }
-    let previous_length = out.len();
-    /*1: length*/
-    out.extend_from_slice(&(length as u32).to_be_bytes());
-    /*2: chunk name (4 letters)*/
-    out.extend_from_slice(&type_[..]);
-    /*3: the data*/
-    out.extend_from_slice(data);
-    /*4: CRC (of the chunkname characters and the data)*/
-    out.extend_from_slice(&[0,0,0,0]);
-    lodepng_chunk_generate_crc(&mut out[previous_length..]);
-    Ok(())
+
+    #[inline]
+    pub fn write_u32be(&mut self, num: u32) {
+        self.buf.extend_from_slice(&num.to_be_bytes());
+    }
+
+    #[inline]
+    pub fn write_u16be(&mut self, num: u16) {
+        self.buf.extend_from_slice(&num.to_be_bytes());
+    }
+
+    #[inline]
+    pub fn push(&mut self, byte: u8) {
+        self.buf.push(byte);
+    }
+
+    #[inline]
+    pub fn extend_from_slice(&mut self, slice: &[u8]) -> Result<(), Error> {
+        self.buf.try_reserve(slice.len())?;
+        self.buf.extend_from_slice(slice);
+        Ok(())
+    }
+
+    pub fn finish(self) -> Result<(), Error> {
+        let written = self.buf.len() - self.buf_start;
+        debug_assert!(written >= 8);
+        let data_length = written - 8;
+        debug_assert!(data_length < (1 << 31));
+        if data_length > (1 << 31) {
+            return Err(Error::new(77));
+        }
+        let len_range = self.buf_start .. self.buf_start + 4;
+        self.buf[len_range].copy_from_slice(&(data_length as u32).to_be_bytes());
+
+        let crc_start = self.buf.len();
+        self.buf.extend_from_slice(&[0,0,0,0]);
+        let ch = ChunkRef::new(&self.buf[self.buf_start..])?;
+        debug_assert_eq!(ch.len(), data_length);
+        let crc = ch.crc();
+        self.buf[crc_start..].copy_from_slice(&crc.to_be_bytes());
+        Ok(())
+    }
 }
 
 /*shared values used by multiple Adam7 related functions*/

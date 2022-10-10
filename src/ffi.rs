@@ -618,10 +618,14 @@ pub unsafe extern "C" fn lodepng_chunk_create(out: &mut *mut u8, outsize: &mut u
     // detect it's our Vec, not malloced buf
     if *outsize == 0 && !(*out).is_null() {
         let vec = std::mem::transmute::<&mut *mut u8, &mut &mut Vec<u8>>(out);
-        lode_error!(rustimpl::add_chunk(vec, type_, data))
+        let mut ch = rustimpl::ChunkBuilder::new(vec, type_);
+        lode_try!(ch.extend_from_slice(data));
+        lode_error!(ch.finish())
     } else {
         let mut v = vec_from_raw(*out, *outsize);
-        let err = lode_error!(rustimpl::add_chunk(&mut v, type_, data));
+        let mut ch = rustimpl::ChunkBuilder::new(&mut v, type_);
+        lode_try!(ch.extend_from_slice(data));
+        let err = lode_error!(ch.finish());
         let (data, size) = lode_try!(vec_into_raw(v));
         *out = data;
         *outsize = size;
