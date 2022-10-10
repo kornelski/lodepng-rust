@@ -4,7 +4,7 @@
 pub mod ffi;
 
 mod rustimpl;
-use crate::rustimpl::{lodepng_chunk_length, lodepng_get_bpp_lct, lodepng_zlib_decompress};
+use crate::rustimpl::{chunk_length, lodepng_get_bpp_lct, lodepng_zlib_decompress};
 
 mod error;
 pub use crate::error::*;
@@ -1053,7 +1053,7 @@ impl<'a> ChunkRef<'a> {
     pub(crate) unsafe fn from_ptr(data: *const u8) -> Result<Self, Error> {
         debug_assert!(!data.is_null());
         let head = std::slice::from_raw_parts(data, 4);
-        let len = lodepng_chunk_length(head);
+        let len = chunk_length(head);
         let chunk = std::slice::from_raw_parts(data, len + 12);
         Self::new(chunk)
     }
@@ -1062,7 +1062,7 @@ impl<'a> ChunkRef<'a> {
         if data.len() < 12 {
             return Err(Error::new(30));
         }
-        let len = lodepng_chunk_length(data);
+        let len = chunk_length(data);
         /*error: chunk length larger than the max PNG chunk size*/
         if len > (1 << 31) {
             return Err(Error::new(63));
@@ -1080,7 +1080,7 @@ impl<'a> ChunkRef<'a> {
     #[allow(clippy::len_without_is_empty)]
     #[must_use]
     pub fn len(&self) -> usize {
-        lodepng_chunk_length(self.data)
+        chunk_length(self.data)
     }
 
     /// Chunk type, e.g. `tRNS`

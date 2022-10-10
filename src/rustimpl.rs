@@ -1487,7 +1487,7 @@ fn set_bit_of_reversed_stream(bitpointer: &mut usize, bitstream: &mut [u8], bit:
 /* / PNG chunks                                                             / */
 /* ////////////////////////////////////////////////////////////////////////// */
 #[inline]
-pub(crate) fn lodepng_chunk_length(chunk: &[u8]) -> usize {
+pub(crate) fn chunk_length(chunk: &[u8]) -> usize {
     u32::from_be_bytes(chunk[..4].try_into().unwrap()) as usize
 }
 
@@ -1496,13 +1496,6 @@ pub(crate) fn lodepng_chunk_generate_crc(chunk: &mut [u8]) {
     let length = ch.len();
     let crc = ch.crc();
     chunk[8 + length..].copy_from_slice(&crc.to_be_bytes());
-}
-
-#[inline]
-pub(crate) fn chunk_append(out: &mut Vec<u8>, chunk: &[u8]) -> Result<(), Error> {
-    let total_chunk_length = lodepng_chunk_length(chunk) as usize + 12;
-    out.try_reserve(total_chunk_length)?;
-    Ok(out.extend_from_slice(&chunk[0..total_chunk_length]))
 }
 
 /* ////////////////////////////////////////////////////////////////////////// */
@@ -2251,10 +2244,9 @@ pub(crate) fn lodepng_save_file(buffer: &[u8], filename: &Path) -> Result<(), Er
 }
 
 fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
-    let chunks = ChunksIter { data };
-    for ch in chunks {
-        chunk_append(out, ch?.whole_chunk_data())?;
-    }
+    debug_assert!(ChunksIter { data }.all(|ch| ch.is_ok()));
+    out.try_reserve(data.len())?;
+    out.extend_from_slice(data);
     Ok(())
 }
 

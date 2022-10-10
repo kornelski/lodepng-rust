@@ -635,7 +635,7 @@ pub unsafe extern "C" fn lodepng_chunk_create(out: &mut *mut u8, outsize: &mut u
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_length(chunk: *const u8) -> c_uint {
-    rustimpl::lodepng_chunk_length(slice::from_raw_parts(chunk, 12)) as c_uint
+    rustimpl::chunk_length(slice::from_raw_parts(chunk, 12)) as c_uint
 }
 
 #[no_mangle]
@@ -705,11 +705,17 @@ pub unsafe extern "C" fn lodepng_chunk_generate_crc(chunk: *mut u8) {
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_append(out: &mut *mut u8, outsize: &mut usize, chunk: *const u8) -> ErrorCode {
     let mut v = vec_from_raw(*out, *outsize);
-    lode_try!(rustimpl::chunk_append(&mut v, slice::from_raw_parts(chunk, 0x7FFF_FFFF)));
+    lode_try!(chunk_append(&mut v, slice::from_raw_parts(chunk, 0x7FFF_FFFF)));
     let (data, size) = lode_try!(vec_into_raw(v));
     *out = data;
     *outsize = size;
     ErrorCode(0)
+}
+#[inline]
+fn chunk_append(out: &mut Vec<u8>, chunk: &[u8]) -> Result<(), crate::Error> {
+    let total_chunk_length = rustimpl::chunk_length(chunk) as usize + 12;
+    out.try_reserve(total_chunk_length)?;
+    Ok(out.extend_from_slice(&chunk[0..total_chunk_length]))
 }
 
 #[no_mangle]
