@@ -104,7 +104,7 @@ pub enum ColorType {
 /// bits to RGBA colors. This information is the same as used in the PNG file
 /// format, and is used both for PNG and raw image data in LodePNG.
 #[repr(C)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ColorMode {
     /// color type, see PNG standard
     pub colortype: ColorType,
@@ -138,22 +138,6 @@ pub struct ColorMode {
     pub(crate) key_r: c_uint,
     pub(crate) key_g: c_uint,
     pub(crate) key_b: c_uint,
-}
-
-impl fmt::Debug for ColorMode {
-    #[cold]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = f.debug_struct("ColorMode");
-        s.field("colortype", &self.colortype);
-        s.field("bitdepth", &self.bitdepth);
-        s.field("palette", &self.palette.as_ref().map(|s| &s[..]));
-        s.field("palettesize", &self.palettesize);
-        s.field("key_defined", &self.key_defined);
-        s.field("key_r", &self.key_r);
-        s.field("key_g", &self.key_g);
-        s.field("key_b", &self.key_b);
-        s.finish()
-    }
 }
 
 pub type custom_compress_callback = Option<fn(input: &[u8], output: &mut dyn io::Write, context: &CompressSettings) -> Result<(), crate::Error>>;
@@ -405,6 +389,7 @@ pub struct State {
 /// Gives characteristics about the colors of the image, which helps decide which color model to use for encoding.
 /// Used internally by default if `auto_convert` is enabled. Public because it's useful for custom algorithms.
 #[repr(C)]
+#[derive(Debug)]
 pub struct ColorProfile {
     /// not greyscale
     pub colored: bool,
@@ -422,22 +407,6 @@ pub struct ColorProfile {
     pub numcolors: u16,
     /// Remembers up to the first 256 RGBA colors, in no particular order
     pub palette: [crate::RGBA; 256],
-}
-
-impl fmt::Debug for ColorProfile {
-    #[cold]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ColorProfile")
-            .field("colored", &self.colored)
-            .field("key", &self.key)
-            .field("key_r", &self.key_r)
-            .field("key_g", &self.key_g)
-            .field("key_b", &self.key_b)
-            .field("alpha", &self.alpha)
-            .field("numcolors", &self.numcolors)
-            .field("bits", &self.bits)
-            .finish()
-    }
 }
 
 impl fmt::Debug for CompressSettings {
