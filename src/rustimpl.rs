@@ -88,17 +88,14 @@ fn get_palette_translucency(palette: &[RGBA]) -> PaletteTranslucency {
 
 /*The opposite of the remove_padding_bits function
   olinebits must be >= ilinebits*/
-fn add_padding_bits(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usize, h: usize) {
-    for y in 0..h {
-        let iline = y * ilinebits;
-        let oline = y * olinebits;
-        for i in 0..ilinebits {
-            let bit = read_bit_from_reversed_stream(iline + i, inp);
-            set_bit_of_reversed_stream(oline + i, out, bit);
-        }
-        for i in ilinebits..olinebits {
-            set_bit_of_reversed_stream(oline + i, out, 0);
-        }
+fn add_padding_bits_line(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usize, y: usize) {
+    let iline = y * ilinebits;
+    for i in 0..ilinebits {
+        let bit = read_bit_from_reversed_stream(iline + i, inp);
+        set_bit_of_reversed_stream(i, out, bit);
+    }
+    for i in ilinebits..olinebits {
+        set_bit_of_reversed_stream(i, out, 0);
     }
 }
 
@@ -126,14 +123,7 @@ fn pre_process_scanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settin
     if info_png.interlace_method == 0 {
         let outsize = h + (h * linebytes_rounded(w, bpp));
         let mut out = zero_vec(outsize)?;
-        /*image size plus an extra byte per scanline + possible padding bits*/
-        if bpp < 8 && linebits_exact(w, bpp) != linebits_rounded(w, bpp) {
-            let mut padded = zero_vec(h * linebytes_rounded(w, bpp))?; /*we can immediately filter into the out buffer, no other steps needed*/
-            add_padding_bits(&mut padded, inp, linebits_rounded(w, bpp), linebits_exact(w, bpp), h);
-            filter(&mut out, &padded, w, h, &info_png.color, settings)?;
-        } else {
-            filter(&mut out, inp, w, h, &info_png.color, settings)?;
-        }
+        filter(&mut out, inp, w, h, &info_png.color, settings)?;
         Ok(out)
     } else {
         let passes = adam7_get_pass_values(w, h, bpp);
@@ -148,13 +138,7 @@ fn pre_process_scanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settin
             if pass.w == 0 {
                 continue;
             }
-            if bpp < 8 {
-                let mut padded = zero_vec(pass.padded_len)?;
-                add_padding_bits(&mut padded, adam7, linebits_rounded(pass.w, bpp), linebits_exact(pass.w, bpp), pass.h);
-                filter(out, &padded, pass.w, pass.h, &info_png.color, settings)?;
-            } else {
-                filter(out, adam7, pass.w, pass.h, &info_png.color, settings)?;
-            }
+            filter(out, adam7, pass.w, pass.h, &info_png.color, settings)?;
             adam7 = &mut adam7[pass.packed_len..];
             out = &mut out[pass.filtered_len..];
         }
@@ -173,16 +157,24 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
         return Err(Error::new(31));
     }
     debug_assert!(w != 0);
+    let mut f = make_filter(w, h, info, settings)?;
 
     /*the width of a scanline in bytes, not including the filter type*/
     let linebytes = linebytes_rounded(w, bpp) as usize;
-    debug_assert!(linebytes > 0);
-
-    let mut f = make_filter(w, h, info, settings)?;
-    let mut prevline = None;
-    for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
-        f(out, inp, prevline);
-        prevline = Some(inp);
+    if bpp < 8 && linebits_exact(w, bpp) != linebits_rounded(w, bpp) {
+        let mut lines_tmp = zero_vec(linebytes * 2)?;
+        let (mut tmp, mut tmp_prev) = lines_tmp.split_at_mut(linebytes);
+        for (y, out) in out.chunks_exact_mut(1 + linebytes).enumerate() {
+            std::mem::swap(&mut tmp, &mut tmp_prev);
+            add_padding_bits_line(&mut tmp[..], inp, linebits_rounded(w, bpp), linebits_exact(w, bpp), y);
+            f(out, tmp, if y > 0 { Some(tmp_prev) } else { None });
+        }
+    } else {
+        let mut prevline = None;
+        for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
+            f(out, inp, prevline);
+            prevline = Some(inp);
+        }
     }
     Ok(())
 }
