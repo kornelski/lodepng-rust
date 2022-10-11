@@ -602,6 +602,15 @@ fn rgba16_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, px: RGBA16) {
     };
 }
 
+fn get_pixel_color_palette_index(inp: &[u8], i: usize, mode: &ColorMode) -> u8 {
+    if mode.bitdepth() == 8 {
+        inp[i]
+    } else {
+        let j = i as usize * mode.bitdepth() as usize;
+        read_bits_from_reversed_stream(j, inp, mode.bitdepth() as usize) as u8
+    }
+}
+
 /*Get RGBA8 color of pixel with index i (y * width + x) from the raw image with given color type.*/
 fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> RGBA {
     match mode.colortype {
@@ -664,23 +673,6 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> RGBA {
                 },
             )
         },
-        ColorType::PALETTE => {
-            let index = if mode.bitdepth() == 8 {
-                inp[i] as usize
-            } else {
-                let j = i as usize * mode.bitdepth() as usize;
-                read_bits_from_reversed_stream(j, inp, mode.bitdepth() as usize) as usize
-            };
-            let pal = mode.palette();
-            if index >= pal.len() {
-                /*This is an error according to the PNG spec, but common PNG decoders make it black instead.
-                  Done here too, slightly faster due to no error handling needed.*/
-                RGBA::new(0, 0, 0, 255)
-            } else {
-                let p = pal[index];
-                RGBA::new(p.r, p.g, p.b, p.a)
-            }
-        },
         ColorType::GREY_ALPHA => if mode.bitdepth() == 8 {
             let t = inp[i * 2 + 0];
             RGBA::new(t, t, t, inp[i * 2 + 1])
@@ -717,7 +709,10 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> RGBA {
                 255
             };
             RGBA::new(r, g, b, a)
-        }
+        },
+        ColorType::PALETTE => {
+            unreachable!()
+        },
     }
 }
 /*Similar to get_pixel_color_rgba8, but with all the for loops inside of the color
@@ -1740,6 +1735,15 @@ pub(crate) fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, 
         get_pixel_colors_rgba8(out, numpixels, true, inp, mode_in);
     } else if mode_out.bitdepth() == 8 && mode_out.colortype == ColorType::RGB {
         get_pixel_colors_rgba8(out, numpixels, false, inp, mode_in);
+    } else if mode_in.colortype == ColorType::PALETTE {
+        let pal = mode_in.palette();
+        for i in 0..numpixels {
+            let index = get_pixel_color_palette_index(inp, i, mode_in) as usize;
+            /*This is an error according to the PNG spec, but common PNG decoders make it black instead.
+              Done here too, slightly faster due to no error handling needed.*/
+            let px = pal.get(index).copied().unwrap_or(RGBA::new(0, 0, 0, 255));
+            rgba8_to_pixel(out, i, mode_out, &mut colormap, px)?;
+        }
     } else {
         for i in 0..numpixels {
             let px = get_pixel_color_rgba8(inp, i, mode_in);
@@ -2379,149 +2383,185 @@ pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) ->
 /*profile must already have been inited with mode.
 It's ok to set some parameters of profile to done already.*/
 /// basic flag is for internal use
-pub(crate) fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result<ColorProfile, Error> {
+fn get_color_profile16(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> ColorProfile {
     let mut profile = ColorProfile::new();
     let numpixels: usize = w as usize * h as usize;
     let mut colored_done = mode.is_greyscale_type();
     let mut alpha_done = !mode.can_have_alpha();
-    let mut numcolors_done = false;
-    let bpp = mode.bpp() as usize;
-    let mut bits_done = bpp == 1;
-    let maxnumcolors: u16 = match bpp {
-        1 => 2,
-        2 => 4,
-        4 => 16,
-        5..=8 => 256,
-        _ => 257,
-    };
+
+    profile.bits = 16;
+    /*counting colors no longer useful, palette doesn't support 16-bit*/
+    for i in 0..numpixels {
+        let px = get_pixel_color_rgba16(inp, i, mode);
+        if !colored_done && (px.r != px.g || px.r != px.b) {
+            profile.colored = true;
+            colored_done = true;
+        }
+        if !alpha_done {
+            let matchkey = px.r == profile.key_r && px.g == profile.key_g && px.b == profile.key_b;
+            if px.a != 65535 && (px.a != 0 || (profile.key && !matchkey)) {
+                profile.alpha = true;
+                profile.key = false;
+                alpha_done = true;
+            } else if px.a == 0 && !profile.alpha && !profile.key {
+                profile.key = true;
+                profile.key_r = px.r;
+                profile.key_g = px.g;
+                profile.key_b = px.b;
+            } else if px.a == 65535 && profile.key && matchkey {
+                profile.alpha = true;
+                profile.key = false;
+                alpha_done = true;
+            };
+        }
+        if alpha_done && colored_done {
+            break;
+        };
+    }
+    if profile.key && !profile.alpha {
+        for i in 0..numpixels {
+            let px = get_pixel_color_rgba16(inp, i, mode);
+            if px.a != 0 && px.r == profile.key_r && px.g == profile.key_g && px.b == profile.key_b {
+                profile.alpha = true;
+                profile.key = false;
+            }
+        }
+    }
+    profile
+}
+
+fn get_color_profile_palette(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> ColorProfile {
+    let numpixels: usize = w as usize * h as usize;
+    let maxnumcolors = 1u16 << mode.bpp();
+
+    let mut used = [false; 256];
+    let mut numcolors = 0;
+    for i in 0..numpixels {
+        let idx = get_pixel_color_palette_index(inp, i, mode);
+        if !used[idx as usize] {
+            used[idx as usize] = true;
+            numcolors += 1;
+            if numcolors == maxnumcolors {
+                break;
+            }
+        }
+    }
+
+    let mut profile = ColorProfile::new();
+    profile.bits = 8;
+    profile.numcolors = numcolors;
+    for ((i, px), _) in mode.palette().iter().enumerate().zip(used).filter(|&(_, used)| used) {
+        profile.palette[i] = *px;
+        if px.r != px.g || px.r != px.b {
+            profile.colored = true;
+        }
+        if px.a != 255 {
+            profile.alpha = true;
+        }
+    }
+
+    profile
+}
+
+pub(crate) fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result<ColorProfile, Error> {
+    let numpixels: usize = w as usize * h as usize;
 
     /*Check if the 16-bit input is truly 16-bit*/
-    let mut sixteen = false;
     if mode.bitdepth() == 16 {
         for i in 0..numpixels {
             let RGBA16 { r, g, b, a } = get_pixel_color_rgba16(inp, i, mode);
             if (r & 255) != ((r >> 8) & 255) || (g & 255) != ((g >> 8) & 255) || (b & 255) != ((b >> 8) & 255) || (a & 255) != ((a >> 8) & 255) {
                 /*first and second byte differ*/
-                sixteen = true;
-                break;
+                return Ok(get_color_profile16(inp, w, h, mode));
             };
         }
     }
-    if sixteen {
-        profile.bits = 16;
-        bits_done = true;
-        numcolors_done = true;
-        /*counting colors no longer useful, palette doesn't support 16-bit*/
-        for i in 0..numpixels {
-            let px = get_pixel_color_rgba16(inp, i, mode);
-            if !colored_done && (px.r != px.g || px.r != px.b) {
-                profile.colored = true;
-                colored_done = true;
-            }
-            if !alpha_done {
-                let matchkey = px.r == profile.key_r && px.g == profile.key_g && px.b == profile.key_b;
-                if px.a != 65535 && (px.a != 0 || (profile.key && !matchkey)) {
-                    profile.alpha = true;
-                    profile.key = false;
-                    alpha_done = true;
-                } else if px.a == 0 && !profile.alpha && !profile.key {
-                    profile.key = true;
-                    profile.key_r = px.r;
-                    profile.key_g = px.g;
-                    profile.key_b = px.b;
-                } else if px.a == 65535 && profile.key && matchkey {
-                    profile.alpha = true;
-                    profile.key = false;
-                    alpha_done = true;
-                };
-            }
-            if alpha_done && numcolors_done && colored_done && bits_done {
-                break;
+
+    if mode.colortype == ColorType::PALETTE {
+        return Ok(get_color_profile_palette(inp, w, h, mode));
+    }
+
+    let mut colored_done = mode.is_greyscale_type();
+    let mut alpha_done = !mode.can_have_alpha();
+    let mut numcolors_done = false;
+    let bpp = mode.bpp() as usize;
+    let mut bits_done = bpp == 1;
+    let maxnumcolors = 257;
+
+    let mut profile = ColorProfile::new();
+    let mut colormap = ColorIndices::with_capacity(maxnumcolors.into());
+    for i in 0..numpixels {
+        let px = get_pixel_color_rgba8(inp, i, mode);
+        if !bits_done && profile.bits < 8 {
+            let bits = get_value_required_bits(px.r);
+            if bits > profile.bits {
+                profile.bits = bits;
             };
         }
-        if profile.key && !profile.alpha {
-            for i in 0..numpixels {
-                let px = get_pixel_color_rgba16(inp, i, mode);
-                if px.a != 0 && px.r == profile.key_r && px.g == profile.key_g && px.b == profile.key_b {
-                    profile.alpha = true;
-                    profile.key = false;
-                }
-            }
+        bits_done = profile.bits as usize >= bpp;
+        if !colored_done && (px.r != px.g || px.r != px.b) {
+            profile.colored = true;
+            colored_done = true;
+            if profile.bits < 8 {
+                profile.bits = 8;
+            };
+            /*PNG has no colored modes with less than 8-bit per channel*/
         }
-    } else {
-        let mut colormap = ColorIndices::with_capacity(maxnumcolors.into());
-        for i in 0..numpixels {
-            let px = get_pixel_color_rgba8(inp, i, mode);
-            if !bits_done && profile.bits < 8 {
-                let bits = get_value_required_bits(px.r);
-                if bits > profile.bits {
-                    profile.bits = bits;
-                };
-            }
-            bits_done = profile.bits as usize >= bpp;
-            if !colored_done && (px.r != px.g || px.r != px.b) {
-                profile.colored = true;
-                colored_done = true;
+        if !alpha_done {
+            let matchkey = px.r as u16 == profile.key_r && px.g as u16 == profile.key_g && px.b as u16 == profile.key_b;
+            if px.a != 255 && (px.a != 0 || (profile.key && !matchkey)) {
+                profile.alpha = true;
+                profile.key = false;
+                alpha_done = true;
                 if profile.bits < 8 {
                     profile.bits = 8;
                 };
-                /*PNG has no colored modes with less than 8-bit per channel*/
-            }
-            if !alpha_done {
-                let matchkey = px.r as u16 == profile.key_r && px.g as u16 == profile.key_g && px.b as u16 == profile.key_b;
-                if px.a != 255 && (px.a != 0 || (profile.key && !matchkey)) {
-                    profile.alpha = true;
-                    profile.key = false;
-                    alpha_done = true;
-                    if profile.bits < 8 {
-                        profile.bits = 8;
-                    };
-                /*PNG has no alphachannel modes with less than 8-bit per channel*/
-                } else if px.a == 0 && !profile.alpha && !profile.key {
-                    profile.key = true;
-                    profile.key_r = px.r as u16;
-                    profile.key_g = px.g as u16;
-                    profile.key_b = px.b as u16;
-                } else if px.a == 255 && profile.key && matchkey {
-                    profile.alpha = true;
-                    profile.key = false;
-                    alpha_done = true;
-                    if profile.bits < 8 {
-                        profile.bits = 8;
-                    };
-                    /*PNG has no alphachannel modes with less than 8-bit per channel*/
+            /*PNG has no alphachannel modes with less than 8-bit per channel*/
+            } else if px.a == 0 && !profile.alpha && !profile.key {
+                profile.key = true;
+                profile.key_r = px.r as u16;
+                profile.key_g = px.g as u16;
+                profile.key_b = px.b as u16;
+            } else if px.a == 255 && profile.key && matchkey {
+                profile.alpha = true;
+                profile.key = false;
+                alpha_done = true;
+                if profile.bits < 8 {
+                    profile.bits = 8;
                 };
-            }
-            if !numcolors_done && colormap.get(&px).is_none() {
-                colormap.insert(px, profile.numcolors as u8);
-                if profile.numcolors < 256 {
-                    profile.palette[profile.numcolors as usize] = px;
-                }
-                profile.numcolors += 1;
-                numcolors_done = profile.numcolors >= maxnumcolors;
-            }
-            if alpha_done && numcolors_done && colored_done && bits_done {
-                break;
+                /*PNG has no alphachannel modes with less than 8-bit per channel*/
             };
         }
-        if profile.key && !profile.alpha {
-            for i in 0..numpixels {
-                let px = get_pixel_color_rgba8(inp, i, mode);
-                if px.a != 0 && px.r as u16 == profile.key_r && px.g as u16 == profile.key_g && px.b as u16 == profile.key_b {
-                    profile.alpha = true;
-                    profile.key = false;
-                    /*PNG has no alphachannel modes with less than 8-bit per channel*/
-                    if profile.bits < 8 {
-                        profile.bits = 8;
-                    };
-                };
+        if !numcolors_done && colormap.get(&px).is_none() {
+            colormap.insert(px, profile.numcolors as u8);
+            if profile.numcolors < 256 {
+                profile.palette[profile.numcolors as usize] = px;
+            }
+            profile.numcolors += 1;
+            numcolors_done = profile.numcolors >= maxnumcolors;
+        }
+        if alpha_done && numcolors_done && colored_done && bits_done {
+            break;
+        };
+    }
+    if profile.key && !profile.alpha {
+        for i in 0..numpixels {
+            let px = get_pixel_color_rgba8(inp, i, mode);
+            if px.a != 0 && px.r as u16 == profile.key_r && px.g as u16 == profile.key_g && px.b as u16 == profile.key_b {
+                profile.alpha = true;
+                profile.key = false;
+                /*PNG has no alphachannel modes with less than 8-bit per channel*/
+                if profile.bits < 8 {
+                    profile.bits = 8;
+                }
+                break;
             }
         }
-        /*make the profile's key always 16-bit for consistency - repeat each byte twice*/
-        profile.key_r += profile.key_r << 8;
-        profile.key_g += profile.key_g << 8;
-        profile.key_b += profile.key_b << 8;
     }
+    /*make the profile's key always 16-bit for consistency - repeat each byte twice*/
+    profile.key_r += profile.key_r << 8;
+    profile.key_g += profile.key_g << 8;
+    profile.key_b += profile.key_b << 8;
     Ok(profile)
 }
 
