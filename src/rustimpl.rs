@@ -20,6 +20,7 @@ use crate::ffi::State;
 use crate::ChunkPosition;
 
 pub use rgb::RGBA8 as RGBA;
+use rgb::RGBA16;
 use std::collections::HashMap;
 use std::fs;
 use std::io;
@@ -111,39 +112,25 @@ fn linebytes_rounded(w: usize, bpp: u8) -> usize {
     (w * bpp as usize + 7) / 8
 }
 
-/*out must be buffer big enough to contain uncompressed IDAT chunk data, and in must contain the full image.
-return value is error**/
-fn pre_process_scanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settings: &EncoderSettings) -> Result<Vec<u8>, Error> {
-    /*
-      This function converts the pure 2D image with the PNG's colortype, into filtered-padded-interlaced data. Steps:
-      *) if no Adam7: 1) add padding bits (= posible extra bits per scanline if bpp < 8) 2) filter
-      *) if adam7: 1) adam7_interlace 2) 7x add padding bits 3) 7x filter
-      */
+fn filtered_scanlines(out: &mut dyn Write, inp: &[u8], w: usize, h: usize, info_png: &Info, settings: &EncoderSettings) -> Result<(), Error> {
     let bpp = info_png.color.bpp() as u8;
     if info_png.interlace_method == 0 {
-        let outsize = h + (h * linebytes_rounded(w, bpp));
-        let mut out = zero_vec(outsize)?;
-        filter(&mut out, inp, w, h, &info_png.color, settings)?;
-        Ok(out)
+        filter(out, inp, w, h, &info_png.color, settings)?;
     } else {
         let passes = adam7_get_pass_values(w, h, bpp);
-        let outsize = passes.iter().map(|l| l.filtered_len).sum();
         /*image size plus an extra byte per scanline + possible padding bits*/
-        let mut outvec = zero_vec(outsize)?;
         let mut adam7 = zero_vec(passes.iter().map(|l| l.packed_len).sum::<usize>() + 1)?;
         adam7_interlace(&mut adam7, inp, w, h, bpp);
         let mut adam7 = &mut adam7[..];
-        let mut out = &mut outvec[..];
         for pass in passes {
             if pass.w == 0 {
                 continue;
             }
             filter(out, adam7, pass.w, pass.h, &info_png.color, settings)?;
             adam7 = &mut adam7[pass.packed_len..];
-            out = &mut out[pass.filtered_len..];
         }
-        Ok(outvec)
     }
+    Ok(())
 }
 
 /*
@@ -151,7 +138,7 @@ fn pre_process_scanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settin
   out must be a buffer with as size: h + (w * h * bpp + 7) / 8, because there are
   the scanlines with 1 extra byte per scanline
   */
-fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, settings: &EncoderSettings) -> Result<(), Error> {
+fn filter(out: &mut dyn Write, inp: &[u8], w: usize, h: usize, info: &ColorMode, settings: &EncoderSettings) -> Result<(), Error> {
     let bpp = info.bpp() as u8;
     if bpp == 0 {
         return Err(Error::new(31));
@@ -161,19 +148,22 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
 
     /*the width of a scanline in bytes, not including the filter type*/
     let linebytes = linebytes_rounded(w, bpp) as usize;
+    let mut out_buffer = zero_vec(1 + linebytes)?;
     if bpp < 8 && linebits_exact(w, bpp) != linebits_rounded(w, bpp) {
         let mut lines_tmp = zero_vec(linebytes * 2)?;
         let (mut tmp, mut tmp_prev) = lines_tmp.split_at_mut(linebytes);
-        for (y, out) in out.chunks_exact_mut(1 + linebytes).enumerate() {
+        for y in 0..h {
             std::mem::swap(&mut tmp, &mut tmp_prev);
             add_padding_bits_line(&mut tmp[..], inp, linebits_rounded(w, bpp), linebits_exact(w, bpp), y);
-            f(out, tmp, if y > 0 { Some(tmp_prev) } else { None });
+            f(&mut out_buffer, tmp, if y > 0 { Some(tmp_prev) } else { None });
+            out.write_all(&out_buffer)?;
         }
     } else {
         let mut prevline = None;
-        for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
-            f(out, inp, prevline);
+        for inp in inp.chunks_exact(linebytes).take(h) {
+            f(&mut out_buffer, inp, prevline);
             prevline = Some(inp);
+            out.write_all(&out_buffer)?;
         }
     }
     Ok(())
@@ -496,13 +486,13 @@ fn add_color_bits(out: &mut [u8], index: usize, bits: u32, mut inp: u32) {
     }
 }
 
-pub type ColorTree = HashMap<(u8, u8, u8, u8), u16>;
+type ColorIndices = HashMap<RGBA, u8>;
 
 #[inline(always)]
-fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTree, /*for palette*/ r: u8, g: u8, b: u8, a: u8) -> Result<(), Error> {
+fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, colormap: &mut ColorIndices, /*for palette*/ px: RGBA) -> Result<(), Error> {
     match mode.colortype {
         ColorType::GREY => {
-            let grey = r; /*((unsigned short)r + g + b) / 3*/
+            let grey = px.r; /*((unsigned short)r + g + b) / 3*/
             if mode.bitdepth() == 8 {
                 out[i] = grey; /*take the most significant bits of grey*/
             } else if mode.bitdepth() == 16 {
@@ -516,19 +506,19 @@ fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTr
             };
         },
         ColorType::RGB => if mode.bitdepth() == 8 {
-            out[i * 3 + 0] = r;
-            out[i * 3 + 1] = g;
-            out[i * 3 + 2] = b;
+            out[i * 3 + 0] = px.r;
+            out[i * 3 + 1] = px.g;
+            out[i * 3 + 2] = px.b;
         } else {
-            out[i * 6 + 0] = r;
-            out[i * 6 + 1] = r;
-            out[i * 6 + 2] = g;
-            out[i * 6 + 3] = g;
-            out[i * 6 + 4] = b;
-            out[i * 6 + 5] = b;
+            out[i * 6 + 0] = px.r;
+            out[i * 6 + 1] = px.r;
+            out[i * 6 + 2] = px.g;
+            out[i * 6 + 3] = px.g;
+            out[i * 6 + 4] = px.b;
+            out[i * 6 + 5] = px.b;
         },
         ColorType::PALETTE => {
-            let index = *tree.get(&(r, g, b, a)).ok_or(Error::new(82))?;
+            let index = *colormap.get(&px).ok_or(Error::new(82))?;
             if mode.bitdepth() == 8 {
                 out[i] = index as u8;
             } else {
@@ -536,31 +526,31 @@ fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTr
             };
         },
         ColorType::GREY_ALPHA => {
-            let grey = r;
+            let grey = px.r;
             if mode.bitdepth() == 8 {
                 out[i * 2 + 0] = grey;
-                out[i * 2 + 1] = a;
+                out[i * 2 + 1] = px.a;
             } else if mode.bitdepth() == 16 {
                 out[i * 4 + 0] = grey;
                 out[i * 4 + 1] = grey;
-                out[i * 4 + 2] = a;
-                out[i * 4 + 3] = a;
+                out[i * 4 + 2] = px.a;
+                out[i * 4 + 3] = px.a;
             }
         },
         ColorType::RGBA => if mode.bitdepth() == 8 {
-            out[i * 4 + 0] = r;
-            out[i * 4 + 1] = g;
-            out[i * 4 + 2] = b;
-            out[i * 4 + 3] = a;
+            out[i * 4 + 0] = px.r;
+            out[i * 4 + 1] = px.g;
+            out[i * 4 + 2] = px.b;
+            out[i * 4 + 3] = px.a;
         } else {
-            out[i * 8 + 0] = r;
-            out[i * 8 + 1] = r;
-            out[i * 8 + 2] = g;
-            out[i * 8 + 3] = g;
-            out[i * 8 + 4] = b;
-            out[i * 8 + 5] = b;
-            out[i * 8 + 6] = a;
-            out[i * 8 + 7] = a;
+            out[i * 8 + 0] = px.r;
+            out[i * 8 + 1] = px.r;
+            out[i * 8 + 2] = px.g;
+            out[i * 8 + 3] = px.g;
+            out[i * 8 + 4] = px.b;
+            out[i * 8 + 5] = px.b;
+            out[i * 8 + 6] = px.a;
+            out[i * 8 + 7] = px.a;
         },
         ColorType::BGRA |
         ColorType::BGR |
@@ -573,37 +563,37 @@ fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, tree: &mut ColorTr
 
 /*put a pixel, given its RGBA16 color, into image of any color 16-bitdepth type*/
 #[inline(always)]
-fn rgba16_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, r: u16, g: u16, b: u16, a: u16) {
+fn rgba16_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, px: RGBA16) {
     match mode.colortype {
         ColorType::GREY => {
-            let grey = r;
+            let grey = px.r;
             out[i * 2 + 0] = (grey >> 8) as u8;
             out[i * 2 + 1] = grey as u8;
         },
         ColorType::RGB => {
-            out[i * 6 + 0] = (r >> 8) as u8;
-            out[i * 6 + 1] = r as u8;
-            out[i * 6 + 2] = (g >> 8) as u8;
-            out[i * 6 + 3] = g as u8;
-            out[i * 6 + 4] = (b >> 8) as u8;
-            out[i * 6 + 5] = b as u8;
+            out[i * 6 + 0] = (px.r >> 8) as u8;
+            out[i * 6 + 1] = px.r as u8;
+            out[i * 6 + 2] = (px.g >> 8) as u8;
+            out[i * 6 + 3] = px.g as u8;
+            out[i * 6 + 4] = (px.b >> 8) as u8;
+            out[i * 6 + 5] = px.b as u8;
         },
         ColorType::GREY_ALPHA => {
-            let grey = r;
+            let grey = px.r;
             out[i * 4 + 0] = (grey >> 8) as u8;
             out[i * 4 + 1] = grey as u8;
-            out[i * 4 + 2] = (a >> 8) as u8;
-            out[i * 4 + 3] = a as u8;
+            out[i * 4 + 2] = (px.a >> 8) as u8;
+            out[i * 4 + 3] = px.a as u8;
         },
         ColorType::RGBA => {
-            out[i * 8 + 0] = (r >> 8) as u8;
-            out[i * 8 + 1] = r as u8;
-            out[i * 8 + 2] = (g >> 8) as u8;
-            out[i * 8 + 3] = g as u8;
-            out[i * 8 + 4] = (b >> 8) as u8;
-            out[i * 8 + 5] = b as u8;
-            out[i * 8 + 6] = (a >> 8) as u8;
-            out[i * 8 + 7] = a as u8;
+            out[i * 8 + 0] = (px.r >> 8) as u8;
+            out[i * 8 + 1] = px.r as u8;
+            out[i * 8 + 2] = (px.g >> 8) as u8;
+            out[i * 8 + 3] = px.g as u8;
+            out[i * 8 + 4] = (px.b >> 8) as u8;
+            out[i * 8 + 5] = px.b as u8;
+            out[i * 8 + 6] = (px.a >> 8) as u8;
+            out[i * 8 + 7] = px.a as u8;
         },
         ColorType::BGR |
         ColorType::BGRA |
@@ -613,7 +603,7 @@ fn rgba16_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, r: u16, g: u16, b
 }
 
 /*Get RGBA8 color of pixel with index i (y * width + x) from the raw image with given color type.*/
-fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8, u8, u8, u8) {
+fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> RGBA {
     match mode.colortype {
         ColorType::GREY => {
             if mode.bitdepth() == 8 {
@@ -623,7 +613,7 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8, u8, u8,
                 } else {
                     255
                 };
-                (t, t, t, a)
+                RGBA::new(t, t, t, a)
             } else if mode.bitdepth() == 16 {
                 let t = inp[i * 2 + 0];
                 let g = 256 * inp[i * 2 + 0] as u16 + inp[i * 2 + 1] as u16;
@@ -632,7 +622,7 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8, u8, u8,
                 } else {
                     255
                 };
-                (t, t, t, a)
+                RGBA::new(t, t, t, a)
             } else {
                 let highest = (1 << mode.bitdepth()) - 1;
                 /*highest possible value for this bit depth*/
@@ -644,7 +634,7 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8, u8, u8,
                 } else {
                     255
                 };
-                (t, t, t, a)
+                RGBA::new(t, t, t, a)
             }
         },
         ColorType::RGB => if mode.bitdepth() == 8 {
@@ -656,9 +646,9 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8, u8, u8,
             } else {
                 255
             };
-            (r, g, b, a)
+            RGBA::new(r, g, b, a)
         } else {
-            (
+            RGBA::new(
                 inp[i * 6 + 0],
                 inp[i * 6 + 2],
                 inp[i * 6 + 4],
@@ -685,26 +675,26 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8, u8, u8,
             if index >= pal.len() {
                 /*This is an error according to the PNG spec, but common PNG decoders make it black instead.
                   Done here too, slightly faster due to no error handling needed.*/
-                (0, 0, 0, 255)
+                RGBA::new(0, 0, 0, 255)
             } else {
                 let p = pal[index];
-                (p.r, p.g, p.b, p.a)
+                RGBA::new(p.r, p.g, p.b, p.a)
             }
         },
         ColorType::GREY_ALPHA => if mode.bitdepth() == 8 {
             let t = inp[i * 2 + 0];
-            (t, t, t, inp[i * 2 + 1])
+            RGBA::new(t, t, t, inp[i * 2 + 1])
         } else {
             let t = inp[i * 4 + 0];
-            (t, t, t, inp[i * 4 + 2])
+            RGBA::new(t, t, t, inp[i * 4 + 2])
         },
         ColorType::RGBA => if mode.bitdepth() == 8 {
-            (inp[i * 4 + 0], inp[i * 4 + 1], inp[i * 4 + 2], inp[i * 4 + 3])
+            RGBA::new(inp[i * 4 + 0], inp[i * 4 + 1], inp[i * 4 + 2], inp[i * 4 + 3])
         } else {
-            (inp[i * 8 + 0], inp[i * 8 + 2], inp[i * 8 + 4], inp[i * 8 + 6])
+            RGBA::new(inp[i * 8 + 0], inp[i * 8 + 2], inp[i * 8 + 4], inp[i * 8 + 6])
         },
         ColorType::BGRA => {
-            (inp[i * 4 + 2], inp[i * 4 + 1], inp[i * 4 + 0], inp[i * 4 + 3])
+            RGBA::new(inp[i * 4 + 2], inp[i * 4 + 1], inp[i * 4 + 0], inp[i * 4 + 3])
         },
         ColorType::BGR => {
             let b = inp[i * 3 + 0];
@@ -715,7 +705,7 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8, u8, u8,
             } else {
                 255
             };
-            (r, g, b, a)
+            RGBA::new(r, g, b, a)
         },
         ColorType::BGRX => {
             let b = inp[i * 4 + 0];
@@ -726,7 +716,7 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8, u8, u8,
             } else {
                 255
             };
-            (r, g, b, a)
+            RGBA::new(r, g, b, a)
         }
     }
 }
@@ -933,11 +923,11 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], numpixels: usize, has_alpha: bool, 
 /*Get RGBA16 color of pixel with index i (y * width + x) from the raw image with
 given color type, but the given color type must be 16-bit itself.*/
 #[inline(always)]
-fn get_pixel_color_rgba16(inp: &[u8], i: usize, mode: &ColorMode) -> (u16, u16, u16, u16) {
+fn get_pixel_color_rgba16(inp: &[u8], i: usize, mode: &ColorMode) -> RGBA16 {
     match mode.colortype {
         ColorType::GREY => {
             let t = 256 * inp[i * 2 + 0] as u16 + inp[i * 2 + 1] as u16;
-            (t,t,t,
+            RGBA16::new(t,t,t,
             if mode.key() == Some((t,t,t)) {
                 0
             } else {
@@ -953,14 +943,14 @@ fn get_pixel_color_rgba16(inp: &[u8], i: usize, mode: &ColorMode) -> (u16, u16, 
             } else {
                 0xffff
             };
-            (r, g, b, a)
+            RGBA16::new(r, g, b, a)
         },
         ColorType::GREY_ALPHA => {
             let t = 256 * inp[i * 4 + 0] as u16 + inp[i * 4 + 1] as u16;
             let a = 256 * inp[i * 4 + 2] as u16 + inp[i * 4 + 3] as u16;
-            (t, t, t, a)
+            RGBA16::new(t, t, t, a)
         },
-        ColorType::RGBA => (
+        ColorType::RGBA => RGBA16::new(
             256 * inp[i * 8 + 0] as u16 + inp[i * 8 + 1] as u16,
             256 * inp[i * 8 + 2] as u16 + inp[i * 8 + 3] as u16,
             256 * inp[i * 8 + 4] as u16 + inp[i * 8 + 5] as u16,
@@ -1169,9 +1159,17 @@ fn read_chunk_phys(info: &mut Info, data: &[u8]) -> Result<(), Error> {
     Ok(())
 }
 
-fn add_chunk_idat(out: &mut Vec<u8>, data: &[u8], zlibsettings: &CompressSettings) -> Result<(), Error> {
+fn add_chunk_idat(out: &mut Vec<u8>, inp: &[u8], w: usize, h: usize, info_png: &Info, settings: &EncoderSettings, zlibsettings: &CompressSettings) -> Result<(), Error> {
     let mut ch = ChunkBuilder::new(out, b"IDAT");
-    zlib_compress_into(&mut ch, data, zlibsettings)?;
+
+    if let Some(cb) = zlibsettings.custom_zlib {
+        let mut tmp = Vec::new();
+        filtered_scanlines(&mut tmp, inp, w, h, info_png, settings)?;
+        (cb)(&tmp, &mut ch, zlibsettings)?;
+    } else {
+        let mut z = lodepng_zlib_compressor(&mut ch, zlibsettings)?;
+        filtered_scanlines(&mut z, inp, w, h, info_png, settings)?;
+    }
     ch.finish()
 }
 
@@ -1718,7 +1716,7 @@ pub(crate) fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, 
         out[..numbytes].copy_from_slice(&inp[..numbytes]);
         return Ok(());
     }
-    let mut tree = ColorTree::new();
+    let mut colormap = ColorIndices::new();
     if mode_out.colortype == ColorType::PALETTE {
         let mut palette = mode_out.palette();
         let palsize = 1 << mode_out.bitdepth();
@@ -1729,14 +1727,14 @@ pub(crate) fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, 
             palette = mode_in.palette();
         }
         palette = &palette[0..palette.len().min(palsize)];
-        for (i, p) in palette.iter().enumerate() {
-            tree.insert((p.r, p.g, p.b, p.a), i as u16);
-        }
+        colormap.extend(palette.iter().enumerate().map(|(i, p)| {
+            (*p, i as u8)
+        }));
     }
     if mode_in.bitdepth() == 16 && mode_out.bitdepth() == 16 {
         for i in 0..numpixels {
-            let (r, g, b, a) = get_pixel_color_rgba16(inp, i, mode_in);
-            rgba16_to_pixel(out, i, mode_out, r, g, b, a);
+            let px = get_pixel_color_rgba16(inp, i, mode_in);
+            rgba16_to_pixel(out, i, mode_out, px);
         }
     } else if mode_out.bitdepth() == 8 && mode_out.colortype == ColorType::RGBA {
         get_pixel_colors_rgba8(out, numpixels, true, inp, mode_in);
@@ -1744,8 +1742,8 @@ pub(crate) fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, 
         get_pixel_colors_rgba8(out, numpixels, false, inp, mode_in);
     } else {
         for i in 0..numpixels {
-            let (r, g, b, a) = get_pixel_color_rgba8(inp, i, mode_in);
-            rgba8_to_pixel(out, i, mode_out, &mut tree, r, g, b, a)?;
+            let px = get_pixel_color_rgba8(inp, i, mode_in);
+            rgba8_to_pixel(out, i, mode_out, &mut colormap, px)?;
         }
     }
     Ok(())
@@ -2339,7 +2337,7 @@ pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) ->
         lodepng_convert(&mut converted, image, &info.color, &state.info_raw, w as u32, h as u32)?;
         image = &converted;
     }
-    add_chunk_idat(&mut outv, &pre_process_scanlines(image, w, h, &info, &state.encoder)?, &state.encoder.zlibsettings)?;
+    add_chunk_idat(&mut outv, image, w, h, &info, &state.encoder, &state.encoder.zlibsettings)?;
 
     if info.time_defined {
         add_chunk_time(&mut outv, &info.time)?;
@@ -2380,7 +2378,8 @@ pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) ->
 
 /*profile must already have been inited with mode.
 It's ok to set some parameters of profile to done already.*/
-pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result<ColorProfile, Error> {
+/// basic flag is for internal use
+pub(crate) fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result<ColorProfile, Error> {
     let mut profile = ColorProfile::new();
     let numpixels: usize = w as usize * h as usize;
     let mut colored_done = mode.is_greyscale_type();
@@ -2388,7 +2387,7 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
     let mut numcolors_done = false;
     let bpp = mode.bpp() as usize;
     let mut bits_done = bpp == 1;
-    let maxnumcolors = match bpp {
+    let maxnumcolors: u16 = match bpp {
         1 => 2,
         2 => 4,
         4 => 16,
@@ -2400,7 +2399,7 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
     let mut sixteen = false;
     if mode.bitdepth() == 16 {
         for i in 0..numpixels {
-            let (r, g, b, a) = get_pixel_color_rgba16(inp, i, mode);
+            let RGBA16 { r, g, b, a } = get_pixel_color_rgba16(inp, i, mode);
             if (r & 255) != ((r >> 8) & 255) || (g & 255) != ((g >> 8) & 255) || (b & 255) != ((b >> 8) & 255) || (a & 255) != ((a >> 8) & 255) {
                 /*first and second byte differ*/
                 sixteen = true;
@@ -2414,23 +2413,23 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
         numcolors_done = true;
         /*counting colors no longer useful, palette doesn't support 16-bit*/
         for i in 0..numpixels {
-            let (r, g, b, a) = get_pixel_color_rgba16(inp, i, mode);
-            if !colored_done && (r != g || r != b) {
+            let px = get_pixel_color_rgba16(inp, i, mode);
+            if !colored_done && (px.r != px.g || px.r != px.b) {
                 profile.colored = true;
                 colored_done = true;
             }
             if !alpha_done {
-                let matchkey = r == profile.key_r && g == profile.key_g && b == profile.key_b;
-                if a != 65535 && (a != 0 || (profile.key && !matchkey)) {
+                let matchkey = px.r == profile.key_r && px.g == profile.key_g && px.b == profile.key_b;
+                if px.a != 65535 && (px.a != 0 || (profile.key && !matchkey)) {
                     profile.alpha = true;
                     profile.key = false;
                     alpha_done = true;
-                } else if a == 0 && !profile.alpha && !profile.key {
+                } else if px.a == 0 && !profile.alpha && !profile.key {
                     profile.key = true;
-                    profile.key_r = r;
-                    profile.key_g = g;
-                    profile.key_b = b;
-                } else if a == 65535 && profile.key && matchkey {
+                    profile.key_r = px.r;
+                    profile.key_g = px.g;
+                    profile.key_b = px.b;
+                } else if px.a == 65535 && profile.key && matchkey {
                     profile.alpha = true;
                     profile.key = false;
                     alpha_done = true;
@@ -2442,25 +2441,25 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
         }
         if profile.key && !profile.alpha {
             for i in 0..numpixels {
-                let (r, g, b, a) = get_pixel_color_rgba16(inp, i, mode);
-                if a != 0 && r == profile.key_r && g == profile.key_g && b == profile.key_b {
+                let px = get_pixel_color_rgba16(inp, i, mode);
+                if px.a != 0 && px.r == profile.key_r && px.g == profile.key_g && px.b == profile.key_b {
                     profile.alpha = true;
                     profile.key = false;
                 }
             }
         }
     } else {
-        let mut tree = ColorTree::new();
+        let mut colormap = ColorIndices::with_capacity(maxnumcolors.into());
         for i in 0..numpixels {
-            let (r, g, b, a) = get_pixel_color_rgba8(inp, i, mode);
+            let px = get_pixel_color_rgba8(inp, i, mode);
             if !bits_done && profile.bits < 8 {
-                let bits = get_value_required_bits(r);
+                let bits = get_value_required_bits(px.r);
                 if bits > profile.bits {
                     profile.bits = bits;
                 };
             }
             bits_done = profile.bits as usize >= bpp;
-            if !colored_done && (r != g || r != b) {
+            if !colored_done && (px.r != px.g || px.r != px.b) {
                 profile.colored = true;
                 colored_done = true;
                 if profile.bits < 8 {
@@ -2469,8 +2468,8 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
                 /*PNG has no colored modes with less than 8-bit per channel*/
             }
             if !alpha_done {
-                let matchkey = r as u16 == profile.key_r && g as u16 == profile.key_g && b as u16 == profile.key_b;
-                if a != 255 && (a != 0 || (profile.key && !matchkey)) {
+                let matchkey = px.r as u16 == profile.key_r && px.g as u16 == profile.key_g && px.b as u16 == profile.key_b;
+                if px.a != 255 && (px.a != 0 || (profile.key && !matchkey)) {
                     profile.alpha = true;
                     profile.key = false;
                     alpha_done = true;
@@ -2478,12 +2477,12 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
                         profile.bits = 8;
                     };
                 /*PNG has no alphachannel modes with less than 8-bit per channel*/
-                } else if a == 0 && !profile.alpha && !profile.key {
+                } else if px.a == 0 && !profile.alpha && !profile.key {
                     profile.key = true;
-                    profile.key_r = r as u16;
-                    profile.key_g = g as u16;
-                    profile.key_b = b as u16;
-                } else if a == 255 && profile.key && matchkey {
+                    profile.key_r = px.r as u16;
+                    profile.key_g = px.g as u16;
+                    profile.key_b = px.b as u16;
+                } else if px.a == 255 && profile.key && matchkey {
                     profile.alpha = true;
                     profile.key = false;
                     alpha_done = true;
@@ -2493,10 +2492,10 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
                     /*PNG has no alphachannel modes with less than 8-bit per channel*/
                 };
             }
-            if !numcolors_done && tree.get(&(r, g, b, a)).is_none() {
-                tree.insert((r, g, b, a), profile.numcolors as u16);
+            if !numcolors_done && colormap.get(&px).is_none() {
+                colormap.insert(px, profile.numcolors as u8);
                 if profile.numcolors < 256 {
-                    profile.palette[profile.numcolors as usize] = RGBA { r, g, b, a };
+                    profile.palette[profile.numcolors as usize] = px;
                 }
                 profile.numcolors += 1;
                 numcolors_done = profile.numcolors >= maxnumcolors;
@@ -2507,8 +2506,8 @@ pub fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result
         }
         if profile.key && !profile.alpha {
             for i in 0..numpixels {
-                let (r, g, b, a) = get_pixel_color_rgba8(inp, i, mode);
-                if a != 0 && r as u16 == profile.key_r && g as u16 == profile.key_g && b as u16 == profile.key_b {
+                let px = get_pixel_color_rgba8(inp, i, mode);
+                if px.a != 0 && px.r as u16 == profile.key_r && px.g as u16 == profile.key_g && px.b as u16 == profile.key_b {
                     profile.alpha = true;
                     profile.key = false;
                     /*PNG has no alphachannel modes with less than 8-bit per channel*/
@@ -2531,7 +2530,7 @@ output image, e.g. grey if there are only greyscale pixels, palette if there
 are less than 256 colors, …
 Updates values of mode with a potentially smaller color model. mode_out should
 contain the user chosen color model, but will be overwritten with the new chosen one.*/
-pub fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &ColorMode) -> Result<ColorMode, Error> {
+pub(crate) fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &ColorMode) -> Result<ColorMode, Error> {
     let mut mode_out = ColorMode::new();
     let mut prof = get_color_profile(image, w as u32, h as u32, mode_in)?;
 
