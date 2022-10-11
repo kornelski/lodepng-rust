@@ -6,6 +6,7 @@ use crate::ChunkRef;
 use std::ffi::CStr;
 use std::fmt;
 use std::io;
+use std::io::Write;
 use std::mem;
 use std::os::raw::{c_char, c_long, c_uint, c_void};
 #[cfg(unix)]
@@ -725,7 +726,9 @@ pub unsafe extern "C" fn zlib_decompress(out: &mut *mut u8, outsize: &mut usize,
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, settings: &CompressSettings) -> ErrorCode {
     let mut v = vec_from_raw(*out, *outsize);
-    let err = lode_error!(rustimpl::lodepng_zlib_compress(&mut v, slice::from_raw_parts(inp, insize), settings));
+    let inp = slice::from_raw_parts(inp, insize);
+    let err = lode_error!(rustimpl::lodepng_zlib_compressor(&mut v, settings)
+        .map(|mut z| Ok::<_, crate::Error>(z.write_all(inp)?)));
     let (data, size) = lode_try!(vec_into_raw(v));
     *out = data;
     *outsize = size;

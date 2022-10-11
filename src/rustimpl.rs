@@ -134,6 +134,9 @@ fn pre_process_scanlines(inp: &[u8], w: usize, h: usize, info_png: &Info, settin
         let mut adam7 = zero_vec(offsets[7].normal + 1)?;
         adam7_interlace(&mut adam7, inp, w, h, bpp as u8);
         for i in 0..7 {
+            if sizes[i].w == 0 {
+                continue;
+            }
             if bpp < 8 {
                 let mut padded = zero_vec(offsets[i + 1].padded - offsets[i].padded)?;
                 add_padding_bits(
@@ -169,10 +172,7 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
     if bpp == 0 {
         return Err(Error::new(31));
     }
-    if w == 0 {
-        debug_assert_eq!(h, 0);
-        return Ok(()); // WTF?
-    }
+    debug_assert!(w != 0);
     /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
     let bytewidth = (bpp + 7) / 8;
     let bpp = bpp as usize;
@@ -1641,8 +1641,8 @@ pub(crate) fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Resu
     Ok(out)
 }
 
-pub(crate) fn lodepng_zlib_compress<W: Write>(outv: &mut W, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
-    use flate2::write::ZlibEncoder;
+use flate2::write::ZlibEncoder;
+pub(crate) fn lodepng_zlib_compressor<W: Write>(outv: W, settings: &CompressSettings) -> Result<ZlibEncoder<W>, Error> {
     use flate2::Compression;
     let level = settings.level();
     let level = if level == 0 {
@@ -1650,9 +1650,7 @@ pub(crate) fn lodepng_zlib_compress<W: Write>(outv: &mut W, inp: &[u8], settings
     } else {
         Compression::new(level.min(9).into())
     };
-    let mut z = ZlibEncoder::new(outv, level);
-    z.write_all(inp)?;
-    Ok(())
+    Ok(ZlibEncoder::new(outv, level))
 }
 
 /* compress using the default or custom zlib function */
@@ -1666,7 +1664,8 @@ fn zlib_compress_into<W: Write>(out: &mut W, inp: &[u8], settings: &CompressSett
     if let Some(cb) = settings.custom_zlib {
         (cb)(inp, out, settings)?;
     } else {
-        lodepng_zlib_compress(out, inp, settings)?;
+        let mut z = lodepng_zlib_compressor(out, settings)?;
+        z.write_all(inp)?;
     }
     Ok(())
 }
@@ -2326,15 +2325,6 @@ pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) ->
     check_png_color_validity(info.color.colortype, info.color.bitdepth())?; /*tEXt and/or zTXt */
     check_lode_color_validity(state.info_raw.colortype, state.info_raw.bitdepth())?; /*LodePNG version id in text chunk */
 
-    let data = if !lodepng_color_mode_equal(&state.info_raw, &info.color) {
-        let raw_size = (w * h * (info.color.bpp() as usize) + 7) / 8;
-        let mut converted = zero_vec(raw_size)?;
-        lodepng_convert(&mut converted, image, &info.color, &state.info_raw, w as u32, h as u32)?;
-        pre_process_scanlines(&converted, w, h, &info, &state.encoder)?
-    } else {
-        pre_process_scanlines(image, w, h, &info, &state.encoder)?
-    };
-
     let mut outv = Vec::new(); outv.try_reserve(1024 + w * h / 2)?;
     write_signature(&mut outv);
 
@@ -2359,7 +2349,17 @@ pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) ->
         add_chunk_phys(&mut outv, &info)?;
     }
     add_unknown_chunks(&mut outv, &info.unknown_chunks[ChunkPosition::PLTE as usize])?;
-    add_chunk_idat(&mut outv, &data, &state.encoder.zlibsettings)?;
+
+    let mut converted;
+    let mut image = image;
+    if !lodepng_color_mode_equal(&state.info_raw, &info.color) {
+        let raw_size = (w * h * (info.color.bpp() as usize) + 7) / 8;
+        converted = zero_vec(raw_size)?;
+        lodepng_convert(&mut converted, image, &info.color, &state.info_raw, w as u32, h as u32)?;
+        image = &converted;
+    }
+    add_chunk_idat(&mut outv, &pre_process_scanlines(image, w, h, &info, &state.encoder)?, &state.encoder.zlibsettings)?;
+
     if info.time_defined {
         add_chunk_time(&mut outv, &info.time)?;
     }
