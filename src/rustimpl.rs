@@ -89,16 +89,15 @@ fn get_palette_translucency(palette: &[RGBA]) -> PaletteTranslucency {
 /*The opposite of the remove_padding_bits function
   olinebits must be >= ilinebits*/
 fn add_padding_bits(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usize, h: usize) {
-    let diff = olinebits - ilinebits; /*bit pointers*/
-    let mut obp = 0;
-    let mut ibp = 0;
-    for _ in 0..h {
-        for _ in 0..ilinebits {
-            let bit = read_bit_from_reversed_stream(&mut ibp, inp);
-            set_bit_of_reversed_stream(&mut obp, out, bit);
+    for y in 0..h {
+        let iline = y * ilinebits;
+        let oline = y * olinebits;
+        for i in 0..ilinebits {
+            let bit = read_bit_from_reversed_stream(iline + i, inp);
+            set_bit_of_reversed_stream(oline + i, out, bit);
         }
-        for _ in 0..diff {
-            set_bit_of_reversed_stream(&mut obp, out, 0);
+        for i in ilinebits..olinebits {
+            set_bit_of_reversed_stream(oline + i, out, 0);
         }
     }
 }
@@ -641,8 +640,8 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8, u8, u8,
             } else {
                 let highest = (1 << mode.bitdepth()) - 1;
                 /*highest possible value for this bit depth*/
-                let mut j = i as usize * mode.bitdepth() as usize;
-                let value = read_bits_from_reversed_stream(&mut j, inp, mode.bitdepth() as usize);
+                let j = i as usize * mode.bitdepth() as usize;
+                let value = read_bits_from_reversed_stream(j, inp, mode.bitdepth() as usize);
                 let t = ((value * 255) / highest) as u8;
                 let a = if mode.key() == Some((t as u16, t as u16, t as u16)) {
                     0
@@ -683,8 +682,8 @@ fn get_pixel_color_rgba8(inp: &[u8], i: usize, mode: &ColorMode) -> (u8, u8, u8,
             let index = if mode.bitdepth() == 8 {
                 inp[i] as usize
             } else {
-                let mut j = i as usize * mode.bitdepth() as usize;
-                read_bits_from_reversed_stream(&mut j, inp, mode.bitdepth() as usize) as usize
+                let j = i as usize * mode.bitdepth() as usize;
+                read_bits_from_reversed_stream(j, inp, mode.bitdepth() as usize) as usize
             };
             let pal = mode.palette();
             if index >= pal.len() {
@@ -777,7 +776,8 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], numpixels: usize, has_alpha: bool, 
                 /*highest possible value for this bit depth*/
                 let mut j = 0;
                 for buffer in buffer.chunks_mut(num_channels).take(numpixels) {
-                    let value = read_bits_from_reversed_stream(&mut j, inp, mode.bitdepth() as usize);
+                    let nbits = mode.bitdepth() as usize;
+                    let value = read_bits_from_reversed_stream(j, inp, nbits); j += nbits;
                     buffer[0] = ((value * 255) / highest) as u8;
                     buffer[1] = ((value * 255) / highest) as u8;
                     buffer[2] = ((value * 255) / highest) as u8;
@@ -830,7 +830,10 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], numpixels: usize, has_alpha: bool, 
                 let index = if mode.bitdepth() == 8 {
                     inp[i] as usize
                 } else {
-                    read_bits_from_reversed_stream(&mut j, inp, mode.bitdepth() as usize) as usize
+                    let nbits = mode.bitdepth() as usize;
+                    let res = read_bits_from_reversed_stream(j, inp, nbits);
+                    j += nbits;
+                    res as usize
                 };
                 let pal = mode.palette();
                 if index >= pal.len() {
@@ -975,9 +978,9 @@ fn get_pixel_color_rgba16(inp: &[u8], i: usize, mode: &ColorMode) -> (u16, u16, 
 }
 
 #[inline(always)]
-fn read_bits_from_reversed_stream(bitpointer: &mut usize, bitstream: &[u8], nbits: usize) -> u32 {
+fn read_bits_from_reversed_stream(bitpointer: usize, bitstream: &[u8], nbits: usize) -> u32 {
     let mut result = 0;
-    for _ in 0..nbits {
+    for bitpointer in bitpointer..bitpointer+nbits {
         result <<= 1;
         result |= read_bit_from_reversed_stream(bitpointer, bitstream) as u32;
     }
@@ -1489,9 +1492,9 @@ fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
                     let mut obp = (ADAM7_IY[i] as usize + y * ADAM7_DY[i] as usize) *
                         olinebits + (ADAM7_IX[i] as usize + x * ADAM7_DX[i] as usize) * bpp;
                     for _ in 0..bpp {
-                        let bit = read_bit_from_reversed_stream(&mut ibp, inp);
+                        let bit = read_bit_from_reversed_stream(ibp, inp); ibp += 1;
                         /*note that this function assumes the out buffer is completely 0, use set_bit_of_reversed_stream otherwise*/
-                        set_bit_of_reversed_stream0(&mut obp, out, bit);
+                        set_bit_of_reversed_stream0(obp, out, bit); obp += 1;
                     }
                 }
             }
@@ -1503,29 +1506,25 @@ fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
 /* / Reading and writing single bits and bytes from/to stream for LodePNG   / */
 /* ////////////////////////////////////////////////////////////////////////// */
 #[inline(always)]
-fn read_bit_from_reversed_stream(bitpointer: &mut usize, bitstream: &[u8]) -> u8 {
-    let result = ((bitstream[(*bitpointer) >> 3] >> (7 - ((*bitpointer) & 7))) & 1) as u8;
-    *bitpointer += 1;
-    result
+fn read_bit_from_reversed_stream(bitpointer: usize, bitstream: &[u8]) -> u8 {
+    (bitstream[bitpointer >> 3] >> (7 - (bitpointer & 7))) & 1
 }
 
-fn set_bit_of_reversed_stream0(bitpointer: &mut usize, bitstream: &mut [u8], bit: u8) {
+fn set_bit_of_reversed_stream0(bitpointer: usize, bitstream: &mut [u8], bit: u8) {
     /*the current bit in bitstream must be 0 for this to work*/
     if bit != 0 {
         /*earlier bit of huffman code is in a lesser significant bit of an earlier byte*/
-        bitstream[(*bitpointer) >> 3] |= bit << (7 - ((*bitpointer) & 7));
+        bitstream[bitpointer >> 3] |= bit << (7 - (bitpointer & 7));
     }
-    *bitpointer += 1;
 }
 
-fn set_bit_of_reversed_stream(bitpointer: &mut usize, bitstream: &mut [u8], bit: u8) {
+fn set_bit_of_reversed_stream(bitpointer: usize, bitstream: &mut [u8], bit: u8) {
     /*the current bit in bitstream may be 0 or 1 for this to work*/
     if bit == 0 {
-        bitstream[(*bitpointer) >> 3] &= (!(1 << (7 - ((*bitpointer) & 7)))) as u8;
+        bitstream[bitpointer >> 3] &= (!(1 << (7 - (bitpointer & 7)))) as u8;
     } else {
-        bitstream[(*bitpointer) >> 3] |= 1 << (7 - ((*bitpointer) & 7));
+        bitstream[bitpointer >> 3] |= 1 << (7 - (bitpointer & 7));
     }
-    *bitpointer += 1;
 }
 /* ////////////////////////////////////////////////////////////////////////// */
 /* / PNG chunks                                                             / */
@@ -1796,14 +1795,7 @@ fn postprocess_scanlines(out: &mut [u8], inp: &mut [u8], w: usize, h: usize, inf
             if bpp < 8 {
                 /*remove padding bits in scanlines; after this there still may be padding
                         bits between the different reduced images: each reduced image still starts nicely at a byte*/
-                remove_padding_bits_aliased(
-                    inp,
-                    offset.normal,
-                    offset.padded,
-                    linebits_exact(size.w as _, bpp),
-                    linebits_rounded(size.w as _, bpp),
-                    size.h,
-                );
+                remove_padding_bits_aliased(inp, offset.normal, offset.padded, linebits_exact(size.w as _, bpp), linebits_rounded(size.w as _, bpp), size.h, );
             };
         }
         adam7_deinterlace(out, inp, w, h, bpp);
@@ -1985,28 +1977,24 @@ fn unfilter_scanline_aliased(inout: &mut [u8], recon: usize, scanline: usize, pr
   only useful if (ilinebits - olinebits) is a value in the range 1..7
   */
 fn remove_padding_bits(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usize, h: usize) {
-    let diff = ilinebits - olinebits; /*input and output bit pointers*/
-    let mut ibp = 0;
-    let mut obp = 0;
-    for _ in 0..h {
-        for _ in 0..olinebits {
-            let bit = read_bit_from_reversed_stream(&mut ibp, inp);
-            set_bit_of_reversed_stream(&mut obp, out, bit);
+    for y in 0..h {
+        let iline = y * ilinebits;
+        let oline = y * olinebits;
+        for i in 0..olinebits {
+            let bit = read_bit_from_reversed_stream(iline + i, inp);
+            set_bit_of_reversed_stream(oline + i, out, bit);
         }
-        ibp += diff;
     }
 }
 
 fn remove_padding_bits_aliased(inout: &mut [u8], out_off: usize, in_off: usize, olinebits: usize, ilinebits: usize, h: usize) {
-    let diff = ilinebits - olinebits; /*input and output bit pointers*/
-    let mut ibp = 0;
-    let mut obp = 0;
-    for _ in 0..h {
-        for _ in 0..olinebits {
-            let bit = read_bit_from_reversed_stream(&mut ibp, &inout[in_off..]);
-            set_bit_of_reversed_stream(&mut obp, &mut inout[out_off..], bit);
+    for y in 0..h {
+        let iline = y * ilinebits;
+        let oline = y * olinebits;
+        for i in 0..olinebits {
+            let bit = read_bit_from_reversed_stream(iline + i, &inout[in_off..]);
+            set_bit_of_reversed_stream(oline + i, &mut inout[out_off..], bit);
         }
-        ibp += diff;
     }
 }
 
@@ -2045,8 +2033,8 @@ fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
                     let mut ibp = (ADAM7_IY[i] as usize + y * ADAM7_DY[i] as usize) * olinebits + (ADAM7_IX[i] as usize + x * ADAM7_DX[i] as usize) * bpp;
                     let mut obp = (8 * offsets[i].normal) + (y * ilinebits + x * bpp);
                     for _ in 0..bpp {
-                        let bit = read_bit_from_reversed_stream(&mut ibp, inp);
-                        set_bit_of_reversed_stream(&mut obp, out, bit);
+                        let bit = read_bit_from_reversed_stream(ibp, inp); ibp += 1;
+                        set_bit_of_reversed_stream(obp, out, bit); obp += 1;
                     }
                 }
             }
