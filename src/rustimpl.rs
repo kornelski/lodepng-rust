@@ -173,6 +173,27 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
         return Err(Error::new(31));
     }
     debug_assert!(w != 0);
+    let bpp = bpp as usize;
+
+    /*the width of a scanline in bytes, not including the filter type*/
+    let linebytes = ((w * bpp + 7) / 8) as usize;
+    debug_assert!(linebytes > 0);
+
+    let mut f = make_filter(w, h, info, settings)?;
+    let mut prevline = None;
+    for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
+        f(out, inp, prevline);
+        prevline = Some(inp);
+    }
+    Ok(())
+}
+
+fn make_filter<'a>(w: usize, h: usize, info: &ColorMode, settings: &'a EncoderSettings) -> Result<Box<dyn FnMut(&mut [u8], &[u8], Option<&[u8]>) + 'a>, Error> {
+    let bpp = info.bpp() as u8;
+    if bpp == 0 {
+        return Err(Error::new(31));
+    }
+    debug_assert!(w != 0);
     /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
     let bytewidth = (bpp + 7) / 8;
     let bpp = bpp as usize;
@@ -198,17 +219,13 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
     } else {
         settings.filter_strategy
     };
-    match strategy {
+    Ok(match strategy {
         FilterStrategy::ZERO => {
-            let mut prevline = None;
-            for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
-                out[0] = 0;
-                filter_scanline(&mut out[1..], inp, prevline, bytewidth, 0);
-                prevline = Some(inp);
-            }
+            Box::new(move |out, inp, _prevline| {
+                out[0] = 0; out[1..].copy_from_slice(inp);
+            })
         },
         FilterStrategy::MINSUM => {
-            let mut sum: [usize; 5] = [0, 0, 0, 0, 0];
             let mut attempt = [
                 zero_vec(linebytes)?,
                 zero_vec(linebytes)?,
@@ -216,36 +233,30 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
                 zero_vec(linebytes)?,
                 zero_vec(linebytes)?,
             ];
-            let mut smallest = 0;
-            let mut best_type = 0;
-            let mut prevline = None;
-            debug_assert!(linebytes > 0);
-            for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
-                for type_ in 0..5 {
-                    filter_scanline(&mut attempt[type_], inp, prevline, bytewidth, type_ as u8);
-                    sum[type_] = if type_ == 0 {
-                        attempt[type_].iter().map(|&s| s as usize).sum()
+            Box::new(move |out, inp, prevline| {
+                let mut smallest = 0;
+                let mut best_type = 0;
+                for (type_, attempt) in attempt.iter_mut().enumerate() {
+                    filter_scanline(attempt, inp, prevline, bytewidth, type_ as u8);
+                    let sum = if type_ == 0 {
+                        attempt.iter().map(|&s| s as usize).sum()
                     } else {
                         /*For differences, each byte should be treated as signed, values above 127 are negative
                           (converted to signed char). filter_type 0 isn't a difference though, so use unsigned there.
                           This means filter_type 0 is almost never chosen, but that is justified.*/
-                        attempt[type_].iter().map(|&s| if s < 128 { s } else { 255 - s } as usize).sum()
+                        attempt.iter().map(|&s| if s < 128 { s } else { 255 - s } as usize).sum()
                     };
                     /*check if this is smallest sum (or if type == 0 it's the first case so always store the values)*/
-                    if type_ == 0 || sum[type_] < smallest {
+                    if type_ == 0 || sum < smallest {
                         best_type = type_; /*now fill the out values*/
-                        smallest = sum[type_];
+                        smallest = sum;
                     };
                 }
-                prevline = Some(inp);
                 out[0] = best_type as u8;
                 out[1..].copy_from_slice(&attempt[best_type]);
-            }
+            })
         },
         FilterStrategy::ENTROPY => {
-            let mut sum: [f32; 5] = [0., 0., 0., 0., 0.];
-            let mut smallest = 0.;
-            let mut best_type = 0;
             let mut attempt = [
                 zero_vec(linebytes)?,
                 zero_vec(linebytes)?,
@@ -253,55 +264,45 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
                 zero_vec(linebytes)?,
                 zero_vec(linebytes)?,
             ];
-            let mut prevline = None;
-            for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
-                for type_ in 0..5 {
-                    filter_scanline(&mut attempt[type_], inp, prevline, bytewidth, type_ as u8);
+            Box::new(move |out, inp, prevline| {
+                let mut smallest = 0.;
+                let mut best_type = 0;
+                for (type_, attempt) in attempt.iter_mut().enumerate() {
+                    filter_scanline(attempt, inp, prevline, bytewidth, type_ as u8);
                     let mut count = [0u32; 256];
-                    for &byte in &attempt[type_] {
+                    for byte in attempt.iter().copied() {
                         count[byte as usize] += 1;
                     }
                     count[type_] += 1; /*the extra filterbyte added to each row*/
-                    sum[type_] = 0.;
+                    let mut sum = 0.;
                     for &c in count.iter() {
                         if c > 0 {
                             let p = c as f32 / ((linebytes + 1) as f32);
-                            sum[type_] += (1. / p).log2() * p;
+                            sum += (1. / p).log2() * p;
                         }
                     }
                     /*check if this is smallest sum (or if type == 0 it's the first case so always store the values)*/
-                    if type_ == 0 || sum[type_] < smallest {
+                    if type_ == 0 || sum < smallest {
                         best_type = type_;
-                        smallest = sum[type_];
+                        smallest = sum;
                     };
                 }
-                prevline = Some(inp);
                 out[0] = best_type as u8; /*the first byte of a scanline will be the filter type*/
                 out[1..].copy_from_slice(&attempt[best_type]);
-            }
+            })
         },
         FilterStrategy::PREDEFINED => {
-            let mut prevline = None;
-            let filters = unsafe { settings.predefined_filters(h)? };
-            for ((out, inp), &type_) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)).zip(filters) {
+            let mut filters = unsafe { settings.predefined_filters(h)? }.into_iter().copied();
+            Box::new(move |out, inp, prevline| {
+                let type_ = filters.next().unwrap_or(0);
                 out[0] = type_;
                 filter_scanline(&mut out[1..], inp, prevline, bytewidth, type_);
-                prevline = Some(inp);
-            }
+            })
         },
         FilterStrategy::BRUTE_FORCE => {
             /*brute force filter chooser.
             deflate the scanline after every filter attempt to see which one deflates best.
             This is very slow and gives only slightly smaller, sometimes even larger, result*/
-            let mut size: [usize; 5] = [0, 0, 0, 0, 0]; /*five filtering attempts, one for each filter type*/
-            let mut smallest = 0;
-            let mut best_type = 0;
-            let mut zlibsettings = settings.zlibsettings.clone();
-            zlibsettings.set_level(1);
-            /*a custom encoder likely doesn't read the btype setting and is optimized for complete PNG
-            images only, so disable it*/
-            zlibsettings.custom_zlib = None;
-            zlibsettings.custom_deflate = None; /*try the 5 filter types*/
             let mut attempt = [
                 zero_vec(linebytes)?,
                 zero_vec(linebytes)?,
@@ -310,28 +311,27 @@ fn filter(out: &mut [u8], inp: &[u8], w: usize, h: usize, info: &ColorMode, sett
                 zero_vec(linebytes)?,
             ];
             let mut temp_buf = Vec::with_capacity(linebytes);
-            let mut prevline = None;
-            for (out, inp) in out.chunks_exact_mut(1 + linebytes).zip(inp.chunks_exact(linebytes)) {
-                for type_ in 0..5 {
-                    /*it already works good enough by testing a part of the row*/
-                    filter_scanline(&mut attempt[type_], inp, prevline, bytewidth, type_ as u8);
-                    size[type_] = 0;
+            Box::new(move |out, inp, prevline| {
+                let mut smallest = 0;
+                let mut best_type = 0;
+                for (type_, attempt) in attempt.iter_mut().enumerate() {
+                    filter_scanline(attempt, inp, prevline, bytewidth, type_ as u8);
                     temp_buf.clear();
-                    zlib_compress_into(&mut temp_buf, &attempt[type_], &zlibsettings)?;
-                    size[type_] = temp_buf.len();
+                    let mut zlib = ZlibEncoder::new(&mut temp_buf, Compression::new(1));
+                    let _ = zlib.write_all(&attempt);
+                    drop(zlib);
+                    let size = temp_buf.len();
                     /*check if this is smallest size (or if type == 0 it's the first case so always store the values)*/
-                    if type_ == 0 || size[type_] < smallest {
-                        best_type = type_; /*the first byte of a scanline will be the filter type*/
-                        smallest = size[type_]; /* unknown filter strategy */
+                    if type_ == 0 || size < smallest {
+                        best_type = type_;
+                        smallest = size;
                     }
                 }
-                prevline = Some(inp);
                 out[0] = best_type as u8;
                 out[1..].copy_from_slice(&attempt[best_type]);
-            }
+            })
         },
-    };
-    Ok(())
+    })
 }
 
 #[test]
@@ -405,7 +405,8 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
                 out[i] = scanline[i].wrapping_sub(prevline[i]);
             }
             for i in bytewidth..length {
-                out[i] = scanline[i].wrapping_sub(paeth_predictor(scanline[i - bytewidth].into(), prevline[i].into(), prevline[i - bytewidth].into()));
+                let pred = paeth_predictor(scanline[i - bytewidth], prevline[i], prevline[i - bytewidth]);
+                out[i] = scanline[i].wrapping_sub(pred);
             }
         } else {
             out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
@@ -417,7 +418,11 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
     };
 }
 
-fn paeth_predictor(a: i16, b: i16, c: i16) -> u8 {
+#[inline]
+fn paeth_predictor(a: u8, b: u8, c: u8) -> u8 {
+    let a = a as i16;
+    let b = b as i16;
+    let c = c as i16;
     let pa = (b - c).abs();
     let pb = (a - c).abs();
     let pc = (a + b - c - c).abs();
@@ -1642,8 +1647,8 @@ pub(crate) fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Resu
 }
 
 use flate2::write::ZlibEncoder;
+use flate2::Compression;
 pub(crate) fn lodepng_zlib_compressor<W: Write>(outv: W, settings: &CompressSettings) -> Result<ZlibEncoder<W>, Error> {
-    use flate2::Compression;
     let level = settings.level();
     let level = if level == 0 {
         Compression::none()
