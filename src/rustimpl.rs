@@ -22,6 +22,7 @@ use crate::ChunkPosition;
 pub use rgb::RGBA8 as RGBA;
 use std::collections::HashMap;
 use std::fs;
+use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 use std::slice;
@@ -1171,7 +1172,7 @@ fn read_chunk_phys(info: &mut Info, data: &[u8]) -> Result<(), Error> {
 
 fn add_chunk_idat(out: &mut Vec<u8>, data: &[u8], zlibsettings: &CompressSettings) -> Result<(), Error> {
     let mut ch = ChunkBuilder::new(out, b"IDAT");
-    ch.zlib_compress(data, zlibsettings)?;
+    zlib_compress_into(&mut ch, data, zlibsettings)?;
     ch.finish()
 }
 
@@ -1198,7 +1199,7 @@ fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8], zlibsett
     data.extend_from_slice(keyword)?;
     data.push(0);
     data.push(0);
-    data.zlib_compress(textstring, zlibsettings)?;
+    zlib_compress_into(&mut data, textstring, zlibsettings)?;
     data.finish()
 }
 
@@ -1216,7 +1217,7 @@ fn add_chunk_itxt(
     data.extend_from_slice(langtag.as_bytes())?; data.push(0);
     data.extend_from_slice(transkey.as_bytes())?; data.push(0);
     if compressed {
-        data.zlib_compress(textstring.as_bytes(), zlibsettings)?;
+        zlib_compress_into(&mut data, textstring.as_bytes(), zlibsettings)?;
     } else {
         data.extend_from_slice(textstring.as_bytes())?;
     }
@@ -1315,6 +1316,7 @@ fn add_chunk_phys(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
 pub(crate) struct ChunkBuilder<'buf> {
     buf: &'buf mut Vec<u8>,
     buf_start: usize,
+    crc_hasher: crc32fast::Hasher,
 }
 
 impl<'buf> ChunkBuilder<'buf> {
@@ -1323,42 +1325,42 @@ impl<'buf> ChunkBuilder<'buf> {
     pub fn new(buf: &'buf mut Vec<u8>, type_: &[u8; 4]) -> Self {
         let mut new = Self {
             buf_start: buf.len(),
+            crc_hasher: crc32fast::Hasher::new(),
             buf,
         };
-        new.write_u32be(0); // this will be length
-        new.buf.extend_from_slice(&type_[..]);
+        new.buf.extend_from_slice(&[0,0,0,0]); // this will be length; excluded from crc
+        let _ = new.extend_from_slice(&type_[..]); // included in crc
         debug_assert_eq!(8, new.buf.len() - new.buf_start);
         new
     }
 
     #[inline]
     pub fn write_u32be(&mut self, num: u32) {
-        self.buf.extend_from_slice(&num.to_be_bytes());
+        let _ = self.extend_from_slice(&num.to_be_bytes());
     }
 
     #[inline]
     pub fn write_u16be(&mut self, num: u16) {
-        self.buf.extend_from_slice(&num.to_be_bytes());
-    }
-
-    #[inline]
-    pub fn zlib_compress(&mut self, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
-        zlib_compress_into(self.buf, inp, settings)
+        let _ = self.extend_from_slice(&num.to_be_bytes());
     }
 
     #[inline]
     pub fn push(&mut self, byte: u8) {
         self.buf.push(byte);
+        self.crc_hasher.update(std::slice::from_ref(&byte));
     }
 
     #[inline]
     pub fn extend_from_slice(&mut self, slice: &[u8]) -> Result<(), Error> {
         self.buf.try_reserve(slice.len())?;
         self.buf.extend_from_slice(slice);
+        self.crc_hasher.update(slice);
         Ok(())
     }
 
     pub fn finish(self) -> Result<(), Error> {
+        let crc = self.crc_hasher.finalize();
+
         let written = self.buf.len() - self.buf_start;
         debug_assert!(written >= 8);
         let data_length = written - 8;
@@ -1369,12 +1371,24 @@ impl<'buf> ChunkBuilder<'buf> {
         let len_range = self.buf_start .. self.buf_start + 4;
         self.buf[len_range].copy_from_slice(&(data_length as u32).to_be_bytes());
 
-        let crc_start = self.buf.len();
-        self.buf.extend_from_slice(&[0,0,0,0]);
-        let ch = ChunkRef::new(&self.buf[self.buf_start..])?;
-        debug_assert_eq!(ch.len(), data_length);
-        let crc = ch.crc();
-        self.buf[crc_start..].copy_from_slice(&crc.to_be_bytes());
+        self.buf.extend_from_slice(&crc.to_be_bytes());
+        debug_assert!(ChunkRef::new(&self.buf[self.buf_start..]).unwrap().check_crc());
+        Ok(())
+    }
+}
+
+impl Write for ChunkBuilder<'_> {
+    #[inline]
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.write_all(buf)?;
+        Ok(buf.len())
+    }
+    #[inline(always)]
+    fn write_all(&mut self, buf: &[u8]) -> io::Result<()> {
+        self.extend_from_slice(buf).map_err(|_| io::ErrorKind::OutOfMemory)?;
+        Ok(())
+    }
+    fn flush(&mut self) -> io::Result<()> {
         Ok(())
     }
 }
@@ -1627,7 +1641,7 @@ pub(crate) fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Resu
     Ok(out)
 }
 
-pub(crate) fn lodepng_zlib_compress(outv: &mut Vec<u8>, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
+pub(crate) fn lodepng_zlib_compress<W: Write>(outv: &mut W, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
     use flate2::write::ZlibEncoder;
     use flate2::Compression;
     let level = settings.level();
@@ -1648,7 +1662,7 @@ pub(crate) fn old_ffi_zlib_compress(inp: &[u8], settings: &CompressSettings) -> 
     Ok(out)
 }
 
-fn zlib_compress_into(out: &mut Vec<u8>, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
+fn zlib_compress_into<W: Write>(out: &mut W, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
     if let Some(cb) = settings.custom_zlib {
         (cb)(inp, out, settings)?;
     } else {
