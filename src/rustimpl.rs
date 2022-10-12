@@ -2513,7 +2513,8 @@ fn get_color_profile_low_bpp(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Co
     profile
 }
 
-pub(crate) fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Result<ColorProfile, Error> {
+#[inline(never)]
+pub(crate) fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> ColorProfile {
     let numpixels: usize = w as usize * h as usize;
 
     /*Check if the 16-bit input is truly 16-bit*/
@@ -2522,13 +2523,13 @@ pub(crate) fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) ->
             let RGBA16 { r, g, b, a } = get_pixel_color_rgba16(inp, i, mode);
             if (r & 255) != ((r >> 8) & 255) || (g & 255) != ((g >> 8) & 255) || (b & 255) != ((b >> 8) & 255) || (a & 255) != ((a >> 8) & 255) {
                 /*first and second byte differ*/
-                return Ok(get_color_profile16(inp, w, h, mode));
+                return get_color_profile16(inp, w, h, mode);
             };
         }
     }
 
     if mode.colortype == ColorType::PALETTE || mode.bpp() < 8 {
-        return Ok(get_color_profile_low_bpp(inp, w, h, mode));
+        return get_color_profile_low_bpp(inp, w, h, mode);
     }
 
     let mut colored_done = mode.is_greyscale_type();
@@ -2591,7 +2592,7 @@ pub(crate) fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) ->
     profile.key_r += profile.key_r << 8;
     profile.key_g += profile.key_g << 8;
     profile.key_b += profile.key_b << 8;
-    Ok(profile)
+    profile
 }
 
 
@@ -2600,9 +2601,10 @@ output image, e.g. grey if there are only greyscale pixels, palette if there
 are less than 256 colors, …
 Updates values of mode with a potentially smaller color model. mode_out should
 contain the user chosen color model, but will be overwritten with the new chosen one.*/
+#[inline(never)]
 pub(crate) fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &ColorMode) -> Result<ColorMode, Error> {
     let mut mode_out = ColorMode::new();
-    let mut prof = get_color_profile(image, w as u32, h as u32, mode_in)?;
+    let mut prof = get_color_profile(image, w as u32, h as u32, mode_in);
 
     mode_out.clear_key();
     if prof.key && w * h <= 16 {

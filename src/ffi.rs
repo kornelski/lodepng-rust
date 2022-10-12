@@ -153,6 +153,7 @@ pub struct DecompressSettings {
 }
 
 impl fmt::Debug for DecompressSettings {
+    #[cold]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = f.debug_struct("DecompressSettings");
         s.field("custom_zlib", &self.custom_zlib.is_some());
@@ -889,7 +890,7 @@ pub unsafe extern "C" fn lodepng_encode(out: &mut *mut u8, outsize: &mut usize, 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_get_color_profile(profile_out: *mut ColorProfile, image: *const u8, w: c_uint, h: c_uint, mode: &ColorMode) -> ErrorCode {
     assert!(!image.is_null());
-    let prof = lode_try!(rustimpl::get_color_profile(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, mode));
+    let prof = rustimpl::get_color_profile(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, mode);
     ptr::write(profile_out, prof);
     ErrorCode(0)
 }

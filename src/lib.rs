@@ -125,7 +125,7 @@ impl ColorMode {
     }
 
     /// `tRNS` chunk
-    #[inline]
+    #[cold]
     pub fn set_key(&mut self, r: u16, g: u16, b: u16) {
         self.key_defined = 1;
         self.key_r = c_uint::from(r);
