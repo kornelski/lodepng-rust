@@ -732,7 +732,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
     match mode.colortype {
         ColorType::GREY => {
             if mode.bitdepth() == 8 {
-                for (buffer, inp) in buffer.chunks_mut(num_channels).zip(inp.iter().copied()) {
+                for (buffer, inp) in buffer.chunks_exact_mut(num_channels).zip(inp.iter().copied()) {
                     buffer[..3].fill(inp);
                     if has_alpha {
                         let a = inp as u16;
@@ -744,7 +744,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                     }
                 }
             } else if mode.bitdepth() == 16 {
-                for (buffer, inp) in buffer.chunks_mut(num_channels).zip(inp.chunks_exact(2)) {
+                for (buffer, inp) in buffer.chunks_exact_mut(num_channels).zip(inp.chunks_exact(2)) {
                     buffer[..3].fill(inp[0]);
                     if has_alpha {
                         let a = 256 * inp[0] as u16 + inp[1] as u16;
@@ -759,7 +759,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                 let highest = (1 << mode.bitdepth()) - 1;
                 /*highest possible value for this bit depth*/
                 let mut j = 0;
-                for buffer in buffer.chunks_mut(num_channels) {
+                for buffer in buffer.chunks_exact_mut(num_channels) {
                     let nbits = mode.bitdepth() as usize;
                     let value = read_bits_from_reversed_stream(j, inp, nbits); j += nbits;
                     buffer[0] = ((value * 255) / highest) as u8;
@@ -778,7 +778,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
         },
         ColorType::RGB => {
             if mode.bitdepth() == 8 {
-                for (buffer, inp) in buffer.chunks_mut(num_channels).zip(inp.chunks_exact(3)) {
+                for (buffer, inp) in buffer.chunks_exact_mut(num_channels).zip(inp.chunks_exact(3)) {
                     buffer[..3].copy_from_slice(inp);
                     if has_alpha {
                         buffer[3] = if has_key && key == Some((inp[0] as u16, inp[1] as u16, inp[2] as u16)) {
@@ -789,7 +789,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                     };
                 }
             } else {
-                for (buffer, inp) in buffer.chunks_mut(num_channels).zip(inp.chunks_exact(6)) {
+                for (buffer, inp) in buffer.chunks_exact_mut(num_channels).zip(inp.chunks_exact(6)) {
                     buffer[0] = inp[0];
                     buffer[1] = inp[2];
                     buffer[2] = inp[4];
@@ -809,7 +809,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
         ColorType::PALETTE => {
             let mut j = 0;
             let pal = mode.palette();
-            for (i, buffer) in buffer.chunks_mut(num_channels).enumerate() {
+            for (i, buffer) in buffer.chunks_exact_mut(num_channels).enumerate() {
                 let index = if mode.bitdepth() == 8 {
                     inp[i] as usize
                 } else {
@@ -839,14 +839,14 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
             }
         },
         ColorType::GREY_ALPHA => if mode.bitdepth() == 8 {
-            for (buffer, inp) in buffer.chunks_mut(num_channels).zip(inp.chunks_exact(2)) {
+            for (buffer, inp) in buffer.chunks_exact_mut(num_channels).zip(inp.chunks_exact(2)) {
                 buffer[..3].fill(inp[0]);
                 if has_alpha {
                     buffer[3] = inp[1];
                 };
             }
         } else {
-            for (buffer, inp) in buffer.chunks_mut(num_channels).zip(inp.chunks_exact(4)) {
+            for (buffer, inp) in buffer.chunks_exact_mut(num_channels).zip(inp.chunks_exact(4)) {
                 buffer[..3].fill(inp[0]);
                 if has_alpha {
                     buffer[3] = inp[2];
@@ -854,14 +854,14 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
             }
         },
         ColorType::RGBA => if mode.bitdepth() == 8 {
-            for (buffer, inp) in buffer.chunks_mut(num_channels).zip(inp.chunks_exact(4)) {
+            for (buffer, inp) in buffer.chunks_exact_mut(num_channels).zip(inp.chunks_exact(4)) {
                 buffer[0..3].copy_from_slice(&inp[..3]);
                 if has_alpha {
                     buffer[3] = inp[3];
                 }
             }
         } else {
-            for (buffer, inp) in buffer.chunks_mut(num_channels).zip(inp.chunks_exact(8)) {
+            for (buffer, inp) in buffer.chunks_exact_mut(num_channels).zip(inp.chunks_exact(8)) {
                 buffer[0] = inp[0];
                 buffer[1] = inp[2];
                 buffer[2] = inp[4];
@@ -871,7 +871,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
             }
         },
         ColorType::BGR => {
-            for (buffer, inp) in buffer.chunks_mut(num_channels).zip(inp.chunks_exact(3)) {
+            for (buffer, inp) in buffer.chunks_exact_mut(num_channels).zip(inp.chunks_exact(3)) {
                 buffer[0] = inp[2];
                 buffer[1] = inp[1];
                 buffer[2] = inp[0];
@@ -885,7 +885,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
             }
         },
         ColorType::BGRX => {
-            for (buffer, inp) in buffer.chunks_mut(num_channels).zip(inp.chunks_exact(4)) {
+            for (buffer, inp) in buffer.chunks_exact_mut(num_channels).zip(inp.chunks_exact(4)) {
                 buffer[0] = inp[2];
                 buffer[1] = inp[1];
                 buffer[2] = inp[0];
@@ -899,7 +899,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
             }
         },
         ColorType::BGRA => {
-            for (buffer, inp) in buffer.chunks_mut(num_channels).zip(inp.chunks_exact(4)) {
+            for (buffer, inp) in buffer.chunks_exact_mut(num_channels).zip(inp.chunks_exact(4)) {
                 buffer[0] = inp[2];
                 buffer[1] = inp[1];
                 buffer[2] = inp[0];
@@ -965,7 +965,7 @@ fn read_bits_from_reversed_stream(bitpointer: usize, bitstream: &[u8], nbits: us
 
 fn read_chunk_plte(color: &mut ColorMode, data: &[u8]) -> Result<(), Error> {
     color.palette_clear();
-    for c in data.chunks(3).take(data.len() / 3) {
+    for c in data.chunks_exact(3).take(data.len() / 3) {
         color.palette_add(RGBA {
             r: c[0],
             g: c[1],
@@ -1803,7 +1803,7 @@ fn postprocess_scanlines(out: &mut [u8], inp: &mut [u8], w: usize, h: usize, inf
             if bpp < 8 {
                 /*remove padding bits in scanlines; after this there still may be padding
                         bits between the different reduced images: each reduced image still starts nicely at a byte*/
-                remove_padding_bits_aliased(inp, offset_packed, offset_padded, linebits_exact(pass.w as _, bpp), linebits_rounded(pass.w as _, bpp), pass.h, );
+                remove_padding_bits_aliased(inp, offset_packed, offset_padded, linebits_exact(pass.w as _, bpp), linebits_rounded(pass.w as _, bpp), pass.h);
             };
             offset_padded += pass.padded_len;
             offset_filtered += pass.filtered_len;
@@ -1829,7 +1829,7 @@ fn unfilter(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) -> Result<(
     let linebytes = linebytes_rounded(w, bpp);
     let in_linebytes = 1 + linebytes; /*the extra filterbyte added to each row*/
 
-    for (out_line, in_line) in out.chunks_mut(linebytes).zip(inp.chunks(in_linebytes)).take(h) {
+    for (out_line, in_line) in out.chunks_exact_mut(linebytes).zip(inp.chunks_exact(in_linebytes)).take(h) {
         let (&filter_type, in_line) = in_line.split_first().ok_or_else(|| Error::new(91))?;
         unfilter_scanline(out_line, in_line, prevline, bytewidth, filter_type, linebytes)?;
         prevline = Some(out_line);
