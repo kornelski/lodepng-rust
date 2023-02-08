@@ -73,6 +73,16 @@ fn bgra() {
 }
 
 #[test]
+#[ignore] // slow
+fn huge() {
+    let png = encode24(&vec![RGB::new(0u8,0,0); 67777*68888], 67777, 68888).unwrap();
+    let img = decode24(&png).unwrap();
+    assert_eq!(img.buffer[0], RGB::new(0,0,0));
+    assert_eq!(img.width, 67777);
+    assert_eq!(img.height, 68888);
+}
+
+#[test]
 fn rgb_with_trns_inspect() {
     let mut state = Encoder::new();
     state.info_raw_mut().colortype = ColorType::RGB;
