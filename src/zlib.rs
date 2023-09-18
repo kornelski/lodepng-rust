@@ -1,11 +1,9 @@
-use crate::{CompressSettings, DecompressSettings, Error, Result, zero_vec};
+use crate::{CompressSettings, DecompressSettings, Error, Result};
 use flate2::Compression;
-use flate2::read::ZlibDecoder;
-use flate2::write::ZlibEncoder;
-use std::io::{Read, Write};
+use flate2::write::{ZlibEncoder, ZlibDecoder};
+use std::io::Write;
 
-pub(crate) fn new_decompressor(inp: &[u8]) -> Result<ZlibDecoder<&[u8]>, Error> {
-
+fn check_zlib_stream(inp: &[u8]) -> Result<(), Error> {
     if inp.len() < 2 {
         return Err(Error::new(53));
     }
@@ -27,39 +25,73 @@ pub(crate) fn new_decompressor(inp: &[u8]) -> Result<ZlibDecoder<&[u8]>, Error> 
         return Err(Error::new(26));
     }
 
-    Ok(ZlibDecoder::new_with_buf(inp, zero_vec(32 * 1024)?))
-}
-
-pub(crate) fn decompress_into_vec(inp: &[u8], out: &mut Vec<u8>) -> Result<(), Error> {
-    let mut z = new_decompressor(inp)?;
-    out.try_reserve((inp.len() * 3 / 2).max(16*1024))?;
-    let mut actual_len = out.len();
-    out.resize(out.capacity(), 0);
-    loop {
-        let read = z.read(&mut out[actual_len..])?;
-        if read > 0 {
-            actual_len += read;
-            if out.capacity() < actual_len + 64 * 1024 {
-                out.truncate(actual_len); // copy less
-                out.try_reserve(64 * 1024)?;
-                out.resize(out.capacity(), 0);
-            }
-        } else {
-            break;
-        }
-    }
-    out.truncate(actual_len);
     Ok(())
 }
 
-pub(crate) fn decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
-    let mut out = Vec::new(); out.try_reserve(inp.len() * 3 / 2)?;
-    if let Some(cb) = settings.custom_zlib {
-        (cb)(inp, &mut out, settings)?;
-    } else {
-        decompress_into_vec(inp, &mut out)?;
+pub(crate) enum Decoder<'settings> {
+    Flate(ZlibDecoder<Vec<u8>>),
+    Custom(&'settings DecompressSettings, Vec<u8>),
+}
+
+impl Decoder<'_> {
+    pub fn push(&mut self, chunk: &[u8]) -> Result<(), Error> {
+        match self {
+            Self::Flate(dec) => {
+                dec.get_mut().try_reserve(chunk.len() * 3 / 2)?;
+                dec.write_all(chunk).map_err(|_| Error::new(23))?;
+            },
+            Self::Custom(_, buf) => {
+                buf.try_reserve(chunk.len())?;
+                buf.extend_from_slice(chunk);
+            },
+        }
+        Ok(())
     }
-    Ok(out)
+
+    pub fn finish(self) -> Result<Vec<u8>, Error> {
+        match self {
+            Self::Flate(dec) => {
+                Ok(dec.finish().map_err(|_| Error::new(23))?)
+            },
+            Self::Custom(settings, buf) => {
+                check_zlib_stream(&buf)?;
+
+                let mut out = Vec::new();
+                out.try_reserve((buf.len() * 3 / 2).max(16*1024))?;
+                let cb = settings.custom_zlib.ok_or(Error::new(87))?; // can't fail
+                (cb)(&buf, &mut out, settings)?;
+                Ok(out)
+            }
+        }
+    }
+}
+
+pub(crate) fn new_decompressor<'s, 'w>(settings: &'s DecompressSettings) -> Decoder<'s> {
+    if settings.custom_zlib.is_some() {
+        Decoder::Custom(settings, Vec::new())
+    } else {
+        Decoder::Flate(ZlibDecoder::new(Vec::new()))
+    }
+}
+
+#[inline(never)]
+pub(crate) fn decompress_into_vec(inp: &[u8]) -> Result<Vec<u8>, Error> {
+    check_zlib_stream(inp)?;
+    let mut out = Vec::new();
+    out.try_reserve((inp.len() * 3 / 2).max(16*1024))?;
+    let mut dec = ZlibDecoder::new(out);
+    dec.write_all(inp).map_err(|_| Error::new(23))?;
+    dec.finish().map_err(|_| Error::new(23))
+}
+
+pub(crate) fn decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
+    if let Some(cb) = settings.custom_zlib {
+        let mut out = Vec::new(); out.try_reserve(inp.len() * 3 / 2)?;
+        (cb)(inp, &mut out, settings)?;
+        Ok(out)
+    } else {
+        decompress_into_vec(inp)
+    }
 }
 
 pub(crate) fn new_compressor<W: Write>(outv: W, settings: &CompressSettings) -> Result<ZlibEncoder<W>, Error> {
@@ -72,14 +104,8 @@ pub(crate) fn new_compressor<W: Write>(outv: W, settings: &CompressSettings) -> 
     Ok(ZlibEncoder::new(outv, level))
 }
 
-/* compress using the default or custom zlib function */
-pub(crate) fn old_ffi_zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    let mut out = Vec::new(); out.try_reserve(inp.len() / 2)?;
-    compress_into(&mut out, inp, settings)?;
-    Ok(out)
-}
-
-pub(crate) fn compress_into<W: Write>(out: &mut W, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
+#[inline(never)]
+pub(crate) fn compress_into(out: &mut dyn Write, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
 
     #[allow(deprecated)]
     if let Some(cb) = settings.custom_zlib {

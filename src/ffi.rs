@@ -724,8 +724,7 @@ pub unsafe extern "C" fn lodepng_color_mode_copy(dest: *mut ColorMode, source: &
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_zlib_decompress(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, _: &DecompressSettings) -> ErrorCode {
-    let mut vec = Vec::new();
-    lode_try!(zlib::decompress_into_vec(slice::from_raw_parts(inp, insize), &mut vec));
+    let vec = lode_try!(zlib::decompress_into_vec(slice::from_raw_parts(inp, insize)));
     to_vec(out, outsize, Ok(vec))
 }
 
@@ -734,6 +733,7 @@ pub unsafe extern "C" fn zlib_decompress(out: &mut *mut u8, outsize: &mut usize,
     to_vec(out, outsize, zlib::decompress(slice::from_raw_parts(inp, insize), settings))
 }
 
+/* compress using the default or custom zlib function */
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, settings: &CompressSettings) -> ErrorCode {
     let mut v = vec_from_raw(*out, *outsize);
@@ -748,7 +748,11 @@ pub unsafe extern "C" fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut 
 
 #[no_mangle]
 pub unsafe extern "C" fn zlib_compress(out: &mut *mut u8, outsize: &mut usize, inp: *const u8, insize: usize, settings: &CompressSettings) -> ErrorCode {
-    to_vec(out, outsize, zlib::old_ffi_zlib_compress(slice::from_raw_parts(inp, insize), settings))
+    let inp = slice::from_raw_parts(inp, insize);
+    let mut vec = Vec::new();
+    let _ = vec.try_reserve(inp.len() / 2);
+    let res = zlib::compress_into(&mut vec, inp, settings);
+    to_vec(out, outsize, res.map(move |_| vec))
 }
 
 #[no_mangle]

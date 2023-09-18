@@ -2055,10 +2055,13 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     if numpixels > (isize::MAX as usize - 1) / 4 / 2 {
         return Err(Error::new(92)); /*first byte of the first chunk after the header*/
     }
-    let mut idat = Vec::new(); idat.try_reserve(inp.len() - 33)?;
+
     let chunks = ChunksIter {
-        data: &inp[33..],
+        data: inp.get(33..).ok_or(Error::new(27))?,
     };
+
+    let mut idat_decompressor = zlib::new_decompressor(&state.decoder.zlibsettings);
+
     /*loop through the chunks, ignoring unknown chunks and stopping at IEND chunk.
       IDAT data is put at the start of the in buffer*/
     for ch in chunks {
@@ -2067,8 +2070,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
         let data = ch.data();
         match &ch.name() {
             b"IDAT" => {
-                idat.try_reserve(data.len())?;
-                idat.extend_from_slice(data);
+                idat_decompressor.push(data)?;
                 critical_pos = ChunkPosition::IDAT;
             },
             b"IEND" => {
@@ -2126,7 +2128,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
         let color = &state.info_png.color;
         adam7_expected_size(color, w, h).ok_or(Error::new(91))?
     };
-    let mut scanlines = zlib::decompress(&idat, &state.decoder.zlibsettings)?;
+    let mut scanlines = idat_decompressor.finish()?;
     if scanlines.len() != predict {
         /*decompressed size doesn't match prediction*/
         return Err(Error::new(91));
