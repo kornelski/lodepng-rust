@@ -12,12 +12,13 @@
 #![cfg_attr(feature = "cargo-clippy", allow(clippy::too_many_arguments))]
 #![cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
 
-use super::*;
+use crate::*;
 use crate::ffi::ColorProfile;
 use crate::ffi::IntlText;
 use crate::ffi::LatinText;
 use crate::ffi::State;
 use crate::ChunkPosition;
+use crate::zlib;
 
 pub use rgb::RGBA8 as RGBA;
 use rgb::RGBA16;
@@ -38,13 +39,6 @@ fn write_signature(out: &mut Vec<u8>) {
     out.push(10u8);
     out.push(26u8);
     out.push(10u8);
-}
-
-#[inline]
-fn zero_vec(size: usize) -> Result<Vec<u8>, Error> {
-    let mut vec = Vec::new(); vec.try_reserve(size)?;
-    vec.resize(size, 0);
-    Ok(vec)
 }
 
 #[derive(Eq, PartialEq)]
@@ -297,9 +291,7 @@ fn make_filter<'a>(w: usize, h: usize, info: &ColorMode, settings: &'a EncoderSe
                 for (type_, attempt) in attempt.iter_mut().enumerate() {
                     filter_scanline(attempt, inp, prevline, bytewidth, type_ as u8);
                     temp_buf.clear();
-                    let mut zlib = ZlibEncoder::new(&mut temp_buf, Compression::new(1));
-                    let _ = zlib.write_all(&attempt);
-                    drop(zlib);
+                    zlib::compress_fast(&attempt, &mut temp_buf);
                     let size = temp_buf.len();
                     /*check if this is smallest size (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || size < smallest {
@@ -1078,7 +1070,7 @@ fn read_chunk_ztxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u
         return Err(Error::new(75)); /*will fail if zlib error, e.g. if length is too small*/
     }
     let inl = &data[string2_begin..];
-    let decoded = zlib_decompress(inl, zlibsettings)?;
+    let decoded = zlib::decompress(inl, zlibsettings)?;
     info.push_text(key, &decoded)?;
     Ok(())
 }
@@ -1113,7 +1105,7 @@ fn read_chunk_itxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u
 
     let decoded;
     let rest = if compressed_flag {
-        decoded = zlib_decompress(data, zlibsettings)?;
+        decoded = zlib::decompress(data, zlibsettings)?;
         &decoded[..]
     } else {
         data
@@ -1152,12 +1144,13 @@ fn read_chunk_phys(info: &mut Info, data: &[u8]) -> Result<(), Error> {
 fn add_chunk_idat(out: &mut Vec<u8>, inp: &[u8], w: usize, h: usize, info_png: &Info, settings: &EncoderSettings, zlibsettings: &CompressSettings) -> Result<(), Error> {
     let mut ch = ChunkBuilder::new(out, b"IDAT");
 
+    #[allow(deprecated)]
     if let Some(cb) = zlibsettings.custom_zlib {
         let mut tmp = Vec::new();
         filtered_scanlines(&mut tmp, inp, w, h, info_png, settings)?;
         (cb)(&tmp, &mut ch, zlibsettings)?;
     } else {
-        let mut z = lodepng_zlib_compressor(&mut ch, zlibsettings)?;
+        let mut z = zlib::new_compressor(&mut ch, zlibsettings)?;
         filtered_scanlines(&mut z, inp, w, h, info_png, settings)?;
     }
     ch.finish()
@@ -1186,7 +1179,7 @@ fn add_chunk_ztxt(out: &mut Vec<u8>, keyword: &[u8], textstring: &[u8], zlibsett
     data.extend_from_slice(keyword)?;
     data.push(0);
     data.push(0);
-    zlib_compress_into(&mut data, textstring, zlibsettings)?;
+    zlib::compress_into(&mut data, textstring, zlibsettings)?;
     data.finish()
 }
 
@@ -1204,7 +1197,7 @@ fn add_chunk_itxt(
     data.extend_from_slice(langtag.as_bytes())?; data.push(0);
     data.extend_from_slice(transkey.as_bytes())?; data.push(0);
     if compressed {
-        zlib_compress_into(&mut data, textstring.as_bytes(), zlibsettings)?;
+        zlib::compress_into(&mut data, textstring.as_bytes(), zlibsettings)?;
     } else {
         data.extend_from_slice(textstring.as_bytes())?;
     }
@@ -1550,98 +1543,6 @@ pub(crate) fn lodepng_color_mode_equal(a: &ColorMode, b: &ColorMode) -> bool {
     a.bitdepth() == b.bitdepth() &&
     a.key() == b.key() &&
     a.palette() == b.palette()
-}
-
-/* ////////////////////////////////////////////////////////////////////////// */
-/* / Zlib                                                                   / */
-/* ////////////////////////////////////////////////////////////////////////// */
-
-use flate2::read::ZlibDecoder;
-fn zlib_decompressor(inp: &[u8]) -> Result<ZlibDecoder<&[u8]>, Error> {
-
-    if inp.len() < 2 {
-        return Err(Error::new(53));
-    }
-    /*read information from zlib header*/
-    if (inp[0] as u32 * 256 + inp[1] as u32) % 31 != 0 {
-        /*error: 256 * in[0] + in[1] must be a multiple of 31, the FCHECK value is supposed to be made that way*/
-        return Err(Error::new(24));
-    }
-    let cm = inp[0] as u32 & 15;
-    let cinfo = ((inp[0] as u32) >> 4) & 15;
-    let fdict = ((inp[1] as u32) >> 5) & 1;
-    if cm != 8 || cinfo > 7 {
-        /*error: only compression method 8: inflate with sliding window of 32k is supported by the PNG spec*/
-        return Err(Error::new(25));
-    }
-    if fdict != 0 {
-        /*error: the specification of PNG says about the zlib stream:
-              "The additional flags shall not specify a preset dictionary."*/
-        return Err(Error::new(26));
-    }
-
-    Ok(ZlibDecoder::new_with_buf(inp, zero_vec(32 * 1024)?))
-}
-
-pub(crate) fn decompress_into_vec(inp: &[u8], out: &mut Vec<u8>) -> Result<(), Error> {
-    let mut z = zlib_decompressor(inp)?;
-    out.try_reserve((inp.len() * 3 / 2).max(16*1024))?;
-    let mut actual_len = out.len();
-    out.resize(out.capacity(), 0);
-    loop {
-        let read = z.read(&mut out[actual_len..])?;
-        if read > 0 {
-            actual_len += read;
-            if out.capacity() < actual_len + 64 * 1024 {
-                out.truncate(actual_len); // copy less
-                out.try_reserve(64 * 1024)?;
-                out.resize(out.capacity(), 0);
-            }
-        } else {
-            break;
-        }
-    }
-    out.truncate(actual_len);
-    Ok(())
-}
-
-pub(crate) fn zlib_decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Vec<u8>, Error> {
-    let mut out = Vec::new(); out.try_reserve(inp.len() * 3 / 2)?;
-    if let Some(cb) = settings.custom_zlib {
-        (cb)(inp, &mut out, settings)?;
-    } else {
-        decompress_into_vec(inp, &mut out)?;
-    }
-    Ok(out)
-}
-
-use flate2::write::ZlibEncoder;
-use flate2::Compression;
-pub(crate) fn lodepng_zlib_compressor<W: Write>(outv: W, settings: &CompressSettings) -> Result<ZlibEncoder<W>, Error> {
-    let level = settings.level();
-    let level = if level == 0 {
-        Compression::none()
-    } else {
-        Compression::new(level.min(9).into())
-    };
-    Ok(ZlibEncoder::new(outv, level))
-}
-
-/* compress using the default or custom zlib function */
-pub(crate) fn old_ffi_zlib_compress(inp: &[u8], settings: &CompressSettings) -> Result<Vec<u8>, Error> {
-    let mut out = Vec::new(); out.try_reserve(inp.len() / 2)?;
-    zlib_compress_into(&mut out, inp, settings)?;
-    Ok(out)
-}
-
-fn zlib_compress_into<W: Write>(out: &mut W, inp: &[u8], settings: &CompressSettings) -> Result<(), Error> {
-    if let Some(cb) = settings.custom_zlib {
-        (cb)(inp, out, settings)?;
-    } else {
-        let mut z = lodepng_zlib_compressor(out, settings)?;
-        z.write_all(inp)?;
-    }
-    Ok(())
 }
 
 /* ////////////////////////////////////////////////////////////////////////// */
@@ -2225,7 +2126,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
         let color = &state.info_png.color;
         adam7_expected_size(color, w, h).ok_or(Error::new(91))?
     };
-    let mut scanlines = zlib_decompress(&idat, &state.decoder.zlibsettings)?;
+    let mut scanlines = zlib::decompress(&idat, &state.decoder.zlibsettings)?;
     if scanlines.len() != predict {
         /*decompressed size doesn't match prediction*/
         return Err(Error::new(91));

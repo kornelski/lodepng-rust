@@ -4,7 +4,9 @@
 pub mod ffi;
 
 mod rustimpl;
-use crate::rustimpl::{chunk_length, lodepng_get_bpp_lct, zlib_decompress};
+mod zlib;
+
+use crate::rustimpl::{chunk_length, lodepng_get_bpp_lct};
 
 mod error;
 pub use crate::error::*;
@@ -628,14 +630,16 @@ impl State {
     }
 
     /// See `Encoder'
-    #[deprecated(note = "Use Encoder type instead of State")]
+    #[deprecated(note = "use flate2 crate features instead")]
+    #[allow(deprecated)]
     pub fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.encoder.zlibsettings.custom_zlib = callback;
         self.encoder.zlibsettings.custom_context = context;
     }
 
     /// See `Encoder'
-    #[deprecated(note = "Use Encoder type instead of State")]
+    #[deprecated(note = "use flate2 crate features instead")]
+    #[allow(deprecated)]
     pub fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
         self.encoder.zlibsettings.custom_deflate = callback;
         self.encoder.zlibsettings.custom_context = context;
@@ -698,7 +702,7 @@ impl State {
                 if iccp.get(i+1).cloned().unwrap_or(255) != 0 { // compression type
                     return Err(Error::new(72));
                 }
-                return zlib_decompress(&iccp[i+2 ..], &self.decoder.zlibsettings);
+                return zlib::decompress(&iccp[i+2 ..], &self.decoder.zlibsettings);
             }
         }
         Err(Error::new(75))
@@ -1260,6 +1264,13 @@ impl Default for EncoderSettings {
             text_compression: true,
         }
     }
+}
+
+#[inline]
+fn zero_vec(size: usize) -> Result<Vec<u8>, Error> {
+    let mut vec = Vec::new(); vec.try_reserve(size)?;
+    vec.resize(size, 0);
+    Ok(vec)
 }
 
 #[cfg(test)]
