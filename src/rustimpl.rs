@@ -1824,6 +1824,9 @@ fn unfilter_scanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, b
 
 #[inline(never)]
 fn unfilter_scanline_aliased(inout: &mut [u8], recon: usize, scanline: usize, precon: Option<usize>, bytewidth: u8, filter_type: u8, length: usize) -> Result<(), Error> {
+    if length > u32::MAX as usize || recon > u32::MAX as usize || scanline > u32::MAX as usize || inout.len() < recon + length || inout.len() < scanline + length {
+        return Err(Error::new(77));
+    }
     let bytewidth = bytewidth as usize;
     match filter_type {
         0 => for i in 0..length {
@@ -1838,6 +1841,9 @@ fn unfilter_scanline_aliased(inout: &mut [u8], recon: usize, scanline: usize, pr
             }
         },
         2 => if let Some(precon) = precon {
+            if precon > u32::MAX as usize || inout.len() < precon + length {
+                return Err(Error::new(77));
+            }
             for i in 0..length {
                 inout[recon + i] = inout[scanline + i].wrapping_add(inout[precon + i]);
             }
@@ -1847,6 +1853,9 @@ fn unfilter_scanline_aliased(inout: &mut [u8], recon: usize, scanline: usize, pr
             }
         },
         3 => if let Some(precon) = precon {
+            if precon > u32::MAX as usize || inout.len() < precon + length {
+                return Err(Error::new(77));
+            }
             for i in 0..bytewidth {
                 inout[recon + i] = inout[scanline + i].wrapping_add(inout[precon + i] >> 1);
             }
@@ -1863,6 +1872,9 @@ fn unfilter_scanline_aliased(inout: &mut [u8], recon: usize, scanline: usize, pr
             }
         },
         4 => if let Some(precon) = precon {
+            if precon > u32::MAX as usize || inout.len() < precon + length {
+                return Err(Error::new(77));
+            }
             for i in 0..bytewidth {
                 inout[recon + i] = inout[scanline + i].wrapping_add(inout[precon + i]);
             }
