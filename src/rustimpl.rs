@@ -1682,37 +1682,42 @@ return value is error*/
   *) if adam7: 1) 7x unfilter 2) 7x remove padding bits 3) adam7_deinterlace
   NOTE: the in buffer will be overwritten with intermediate data!
   */
-fn postprocess_scanlines(out: &mut [u8], inp: &mut [u8], w: usize, h: usize, info_png: &Info) -> Result<(), Error> {
+fn postprocess_scanlines(mut inp: Vec<u8>, w: usize, h: usize, info_png: &Info) -> Result<Vec<u8>, Error> {
     let bpp = info_png.color.bpp() as u8;
     if bpp == 0 {
         return Err(Error::new(31));
     }
-    if info_png.interlace_method == 0 {
+    Ok(if info_png.interlace_method == 0 {
         if bpp < 8 && linebits_exact(w, bpp) != linebits_rounded(w, bpp) {
-            unfilter_aliased(inp, 0, 0, w, h, bpp)?;
-            remove_padding_bits(out, inp, linebits_exact(w, bpp), linebits_rounded(w, bpp), h);
+            unfilter_aliased(&mut inp, 0, 0, w, h, bpp)?;
+            let mut out = zero_vec(info_png.color.raw_size(w as u32, h as u32))?;
+            remove_padding_bits(&mut out, &inp, linebits_exact(w, bpp), linebits_rounded(w, bpp), h);
+            out
         } else {
-            unfilter(out, inp, w, h, bpp)?;
-        };
+            unfilter_aliased(&mut inp, 0, 0, w, h, bpp)?;
+            inp.truncate(info_png.color.raw_size(w as u32, h as u32));
+            inp
+        }
     } else {
         let passes = adam7_get_pass_values(w, h, bpp);
         let mut offset_padded = 0;
         let mut offset_filtered = 0;
         let mut offset_packed = 0;
         for pass in passes {
-            unfilter_aliased(inp, offset_padded, offset_filtered, pass.w, pass.h, bpp)?;
+            unfilter_aliased(&mut inp, offset_padded, offset_filtered, pass.w, pass.h, bpp)?;
             if bpp < 8 {
                 /*remove padding bits in scanlines; after this there still may be padding
                         bits between the different reduced images: each reduced image still starts nicely at a byte*/
-                remove_padding_bits_aliased(inp, offset_packed, offset_padded, linebits_exact(pass.w as _, bpp), linebits_rounded(pass.w as _, bpp), pass.h);
+                remove_padding_bits_aliased(&mut inp, offset_packed, offset_padded, linebits_exact(pass.w as _, bpp), linebits_rounded(pass.w as _, bpp), pass.h);
             };
             offset_padded += pass.padded_len;
             offset_filtered += pass.filtered_len;
             offset_packed += pass.packed_len;
         }
-        adam7_deinterlace(out, inp, w, h, bpp);
-    }
-    Ok(())
+        let mut out = zero_vec(info_png.color.raw_size(w as u32, h as u32))?;
+        adam7_deinterlace(&mut out, &inp, w, h, bpp);
+        out
+    })
 }
 
 /*
@@ -1722,33 +1727,35 @@ fn postprocess_scanlines(out: &mut [u8], inp: &mut [u8], w: usize, h: usize, inf
   w and h are image dimensions or dimensions of reduced image, bpp is bits per pixel
   in and out are allowed to be the same memory address (but aren't the same size since in has the extra filter bytes)
   */
-fn unfilter(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) -> Result<(), Error> {
-    let mut prevline = None;
-
-    /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
-    let bytewidth = (bpp + 7) / 8;
-    let linebytes = linebytes_rounded(w, bpp);
-    let in_linebytes = 1 + linebytes; /*the extra filterbyte added to each row*/
-
-    for (out_line, in_line) in out.chunks_exact_mut(linebytes).zip(inp.chunks_exact(in_linebytes)).take(h) {
-        let (&filter_type, in_line) = in_line.split_first().ok_or_else(|| Error::new(91))?;
-        unfilter_scanline(out_line, in_line, prevline, bytewidth, filter_type, linebytes)?;
-        prevline = Some(out_line);
-    }
-    Ok(())
-}
-
 fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h: usize, bpp: u8) -> Result<(), Error> {
     let mut prevline = None;
     /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
     let bytewidth = (bpp + 7) / 8;
     let linebytes = linebytes_rounded(w, bpp);
     for y in 0..h {
-        let outindex = linebytes * y;
-        let inindex = (1 + linebytes) * y; /*the extra filterbyte added to each row*/
-        let filter_type = inout[in_off + inindex];
-        unfilter_scanline_aliased(inout, out_off + outindex, in_off + inindex + 1, prevline, bytewidth, filter_type, linebytes)?;
-        prevline = Some(out_off + outindex);
+        let outindex = out_off + linebytes * y;
+        let inindex = in_off + (1 + linebytes) * y; /*the extra filterbyte added to each row*/
+        let filter_type = *inout.get(inindex).ok_or(Error::new(91))?;
+        let scanline = inindex + 1;
+        if outindex + linebytes > scanline {
+            unfilter_scanline_aliased(inout, outindex, scanline, prevline, bytewidth, filter_type, linebytes)?;
+        } else {
+            let (out, inp) = inout.split_at_mut(outindex + linebytes);
+            let inp = &inp[scanline - (outindex + linebytes)..][..linebytes];
+            let (out, pre) = match prevline {
+                Some(prevline) => {
+                    let (pre, out) = out.split_at_mut(prevline + linebytes);
+                    let out_len = out.len();
+                    (&mut out[out_len - linebytes..], Some(&pre[pre.len() - linebytes..]))
+                },
+                None => {
+                    let out_len = out.len();
+                    (&mut out[out_len - linebytes..], None)
+                }
+            };
+            unfilter_scanline(out, inp, pre, bytewidth, filter_type, linebytes)?;
+        }
+        prevline = Some(outindex);
     }
     Ok(())
 }
@@ -1824,14 +1831,15 @@ fn unfilter_scanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, b
 
 #[inline(never)]
 fn unfilter_scanline_aliased(inout: &mut [u8], recon: usize, scanline: usize, precon: Option<usize>, bytewidth: u8, filter_type: u8, length: usize) -> Result<(), Error> {
-    if length > u32::MAX as usize || recon > u32::MAX as usize || scanline > u32::MAX as usize || inout.len() < recon + length || inout.len() < scanline + length {
+    if length > u32::MAX as usize || recon > u32::MAX as usize || scanline > u32::MAX as usize || precon.unwrap_or(0) > u32::MAX as usize {
+        return Err(Error::new(77));
+    }
+    if inout.len() < recon + length || inout.len() < scanline + length || inout.len() < precon.unwrap_or(0) + length {
         return Err(Error::new(77));
     }
     let bytewidth = bytewidth as usize;
     match filter_type {
-        0 => for i in 0..length {
-            inout[recon + i] = inout[scanline + i];
-        },
+        0 => inout.copy_within(scanline..scanline+length, recon),
         1 => {
             for i in 0..bytewidth {
                 inout[recon + i] = inout[scanline + i];
@@ -1848,9 +1856,7 @@ fn unfilter_scanline_aliased(inout: &mut [u8], recon: usize, scanline: usize, pr
                 inout[recon + i] = inout[scanline + i].wrapping_add(inout[precon + i]);
             }
         } else {
-            for i in 0..length {
-                inout[recon + i] = inout[scanline + i];
-            }
+            inout.copy_within(scanline..scanline+length, recon)
         },
         3 => if let Some(precon) = precon {
             if precon > u32::MAX as usize || inout.len() < precon + length {
@@ -2140,13 +2146,12 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
         let color = &state.info_png.color;
         adam7_expected_size(color, w, h).ok_or(Error::new(91))?
     };
-    let mut scanlines = idat_decompressor.finish()?;
+    let scanlines = idat_decompressor.finish()?;
     if scanlines.len() != predict {
         /*decompressed size doesn't match prediction*/
         return Err(Error::new(91));
     }
-    let mut out = zero_vec(state.info_png.color.raw_size(w as u32, h as u32))?;
-    postprocess_scanlines(&mut out, &mut scanlines, w, h, &state.info_png)?;
+    let out = postprocess_scanlines(scanlines, w, h, &state.info_png)?;
     Ok((out, w, h))
 }
 
