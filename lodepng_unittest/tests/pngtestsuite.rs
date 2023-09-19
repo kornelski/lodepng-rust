@@ -1,10 +1,9 @@
-use png::HasParameters;
 use rgb::*;
 use std::fs::*;
 use std::path::*;
 fn decode(path: &Path) -> Vec<RGBA8> {
     let mut p = png::Decoder::new(File::open(path).unwrap());
-    p.set(png::Transformations::EXPAND);
+    p.set_transformations(png::Transformations::EXPAND);
     let (info, mut reader) = p.read_info().unwrap();
     let mut data = vec![0u8; info.buffer_size()];
     reader.next_frame(&mut data).unwrap();
