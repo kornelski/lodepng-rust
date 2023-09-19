@@ -1682,26 +1682,26 @@ return value is error*/
   *) if adam7: 1) 7x unfilter 2) 7x remove padding bits 3) adam7_deinterlace
   NOTE: the in buffer will be overwritten with intermediate data!
   */
-fn postprocess_scanlines(mut inp: Vec<u8>, w: usize, h: usize, info_png: &Info) -> Result<Vec<u8>, Error> {
+fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: usize, h: usize, info_png: &Info) -> Result<Vec<u8>, Error> {
     let bpp = info_png.color.bpp() as u8;
     if bpp == 0 {
         return Err(Error::new(31));
     }
     Ok(if info_png.interlace_method == 0 {
         if bpp < 8 && linebits_exact(w, bpp) != linebits_rounded(w, bpp) {
-            unfilter_aliased(&mut inp, 0, 0, w, h, bpp)?;
+            unfilter_aliased(&mut inp, 0, unfiltering_buffer, w, h, bpp)?;
             let mut out = zero_vec(info_png.color.raw_size(w as u32, h as u32))?;
             remove_padding_bits(&mut out, &inp, linebits_exact(w, bpp), linebits_rounded(w, bpp), h);
             out
         } else {
-            unfilter_aliased(&mut inp, 0, 0, w, h, bpp)?;
+            unfilter_aliased(&mut inp, 0, unfiltering_buffer, w, h, bpp)?;
             inp.truncate(info_png.color.raw_size(w as u32, h as u32));
             inp
         }
     } else {
         let passes = adam7_get_pass_values(w, h, bpp);
         let mut offset_padded = 0;
-        let mut offset_filtered = 0;
+        let mut offset_filtered = unfiltering_buffer;
         let mut offset_packed = 0;
         for pass in passes {
             unfilter_aliased(&mut inp, offset_padded, offset_filtered, pass.w, pass.h, bpp)?;
@@ -1715,7 +1715,7 @@ fn postprocess_scanlines(mut inp: Vec<u8>, w: usize, h: usize, info_png: &Info) 
             offset_packed += pass.packed_len;
         }
         let mut out = zero_vec(info_png.color.raw_size(w as u32, h as u32))?;
-        adam7_deinterlace(&mut out, &inp, w, h, bpp);
+        adam7_deinterlace(&mut out, &inp[unfiltering_buffer..], w, h, bpp);
         out
     })
 }
@@ -2078,7 +2078,29 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
         data: inp.get(33..).ok_or(Error::new(27))?,
     };
 
-    let mut idat_decompressor = zlib::new_decompressor(&state.decoder.zlibsettings);
+    /*predict output size, to allocate exact size for output buffer to avoid more dynamic allocation.
+      If the decompressed size does not match the prediction, the image must be corrupt.*/
+    let predict = if state.info_png.interlace_method == 0 {
+        /*The extra *h is added because this are the filter bytes every scanline starts with*/
+        state.info_png.color.raw_size_idat(w, h).ok_or(Error::new(91))? + h
+    } else {
+        /*Adam-7 interlaced: predicted size is the sum of the 7 sub-images sizes*/
+        let color = &state.info_png.color;
+        adam7_expected_size(color, w, h).ok_or(Error::new(91))?
+    };
+
+    let bpp = state.info_png.color.bpp() as u8;
+    let bytewidth = (bpp + 7) / 8;
+
+    // if unfiltering can shift the buffer by two lines, it can do unaliased unfiltering in-place
+    let unfiltering_buffer = if state.info_png.interlace_method == 0 { 2 * (1 + (w * bytewidth as usize)) } else { 0 };
+
+    let mut scanlines = Vec::new();
+    scanlines.try_reserve_exact(predict + unfiltering_buffer)?;
+
+    scanlines.resize(unfiltering_buffer, 0);
+
+    let mut idat_decompressor = zlib::new_decompressor(scanlines, chunks.data.len(), &state.decoder.zlibsettings);
 
     /*loop through the chunks, ignoring unknown chunks and stopping at IEND chunk.
       IDAT data is put at the start of the in buffer*/
@@ -2136,22 +2158,12 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
             break;
         }
     }
-    /*predict output size, to allocate exact size for output buffer to avoid more dynamic allocation.
-      If the decompressed size does not match the prediction, the image must be corrupt.*/
-    let predict = if state.info_png.interlace_method == 0 {
-        /*The extra *h is added because this are the filter bytes every scanline starts with*/
-        state.info_png.color.raw_size_idat(w, h).ok_or(Error::new(91))? + h
-    } else {
-        /*Adam-7 interlaced: predicted size is the sum of the 7 sub-images sizes*/
-        let color = &state.info_png.color;
-        adam7_expected_size(color, w, h).ok_or(Error::new(91))?
-    };
     let scanlines = idat_decompressor.finish()?;
-    if scanlines.len() != predict {
+    if scanlines.len() != predict + unfiltering_buffer {
         /*decompressed size doesn't match prediction*/
         return Err(Error::new(91));
     }
-    let out = postprocess_scanlines(scanlines, w, h, &state.info_png)?;
+    let out = postprocess_scanlines(scanlines, unfiltering_buffer, w, h, &state.info_png)?;
     Ok((out, w, h))
 }
 

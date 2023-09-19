@@ -30,18 +30,16 @@ fn check_zlib_stream(inp: &[u8]) -> Result<(), Error> {
 
 pub(crate) enum Decoder<'settings> {
     Flate(ZlibDecoder<Vec<u8>>),
-    Custom(&'settings DecompressSettings, Vec<u8>),
+    Custom(&'settings DecompressSettings, Vec<u8>, Vec<u8>),
 }
 
 impl Decoder<'_> {
     pub fn push(&mut self, chunk: &[u8]) -> Result<(), Error> {
         match self {
             Self::Flate(dec) => {
-                dec.get_mut().try_reserve(chunk.len() * 3 / 2)?;
                 dec.write_all(chunk).map_err(|_| Error::new(23))?;
             },
-            Self::Custom(_, buf) => {
-                buf.try_reserve(chunk.len())?;
+            Self::Custom(_, buf, _) => {
                 buf.extend_from_slice(chunk);
             },
         }
@@ -53,10 +51,9 @@ impl Decoder<'_> {
             Self::Flate(dec) => {
                 Ok(dec.finish().map_err(|_| Error::new(23))?)
             },
-            Self::Custom(settings, buf) => {
+            Self::Custom(settings, buf, mut out) => {
                 check_zlib_stream(&buf)?;
 
-                let mut out = Vec::new();
                 out.try_reserve((buf.len() * 3 / 2).max(16*1024))?;
                 let cb = settings.custom_zlib.ok_or(Error::new(87))?; // can't fail
                 (cb)(&buf, &mut out, settings)?;
@@ -66,11 +63,13 @@ impl Decoder<'_> {
     }
 }
 
-pub(crate) fn new_decompressor<'s, 'w>(settings: &'s DecompressSettings) -> Decoder<'s> {
+pub(crate) fn new_decompressor<'s, 'w>(out: Vec<u8>, zlib_data_size: usize, settings: &'s DecompressSettings) -> Decoder<'s> {
     if settings.custom_zlib.is_some() {
-        Decoder::Custom(settings, Vec::new())
+        let mut buf = Vec::new();
+        let _ = buf.try_reserve_exact(zlib_data_size);
+        Decoder::Custom(settings, buf, out)
     } else {
-        Decoder::Flate(ZlibDecoder::new(Vec::new()))
+        Decoder::Flate(ZlibDecoder::new(out))
     }
 }
 
