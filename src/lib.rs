@@ -827,16 +827,18 @@ pub struct Bitmap<PixelType> {
 impl<PixelType: rgb::Pod> Bitmap<PixelType> {
     /// Convert Vec<u8> to Vec<PixelType>
     fn from_buffer(buffer: Vec<u8>, width: usize, height: usize) -> Result<Self> {
+        let area = width.checked_mul(height).ok_or(Error::new(77))?;
+
         // Can only cast Vec if alignment doesn't change, and capacity is a round number of pixels
-        let is_safe_to_transmute = unsafe {
-            let whole_capacity_slice = std::slice::from_raw_parts(buffer.as_ptr(), buffer.capacity());
+        let is_safe_to_transmute = 1 == std::mem::align_of::<PixelType>() && unsafe {
+            let whole_capacity_slice = buffer.as_slice();
             let (before, _, after) = whole_capacity_slice.align_to::<PixelType>();
-            1 == std::mem::align_of::<PixelType>() && before.is_empty() && after.is_empty()
+            before.is_empty() && after.is_empty()
         };
 
         let buffer = if is_safe_to_transmute {
             debug_assert_eq!(0, buffer.capacity() % std::mem::size_of::<PixelType>());
-            debug_assert!((buffer.len() / std::mem::size_of::<PixelType>()) >= width * height);
+            debug_assert!((buffer.len() / std::mem::size_of::<PixelType>()) >= area);
             unsafe {
                 let mut buffer = std::mem::ManuallyDrop::new(buffer);
                 Vec::from_raw_parts(buffer.as_mut_ptr() as *mut PixelType,
@@ -845,15 +847,13 @@ impl<PixelType: rgb::Pod> Bitmap<PixelType> {
             }
         } else {
             // if it's not properly aligned (e.g. reading RGB<u16>), do it the hard way
-            let mut out = Vec::new(); out.try_reserve(width * height)?;
-            assert!(buffer.len() >= width * height * std::mem::size_of::<PixelType>());
+            let mut out = Vec::<PixelType>::new();
+            out.try_reserve_exact(area)?;
+            let dest = out.spare_capacity_mut();
+            assert!(dest.len() >= area);
             unsafe {
-                let mut ptr = buffer.as_ptr().cast::<PixelType>();
-                for _ in 0..width * height {
-                    let px = std::ptr::read_unaligned::<PixelType>(ptr);
-                    ptr = ptr.add(1);
-                    out.push(px);
-                }
+                ptr::copy_nonoverlapping(buffer.as_ptr(), dest.as_mut_ptr().cast::<u8>(), buffer.len());
+                out.set_len(area);
             }
             out
         };
@@ -1268,7 +1268,7 @@ impl Default for EncoderSettings {
 
 #[inline]
 fn zero_vec(size: usize) -> Result<Vec<u8>, Error> {
-    let mut vec = Vec::new(); vec.try_reserve(size)?;
+    let mut vec = Vec::new(); vec.try_reserve_exact(size)?;
     vec.resize(size, 0);
     Ok(vec)
 }

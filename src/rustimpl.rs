@@ -2118,13 +2118,16 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     };
 
     let bpp = state.info_png.color.bpp() as u8;
-    let bytewidth = (bpp + 7) / 8;
+    let bytewidth = ((bpp + 7) / 8) as usize;
 
     // if unfiltering can shift the buffer by two lines, it can do unaliased unfiltering in-place
-    let unfiltering_buffer = if state.info_png.interlace_method == 0 { 2 * (1 + (w * bytewidth as usize)) } else { 0 };
+    let unfiltering_buffer = if state.info_png.interlace_method == 0 { 2 * (1 + w * bytewidth) } else { 0 };
 
     let mut scanlines = Vec::new();
-    scanlines.try_reserve_exact(predict + unfiltering_buffer)?;
+    let capacity_required = predict + unfiltering_buffer;
+    let remainder = capacity_required % bytewidth;
+    // ensure the buffer is multiple of pixel size, so that it can be cheaply transmuted
+    scanlines.try_reserve_exact(capacity_required + if remainder == 0 {0} else {bytewidth - remainder})?;
 
     scanlines.resize(unfiltering_buffer, 0);
 
