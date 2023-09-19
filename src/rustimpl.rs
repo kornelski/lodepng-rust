@@ -23,6 +23,7 @@ use crate::zlib;
 pub use rgb::RGBA8 as RGBA;
 use rgb::RGBA16;
 use std::collections::HashMap;
+use std::debug_assert;
 use std::fs;
 use std::io;
 use std::io::prelude::*;
@@ -320,15 +321,13 @@ fn test_filter() {
     let mut filtered = vec![99u8; 1 << 16];
     let mut unfiltered = vec![66u8; 1 << 16];
     for filter_type in 0..5 {
-        let len = filtered.len();
         filter_scanline(&mut filtered, &line1, Some(&line2), 1, filter_type);
-        unfilter_scanline(&mut unfiltered, &filtered, Some(&line2), 1, filter_type, len).unwrap();
+        unfilter_scanline(&mut unfiltered, &filtered, Some(&line2), 1, filter_type).unwrap();
         assert_eq!(unfiltered, line1, "prev+filter={}", filter_type);
     }
     for filter_type in 0..5 {
-        let len = filtered.len();
         filter_scanline(&mut filtered, &line1, None, 1, filter_type);
-        unfilter_scanline(&mut unfiltered, &filtered, None, 1, filter_type, len).unwrap();
+        unfilter_scanline(&mut unfiltered, &filtered, None, 1, filter_type).unwrap();
         assert_eq!(unfiltered, line1, "none+filter={}", filter_type);
     }
 }
@@ -1781,7 +1780,7 @@ fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h
                     (&mut out[out_len - linebytes..], None)
                 }
             };
-            unfilter_scanline(out, inp, pre, bytewidth, filter_type, linebytes)?;
+            unfilter_scanline(out, inp, pre, bytewidth, filter_type)?;
         }
         prevline = Some(outindex);
     }
@@ -1797,15 +1796,17 @@ fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h
   out and scanline MAY be the same memory address! prevline must be disjoint.
   */
 #[inline(never)]
-fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8, length: usize) -> Result<(), Error> {
-    debug_assert_eq!(out.len(), scanline.len());
-    debug_assert!(prevline.map_or(true, |p| p.len() == out.len()));
+fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8) -> Result<(), Error> {
     let bytewidth = bytewidth as usize;
-    if bytewidth > length {
+    let length = out.len();
+    debug_assert_eq!(out.len(), length);
+    debug_assert_eq!(scanline.len(), length);
+    // help the optimizer remove bounds checks
+    if bytewidth > 8 || length > u32::MAX as usize || length != scanline.len() || prevline.map_or(false, move |p| p.len() != length) || bytewidth > length {
+        debug_assert!(false);
         return Err(Error::new(84));
     }
-    let out = out.get_mut(..length).ok_or_else(|| Error::new(84))?;
-    let scanline = scanline.get(..length).ok_or_else(|| Error::new(84))?;
+
     match filter_type {
         0 => out.copy_from_slice(scanline),
         1 => {
