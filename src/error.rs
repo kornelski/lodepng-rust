@@ -33,8 +33,8 @@ impl Error {
     /// Panics if the code is 0
     #[cold]
     #[must_use]
-    pub fn new(code: u32) -> Self {
-        Self(NonZeroU32::new(code).unwrap())
+    pub const fn new(code: u32) -> Self {
+        Self(match NonZeroU32::new(code) { Some(s) => s, None => panic!() })
     }
 }
 
