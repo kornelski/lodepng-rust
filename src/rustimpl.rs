@@ -23,7 +23,6 @@ use crate::zlib;
 pub use rgb::RGBA8 as RGBA;
 use rgb::RGBA16;
 use std::collections::HashMap;
-use std::debug_assert;
 use std::fs;
 use std::io;
 use std::io::prelude::*;
@@ -1799,10 +1798,9 @@ fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h
 fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8) -> Result<(), Error> {
     let bytewidth = bytewidth as usize;
     let length = out.len();
-    debug_assert_eq!(out.len(), length);
     debug_assert_eq!(scanline.len(), length);
     // help the optimizer remove bounds checks
-    if bytewidth > 8 || length > u32::MAX as usize || length != scanline.len() || prevline.map_or(false, move |p| p.len() != length) || bytewidth > length {
+    if bytewidth > 8 || bytewidth < 1 || length > u32::MAX as usize || length != scanline.len() || prevline.map_or(false, move |p| p.len() != length) || bytewidth > length {
         debug_assert!(false);
         return Err(Error::new(84));
     }
@@ -1810,9 +1808,11 @@ fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, b
     match filter_type {
         0 => out.copy_from_slice(scanline),
         1 => {
-            out[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
+            out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
             for i in bytewidth..length {
-                out[i] = scanline[i].wrapping_add(out[i - bytewidth]);
+                // can't get rid of this bounds check
+                let tmp = unsafe { *out.get_unchecked(i - bytewidth) };
+                out[i] = scanline[i].wrapping_add(tmp);
             }
         },
         2 => if let Some(prevline) = prevline {
@@ -1829,13 +1829,17 @@ fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, b
                 out[i] = scanline[i].wrapping_add(prevline[i] >> 1);
             }
             for i in bytewidth..length {
-                let t = out[i - bytewidth] as u16 + prevline[i] as u16;
+                // can't get rid of this bounds check
+                let tmp = unsafe { *out.get_unchecked(i - bytewidth) };
+                let t = tmp as u16 + prevline[i] as u16;
                 out[i] = scanline[i].wrapping_add((t >> 1) as u8);
             }
         } else {
-            out[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
+            out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
             for i in bytewidth..length {
-                out[i] = scanline[i].wrapping_add(out[i - bytewidth] >> 1);
+                // can't get rid of this bounds check
+                let tmp = unsafe { *out.get_unchecked(i - bytewidth) };
+                out[i] = scanline[i].wrapping_add(tmp >> 1);
             }
         },
         4 => if let Some(prevline) = prevline {
@@ -1844,13 +1848,18 @@ fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, b
                 out[i] = scanline[i].wrapping_add(prevline[i]);
             }
             for i in bytewidth..length {
-                let pred = paeth_predictor(out[i - bytewidth], prevline[i], prevline[i - bytewidth]);
+                // can't get rid of this bounds check
+                let tmp = unsafe { *out.get_unchecked(i - bytewidth) };
+                let prevtmp = unsafe { *prevline.get_unchecked(i - bytewidth) };
+                let pred = paeth_predictor(tmp, prevline[i], prevtmp);
                 out[i] = scanline[i].wrapping_add(pred);
             }
         } else {
-            out[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
+            out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
             for i in bytewidth..length {
-                out[i] = scanline[i].wrapping_add(out[i - bytewidth]);
+                // can't get rid of this bounds check
+                let tmp = unsafe { *out.get_unchecked(i - bytewidth) };
+                out[i] = scanline[i].wrapping_add(tmp);
             }
         },
         _ => return Err(Error::new(36)),
