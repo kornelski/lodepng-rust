@@ -1792,64 +1792,64 @@ fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h
   For PNG filter method 0
   unfilter a PNG image scanline by scanline. when the pixels are smaller than 1 byte,
   the filter works byte per byte (bytewidth = 1)
-  precon is the previous unfiltered scanline, recon the result, scanline the current one
+  prevline is the previous unfiltered scanline, out the result, scanline the current one
   the incoming scanlines do NOT include the filter_type byte, that one is given in the parameter filter_type instead
-  recon and scanline MAY be the same memory address! precon must be disjoint.
+  out and scanline MAY be the same memory address! prevline must be disjoint.
   */
 #[inline(never)]
-fn unfilter_scanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, bytewidth: u8, filter_type: u8, length: usize) -> Result<(), Error> {
-    debug_assert_eq!(recon.len(), scanline.len());
-    debug_assert!(precon.map_or(true, |p| p.len() == recon.len()));
+fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8, length: usize) -> Result<(), Error> {
+    debug_assert_eq!(out.len(), scanline.len());
+    debug_assert!(prevline.map_or(true, |p| p.len() == out.len()));
     let bytewidth = bytewidth as usize;
     if bytewidth > length {
         return Err(Error::new(84));
     }
-    let recon = recon.get_mut(..length).ok_or_else(|| Error::new(84))?;
+    let out = out.get_mut(..length).ok_or_else(|| Error::new(84))?;
     let scanline = scanline.get(..length).ok_or_else(|| Error::new(84))?;
     match filter_type {
-        0 => recon.copy_from_slice(scanline),
+        0 => out.copy_from_slice(scanline),
         1 => {
-            recon[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
+            out[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
             for i in bytewidth..length {
-                recon[i] = scanline[i].wrapping_add(recon[i - bytewidth]);
+                out[i] = scanline[i].wrapping_add(out[i - bytewidth]);
             }
         },
-        2 => if let Some(precon) = precon {
-            let precon = precon.get(..length).ok_or_else(|| Error::new(84))?;
-            for (recon, (scanline, precon)) in recon.iter_mut().zip(scanline.iter().copied().zip(precon.iter().copied())) {
-                *recon = scanline.wrapping_add(precon);
+        2 => if let Some(prevline) = prevline {
+            let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
+            for (out, (scanline, prevline)) in out.iter_mut().zip(scanline.iter().copied().zip(prevline.iter().copied())) {
+                *out = scanline.wrapping_add(prevline);
             }
         } else {
-            recon.copy_from_slice(scanline);
+            out.copy_from_slice(scanline);
         },
-        3 => if let Some(precon) = precon {
-            let precon = precon.get(..length).ok_or_else(|| Error::new(84))?;
+        3 => if let Some(prevline) = prevline {
+            let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
             for i in 0..bytewidth {
-                recon[i] = scanline[i].wrapping_add(precon[i] >> 1);
+                out[i] = scanline[i].wrapping_add(prevline[i] >> 1);
             }
             for i in bytewidth..length {
-                let t = recon[i - bytewidth] as u16 + precon[i] as u16;
-                recon[i] = scanline[i].wrapping_add((t >> 1) as u8);
+                let t = out[i - bytewidth] as u16 + prevline[i] as u16;
+                out[i] = scanline[i].wrapping_add((t >> 1) as u8);
             }
         } else {
-            recon[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
+            out[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
             for i in bytewidth..length {
-                recon[i] = scanline[i].wrapping_add(recon[i - bytewidth] >> 1);
+                out[i] = scanline[i].wrapping_add(out[i - bytewidth] >> 1);
             }
         },
-        4 => if let Some(precon) = precon {
-            let precon = precon.get(..length).ok_or_else(|| Error::new(84))?;
+        4 => if let Some(prevline) = prevline {
+            let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
             for i in 0..bytewidth {
-                recon[i] = scanline[i].wrapping_add(precon[i]);
+                out[i] = scanline[i].wrapping_add(prevline[i]);
             }
             for i in bytewidth..length {
-                let pred = paeth_predictor(recon[i - bytewidth], precon[i], precon[i - bytewidth]);
-                recon[i] = scanline[i].wrapping_add(pred);
+                let pred = paeth_predictor(out[i - bytewidth], prevline[i], prevline[i - bytewidth]);
+                out[i] = scanline[i].wrapping_add(pred);
             }
         } else {
-            recon[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
+            out[0..bytewidth].copy_from_slice(&scanline[0..bytewidth]);
             for i in bytewidth..length {
-                recon[i] = scanline[i].wrapping_add(recon[i - bytewidth]);
+                out[i] = scanline[i].wrapping_add(out[i - bytewidth]);
             }
         },
         _ => return Err(Error::new(36)),
@@ -1858,70 +1858,70 @@ fn unfilter_scanline(recon: &mut [u8], scanline: &[u8], precon: Option<&[u8]>, b
 }
 
 #[inline(never)]
-fn unfilter_scanline_aliased(inout: &mut [u8], recon: usize, scanline: usize, precon: Option<usize>, bytewidth: u8, filter_type: u8, length: usize) -> Result<(), Error> {
-    if length > u32::MAX as usize || recon > u32::MAX as usize || scanline > u32::MAX as usize || precon.unwrap_or(0) > u32::MAX as usize {
+fn unfilter_scanline_aliased(inout: &mut [u8], out_offset: usize, scanline_offset: usize, prevline_offset: Option<usize>, bytewidth: u8, filter_type: u8, length: usize) -> Result<(), Error> {
+    if length > u32::MAX as usize || out_offset > u32::MAX as usize || scanline_offset > u32::MAX as usize || prevline_offset.unwrap_or(0) > u32::MAX as usize {
         return Err(Error::new(77));
     }
-    if inout.len() < recon + length || inout.len() < scanline + length || inout.len() < precon.unwrap_or(0) + length {
+    if inout.len() < out_offset + length || inout.len() < scanline_offset + length || inout.len() < prevline_offset.unwrap_or(0) + length {
         return Err(Error::new(77));
     }
     let bytewidth = bytewidth as usize;
     match filter_type {
-        0 => inout.copy_within(scanline..scanline+length, recon),
+        0 => inout.copy_within(scanline_offset..scanline_offset+length, out_offset),
         1 => {
             for i in 0..bytewidth {
-                inout[recon + i] = inout[scanline + i];
+                inout[out_offset + i] = inout[scanline_offset + i];
             }
             for i in bytewidth..length {
-                inout[recon + i] = inout[scanline + i].wrapping_add(inout[recon + i - bytewidth]);
+                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[out_offset + i - bytewidth]);
             }
         },
-        2 => if let Some(precon) = precon {
-            if precon > u32::MAX as usize || inout.len() < precon + length {
+        2 => if let Some(prevline) = prevline_offset {
+            if prevline > u32::MAX as usize || inout.len() < prevline + length {
                 return Err(Error::new(77));
             }
             for i in 0..length {
-                inout[recon + i] = inout[scanline + i].wrapping_add(inout[precon + i]);
+                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[prevline + i]);
             }
         } else {
-            inout.copy_within(scanline..scanline+length, recon)
+            inout.copy_within(scanline_offset..scanline_offset+length, out_offset)
         },
-        3 => if let Some(precon) = precon {
-            if precon > u32::MAX as usize || inout.len() < precon + length {
+        3 => if let Some(prevline) = prevline_offset {
+            if prevline > u32::MAX as usize || inout.len() < prevline + length {
                 return Err(Error::new(77));
             }
             for i in 0..bytewidth {
-                inout[recon + i] = inout[scanline + i].wrapping_add(inout[precon + i] >> 1);
+                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[prevline + i] >> 1);
             }
             for i in bytewidth..length {
-                let t = inout[recon + i - bytewidth] as u16 + inout[precon + i] as u16;
-                inout[recon + i] = inout[scanline + i].wrapping_add((t >> 1) as u8);
+                let t = inout[out_offset + i - bytewidth] as u16 + inout[prevline + i] as u16;
+                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add((t >> 1) as u8);
             }
         } else {
             for i in 0..bytewidth {
-                inout[recon + i] = inout[scanline + i];
+                inout[out_offset + i] = inout[scanline_offset + i];
             }
             for i in bytewidth..length {
-                inout[recon + i] = inout[scanline + i].wrapping_add(inout[recon + i - bytewidth] >> 1);
+                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[out_offset + i - bytewidth] >> 1);
             }
         },
-        4 => if let Some(precon) = precon {
-            if precon > u32::MAX as usize || inout.len() < precon + length {
+        4 => if let Some(prevline) = prevline_offset {
+            if prevline > u32::MAX as usize || inout.len() < prevline + length {
                 return Err(Error::new(77));
             }
             for i in 0..bytewidth {
-                inout[recon + i] = inout[scanline + i].wrapping_add(inout[precon + i]);
+                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[prevline + i]);
             }
             for i in bytewidth..length {
-                let pred = paeth_predictor(inout[recon + i - bytewidth], inout[precon + i], inout[precon + i - bytewidth]);
-                inout[recon + i] = inout[scanline + i].wrapping_add(pred);
+                let pred = paeth_predictor(inout[out_offset + i - bytewidth], inout[prevline + i], inout[prevline + i - bytewidth]);
+                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(pred);
             }
         } else {
             for i in 0..bytewidth {
-                inout[recon + i] = inout[scanline + i];
+                inout[out_offset + i] = inout[scanline_offset + i];
             }
             for i in bytewidth..length {
-                inout[recon + i] = inout[scanline + i].wrapping_add(inout[recon + i - bytewidth]);
+                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[out_offset + i - bytewidth]);
             }
         },
         _ => return Err(Error::new(36)),
