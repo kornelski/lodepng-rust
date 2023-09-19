@@ -333,11 +333,15 @@ fn test_filter() {
     }
 }
 
+#[inline(never)]
 fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8) {
-    debug_assert_eq!(out.len(), scanline.len());
-    debug_assert!(prevline.map_or(true, |p| p.len() == out.len()));
-    let length = out.len();
     let bytewidth = bytewidth as usize;
+    let length = out.len();
+    // help the optimizer remove bounds checks
+    if bytewidth > 8 || bytewidth < 1 || length > u32::MAX as usize || length != scanline.len() || prevline.map_or(false, move |p| p.len() != length) || bytewidth > length {
+        debug_assert!(false);
+        return;
+    }
     match filter_type {
         0 => {
             out.copy_from_slice(scanline);
@@ -352,6 +356,7 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
             }
         },
         2 => if let Some(prevline) = prevline {
+            if prevline.len() != length { return }
             for (out, (s, prev)) in out.iter_mut().zip(scanline.iter().copied().zip(prevline.iter().copied())) {
                 *out = s.wrapping_sub(prev);
             }
@@ -359,31 +364,54 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
             out.copy_from_slice(scanline);
         },
         3 => if let Some(prevline) = prevline {
-            for i in 0..bytewidth {
-                out[i] = scanline[i].wrapping_sub(prevline[i] >> 1);
+            if prevline.len() != length { return }
+            let (out_start, out) = out.split_at_mut(bytewidth);
+            let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
+            let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
+
+            for (out, (prev, scan)) in out_start.iter_mut().zip(prevline_start.iter().copied().zip(scanline_start.iter().copied())) {
+                *out = scan.wrapping_sub(prev >> 1);
             }
-            for i in bytewidth..length {
-                let s = scanline[i - bytewidth] as u16 + prevline[i] as u16;
-                out[i] = scanline[i].wrapping_sub((s >> 1) as u8);
+
+            for (out, ((p_next, s_prev), s_next)) in out.iter_mut().zip(prevline_next.iter().copied().zip(scanline.iter().copied()).zip(scanline_next.iter().copied())) {
+                let sum = s_prev as u16 + p_next as u16;
+                *out = s_next.wrapping_sub((sum >> 1) as u8);
             }
         } else {
-            out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
-            for i in bytewidth..length {
-                out[i] = scanline[i].wrapping_sub(scanline[i - bytewidth] >> 1);
+            let (out_start, out) = out.split_at_mut(bytewidth);
+            let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
+            out_start.copy_from_slice(scanline_start);
+
+            for (out, (s_next, s_prev)) in out.iter_mut().zip(scanline_next.iter().copied().zip(scanline.iter().copied())) {
+                *out = s_next.wrapping_sub(s_prev >> 1);
             }
         },
         4 => if let Some(prevline) = prevline {
-            for i in 0..bytewidth {
-                out[i] = scanline[i].wrapping_sub(prevline[i]);
+            if prevline.len() != length { return }
+
+            let (out_start, out) = out.split_at_mut(bytewidth);
+            let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
+            let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
+            out_start.copy_from_slice(scanline_start);
+
+            for (out, (s, p)) in out_start.iter_mut().zip(scanline_start.iter().copied().zip(prevline_start.iter().copied())) {
+                *out = s.wrapping_sub(p);
             }
-            for i in bytewidth..length {
-                let pred = paeth_predictor(scanline[i - bytewidth], prevline[i], prevline[i - bytewidth]);
-                out[i] = scanline[i].wrapping_sub(pred);
+
+            let s = scanline.iter().copied().zip(scanline_next.iter().copied());
+            let p = prevline.iter().copied().zip(prevline_next.iter().copied());
+
+            for (out, ((s, s_next), (p, p_next))) in out.iter_mut().zip(s.zip(p)) {
+                let pred = paeth_predictor(s, p_next, p);
+                *out = s_next.wrapping_sub(pred);
             }
         } else {
-            out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
-            for i in bytewidth..length {
-                out[i] = scanline[i].wrapping_sub(scanline[i - bytewidth]);
+            let (out_start, out) = out.split_at_mut(bytewidth);
+            let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
+            out_start.copy_from_slice(scanline_start);
+
+            for (out, (s_next, s_prev)) in out.iter_mut().zip(scanline_next.iter().copied().zip(scanline.iter().copied())) {
+                *out = s_next.wrapping_sub(s_prev);
             }
         },
         _ => {},
