@@ -24,8 +24,9 @@ pub use rgb::RGBA8 as RGBA;
 use rgb::RGBA16;
 use std::collections::HashMap;
 use std::fs;
-use std::io;
 use std::io::prelude::*;
+use std::io;
+use std::ops::Range;
 use std::path::Path;
 use std::slice;
 
@@ -355,6 +356,7 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
         },
         2 => if let Some(prevline) = prevline {
             if prevline.len() != length { return }
+
             for (out, (s, prev)) in out.iter_mut().zip(scanline.iter().copied().zip(prevline.iter().copied())) {
                 *out = s.wrapping_sub(prev);
             }
@@ -363,6 +365,7 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
         },
         3 => if let Some(prevline) = prevline {
             if prevline.len() != length { return }
+
             let (out_start, out) = out.split_at_mut(bytewidth);
             let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
             let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
@@ -1764,7 +1767,10 @@ fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h
         let filter_type = *inout.get(inindex).ok_or(Error::new(91))?;
         let scanline = inindex + 1;
         if outindex + linebytes > scanline {
-            unfilter_scanline_aliased(inout, outindex, scanline, prevline, bytewidth, filter_type, linebytes)?;
+            let (prev, inout) = inout.split_at_mut(outindex);
+            let prev = prevline.and_then(|prevline| prev.get(prevline..prevline+linebytes));
+            unfilter_scanline_aliased(inout, scanline-outindex, prev, bytewidth, filter_type, linebytes)
+                .ok_or_else(|| Error::new(77))?;
         } else {
             let (out, inp) = inout.split_at_mut(outindex + linebytes);
             let inp = &inp[scanline - (outindex + linebytes)..][..linebytes];
@@ -1867,76 +1873,88 @@ fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, b
     Ok(())
 }
 
+/// Copy from libstd, because the original doesn't inline
+#[inline]
+fn copy_within<T: Copy>(slice: &mut [T], src: Range<usize>, dest: usize) {
+    let Range { start, end } = src;
+    let count = end - start;
+    assert!(dest <= slice.len() - count, "dest is out of bounds");
+    // SAFETY: the conditions for `ptr::copy` have all been checked above,
+    // as have those for `ptr::add`.
+    unsafe {
+        // Derive both `src_ptr` and `dest_ptr` from the same loan
+        let ptr = slice.as_mut_ptr();
+        let src_ptr = ptr.add(start);
+        let dest_ptr = ptr.add(dest);
+        ptr::copy(src_ptr, dest_ptr, count);
+    }
+}
+
+// Aliasing ruins all optimizations here
 #[inline(never)]
-fn unfilter_scanline_aliased(inout: &mut [u8], out_offset: usize, scanline_offset: usize, prevline_offset: Option<usize>, bytewidth: u8, filter_type: u8, length: usize) -> Result<(), Error> {
-    if length > u32::MAX as usize || out_offset > u32::MAX as usize || scanline_offset > u32::MAX as usize || prevline_offset.unwrap_or(0) > u32::MAX as usize {
-        return Err(Error::new(77));
-    }
-    if inout.len() < out_offset + length || inout.len() < scanline_offset + length || inout.len() < prevline_offset.unwrap_or(0) + length {
-        return Err(Error::new(77));
-    }
+fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8, length: usize) -> Option<()> {
     let bytewidth = bytewidth as usize;
-    match filter_type {
-        0 => inout.copy_within(scanline_offset..scanline_offset+length, out_offset),
-        1 => {
-            for i in 0..bytewidth {
-                inout[out_offset + i] = inout[scanline_offset + i];
-            }
-            for i in bytewidth..length {
-                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[out_offset + i - bytewidth]);
-            }
-        },
-        2 => if let Some(prevline) = prevline_offset {
-            if prevline > u32::MAX as usize || inout.len() < prevline + length {
-                return Err(Error::new(77));
-            }
-            for i in 0..length {
-                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[prevline + i]);
-            }
-        } else {
-            inout.copy_within(scanline_offset..scanline_offset+length, out_offset)
-        },
-        3 => if let Some(prevline) = prevline_offset {
-            if prevline > u32::MAX as usize || inout.len() < prevline + length {
-                return Err(Error::new(77));
-            }
-            for i in 0..bytewidth {
-                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[prevline + i] >> 1);
-            }
-            for i in bytewidth..length {
-                let t = inout[out_offset + i - bytewidth] as u16 + inout[prevline + i] as u16;
-                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add((t >> 1) as u8);
-            }
-        } else {
-            for i in 0..bytewidth {
-                inout[out_offset + i] = inout[scanline_offset + i];
-            }
-            for i in bytewidth..length {
-                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[out_offset + i - bytewidth] >> 1);
-            }
-        },
-        4 => if let Some(prevline) = prevline_offset {
-            if prevline > u32::MAX as usize || inout.len() < prevline + length {
-                return Err(Error::new(77));
-            }
-            for i in 0..bytewidth {
-                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[prevline + i]);
-            }
-            for i in bytewidth..length {
-                let pred = paeth_predictor(inout[out_offset + i - bytewidth], inout[prevline + i], inout[prevline + i - bytewidth]);
-                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(pred);
-            }
-        } else {
-            for i in 0..bytewidth {
-                inout[out_offset + i] = inout[scanline_offset + i];
-            }
-            for i in bytewidth..length {
-                inout[out_offset + i] = inout[scanline_offset + i].wrapping_add(inout[out_offset + i - bytewidth]);
-            }
-        },
-        _ => return Err(Error::new(36)),
+    if length > u32::MAX as usize || scanline_offset > u32::MAX as usize {
+        return None;
     }
-    Ok(())
+    if bytewidth > 8 || bytewidth > length {
+        return None;
+    }
+    if inout.len() < length || inout.len() < scanline_offset + length {
+        return None;
+    }
+    match filter_type {
+        0 => copy_within(inout, scanline_offset..scanline_offset+length, 0),
+        1 => {
+            copy_within(inout, scanline_offset..scanline_offset+bytewidth, 0);
+            for i in bytewidth..length {
+                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(*inout.get(i - bytewidth)?);
+            }
+        },
+        2 => if let Some(prevline) = prevline {
+            if prevline.len() != length { return None; }
+
+            for i in 0..length {
+                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(prevline[i]);
+            }
+        } else {
+            copy_within(inout, scanline_offset..scanline_offset+length, 0)
+        },
+        3 => if let Some(prevline) = prevline {
+            if prevline.len() != length { return None; }
+
+            for i in 0..bytewidth {
+                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(prevline[i] >> 1);
+            }
+            for i in bytewidth..length {
+                let t = *inout.get(i - bytewidth)? as u16 + prevline[i] as u16;
+                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add((t >> 1) as u8);
+            }
+        } else {
+            copy_within(inout, scanline_offset..scanline_offset+bytewidth, 0);
+            for i in bytewidth..length {
+                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(*inout.get(i - bytewidth)? >> 1);
+            }
+        },
+        4 => if let Some(prevline) = prevline {
+            if prevline.len() != length { return None; }
+
+            for i in 0..bytewidth {
+                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(prevline[i]);
+            }
+            for i in bytewidth..length {
+                let pred = paeth_predictor(*inout.get(i - bytewidth)?, prevline[i], *prevline.get(i - bytewidth)?);
+                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(pred);
+            }
+        } else {
+            copy_within(inout, scanline_offset..scanline_offset+bytewidth, 0);
+            for i in bytewidth..length {
+                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(*inout.get(i - bytewidth)?);
+            }
+        },
+        _ => return None,
+    }
+    Some(())
 }
 
 /*
