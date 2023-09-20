@@ -142,7 +142,7 @@ fn filter(out: &mut dyn Write, inp: &[u8], w: usize, h: usize, info: &ColorMode,
     let mut f = make_filter(w, h, info, settings)?;
 
     /*the width of a scanline in bytes, not including the filter type*/
-    let linebytes = linebytes_rounded(w, bpp) as usize;
+    let linebytes = linebytes_rounded(w, bpp);
     let mut out_buffer = zero_vec(1 + linebytes)?;
     if bpp < 8 && linebits_exact(w, bpp) != linebits_rounded(w, bpp) {
         let mut lines_tmp = zero_vec(linebytes * 2)?;
@@ -174,7 +174,7 @@ fn make_filter<'a>(w: usize, h: usize, info: &ColorMode, settings: &'a EncoderSe
     let bytewidth = (bpp + 7) / 8;
 
     /*the width of a scanline in bytes, not including the filter type*/
-    let linebytes = linebytes_rounded(w, bpp) as usize;
+    let linebytes = linebytes_rounded(w, bpp);
     debug_assert!(linebytes > 0);
     /*
       There is a heuristic called the minimum sum of absolute differences heuristic, suggested by the PNG standard:
@@ -250,7 +250,7 @@ fn make_filter<'a>(w: usize, h: usize, info: &ColorMode, settings: &'a EncoderSe
                     }
                     count[type_] += 1; /*the extra filterbyte added to each row*/
                     let mut sum = 0.;
-                    for &c in count.iter() {
+                    for &c in &count {
                         if c > 0 {
                             let p = c as f32 / ((linebytes + 1) as f32);
                             sum += (1. / p).log2() * p;
@@ -267,7 +267,7 @@ fn make_filter<'a>(w: usize, h: usize, info: &ColorMode, settings: &'a EncoderSe
             })
         },
         FilterStrategy::PREDEFINED => {
-            let mut filters = unsafe { settings.predefined_filters(h)? }.into_iter().copied();
+            let mut filters = unsafe { settings.predefined_filters(h)? }.iter().copied();
             Box::new(move |out, inp, prevline| {
                 let type_ = filters.next().unwrap_or(0);
                 out[0] = type_;
@@ -292,7 +292,7 @@ fn make_filter<'a>(w: usize, h: usize, info: &ColorMode, settings: &'a EncoderSe
                 for (type_, attempt) in attempt.iter_mut().enumerate() {
                     filter_scanline(attempt, inp, prevline, bytewidth, type_ as u8);
                     temp_buf.clear();
-                    zlib::compress_fast(&attempt, &mut temp_buf);
+                    zlib::compress_fast(attempt, &mut temp_buf);
                     let size = temp_buf.len();
                     /*check if this is smallest size (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || size < smallest {
@@ -323,12 +323,12 @@ fn test_filter() {
     for filter_type in 0..5 {
         filter_scanline(&mut filtered, &line1, Some(&line2), 1, filter_type);
         unfilter_scanline(&mut unfiltered, &filtered, Some(&line2), 1, filter_type).unwrap();
-        assert_eq!(unfiltered, line1, "prev+filter={}", filter_type);
+        assert_eq!(unfiltered, line1, "prev+filter={filter_type}");
     }
     for filter_type in 0..5 {
         filter_scanline(&mut filtered, &line1, None, 1, filter_type);
         unfilter_scanline(&mut unfiltered, &filtered, None, 1, filter_type).unwrap();
-        assert_eq!(unfiltered, line1, "none+filter={}", filter_type);
+        assert_eq!(unfiltered, line1, "none+filter={filter_type}");
     }
 }
 
@@ -543,7 +543,7 @@ fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, colormap: &mut Col
         ColorType::PALETTE => {
             let index = *colormap.get(&px).ok_or(Error::new(82))?;
             if mode.bitdepth() == 8 {
-                out[i] = index as u8;
+                out[i] = index;
             } else {
                 add_color_bits(out, i, mode.bitdepth(), u32::from(index));
             };
@@ -629,7 +629,7 @@ fn get_pixel_low_bpp(inp: &[u8], i: usize, mode: &ColorMode) -> u8 {
     if mode.bitdepth() == 8 {
         inp[i]
     } else {
-        let j = i as usize * mode.bitdepth() as usize;
+        let j = i * mode.bitdepth() as usize;
         read_bits_from_reversed_stream(j, inp, mode.bitdepth() as usize) as u8
     }
 }
@@ -849,7 +849,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                         buffer[3] = 255u8;
                     }
                 } else {
-                    let p = pal[index as usize];
+                    let p = pal[index];
                     buffer[0] = p.r;
                     buffer[1] = p.g;
                     buffer[2] = p.b;
@@ -1081,7 +1081,7 @@ fn read_chunk_text(info: &mut Info, data: &[u8]) -> Result<(), Error> {
 fn read_chunk_ztxt(info: &mut Info, zlibsettings: &DecompressSettings, data: &[u8]) -> Result<(), Error> {
     let mut length = 0;
     while length < data.len() && data[length] != 0 {
-        length += 1
+        length += 1;
     }
     if length + 2 >= data.len() {
         return Err(Error::new(75));
@@ -1251,7 +1251,7 @@ fn add_chunk_ihdr(out: &mut Vec<u8>, w: u32, h: u32, colortype: ColorType, bitde
     let mut header = ChunkBuilder::new(out, b"IHDR");
     header.write_u32be(w);
     header.write_u32be(h);
-    header.push(bitdepth as u8);
+    header.push(bitdepth);
     header.push(colortype as u8);
     header.push(0);
     header.push(0);
@@ -1305,11 +1305,11 @@ fn add_chunk_time(out: &mut Vec<u8>, time: &Time) -> Result<(), Error> {
     let mut c = ChunkBuilder::new(out, b"tIME");
     c.write_u16be(time.year);
     c.extend_from_slice(&[
-        time.month as u8,
-        time.day as u8,
-        time.hour as u8,
-        time.minute as u8,
-        time.second as u8,
+        time.month,
+        time.day,
+        time.hour,
+        time.minute,
+        time.second,
     ])?;
     c.finish()
 }
@@ -1318,7 +1318,7 @@ fn add_chunk_phys(out: &mut Vec<u8>, info: &Info) -> Result<(), Error> {
     let mut data = ChunkBuilder::new(out, b"pHYs");
     data.write_u32be(info.phys_x);
     data.write_u32be(info.phys_y);
-    data.push(info.phys_unit as u8);
+    data.push(info.phys_unit);
     data.finish()
 }
 
@@ -1472,9 +1472,9 @@ fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
         if bpp >= 8 {
             for y in 0..pass.h {
                 for x in 0..pass.w {
-                    let pixelinstart = offset_packed + (y * pass.w + x) as usize * bytewidth;
+                    let pixelinstart = offset_packed + (y * pass.w + x) * bytewidth;
                     let pixeloutstart = ((adam.iy as usize + y * adam.dy as usize) * w + adam.ix as usize + x * adam.dx as usize) * bytewidth;
-                    out[pixeloutstart..(bytewidth + pixeloutstart)].copy_from_slice(&inp[pixelinstart..(bytewidth + pixelinstart)])
+                    out[pixeloutstart..(bytewidth + pixeloutstart)].copy_from_slice(&inp[pixelinstart..(bytewidth + pixelinstart)]);
                 }
             }
         } else {
@@ -1918,7 +1918,7 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
                 *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(prevline[i]);
             }
         } else {
-            copy_within(inout, scanline_offset..scanline_offset+length, 0)
+            copy_within(inout, scanline_offset..scanline_offset+length, 0);
         },
         3 => if let Some(prevline) = prevline {
             if prevline.len() != length { return None; }
@@ -2008,7 +2008,7 @@ fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
             let bytewidth = bpp / 8;
             for y in 0..pass.h {
                 for x in 0..pass.w {
-                    let pixelinstart = ((adam.iy as usize + y * adam.dy as usize) * w as usize + adam.ix as usize + x * adam.dx as usize) * bytewidth;
+                    let pixelinstart = ((adam.iy as usize + y * adam.dy as usize) * w + adam.ix as usize + x * adam.dx as usize) * bytewidth;
                     let pixeloutstart = offset_packed + (y * pass.w + x) * bytewidth;
                     out[pixeloutstart..(bytewidth + pixeloutstart)]
                         .copy_from_slice(&inp[pixelinstart..(bytewidth + pixelinstart)]);
@@ -2332,7 +2332,7 @@ pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) ->
     let mut outv = Vec::new(); outv.try_reserve(1024 + w * h / 2)?;
     write_signature(&mut outv);
 
-    add_chunk_ihdr(&mut outv, w as u32, h as u32, info.color.colortype, info.color.bitdepth() as u8, info.interlace_method as u8)?;
+    add_chunk_ihdr(&mut outv, w as u32, h as u32, info.color.colortype, info.color.bitdepth() as u8, info.interlace_method)?;
     add_unknown_chunks(&mut outv, &info.unknown_chunks[ChunkPosition::IHDR as usize])?;
     if info.color.colortype == ColorType::PALETTE {
         add_chunk_plte(&mut outv, &info.color)?;
@@ -2649,9 +2649,9 @@ pub(crate) fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &Colo
             let mask = ((1 << mode_out.bitdepth()) - 1) as u16;
             /*profile always uses 16-bit, mask converts it*/
             mode_out.set_key(
-                prof.key_r as u16 & mask,
-                prof.key_g as u16 & mask,
-                prof.key_b as u16 & mask);
+                prof.key_r & mask,
+                prof.key_g & mask,
+                prof.key_b & mask);
         };
     }
     Ok(mode_out)

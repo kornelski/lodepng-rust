@@ -8,13 +8,13 @@ fn check_zlib_stream(inp: &[u8]) -> Result<(), Error> {
         return Err(Error::new(53));
     }
     /*read information from zlib header*/
-    if (inp[0] as u32 * 256 + inp[1] as u32) % 31 != 0 {
+    if (u32::from(inp[0]) * 256 + u32::from(inp[1])) % 31 != 0 {
         /*error: 256 * in[0] + in[1] must be a multiple of 31, the FCHECK value is supposed to be made that way*/
         return Err(Error::new(24));
     }
-    let cm = inp[0] as u32 & 15;
-    let cinfo = ((inp[0] as u32) >> 4) & 15;
-    let fdict = ((inp[1] as u32) >> 5) & 1;
+    let cm = u32::from(inp[0]) & 15;
+    let cinfo = (u32::from(inp[0]) >> 4) & 15;
+    let fdict = (u32::from(inp[1]) >> 5) & 1;
     if cm != 8 || cinfo > 7 {
         /*error: only compression method 8: inflate with sliding window of 32k is supported by the PNG spec*/
         return Err(Error::new(25));
@@ -63,7 +63,7 @@ impl Decoder<'_> {
     }
 }
 
-pub(crate) fn new_decompressor<'s, 'w>(out: Vec<u8>, zlib_data_size: usize, settings: &'s DecompressSettings) -> Decoder<'s> {
+pub(crate) fn new_decompressor<'w>(out: Vec<u8>, zlib_data_size: usize, settings: &DecompressSettings) -> Decoder<'_> {
     if settings.custom_zlib.is_some() {
         let mut buf = Vec::new();
         let _ = buf.try_reserve_exact(zlib_data_size);

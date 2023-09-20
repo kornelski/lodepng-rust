@@ -10,9 +10,9 @@ license = "Zlib"
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/kornelski/lodepng-rust.git"
-version = "3.8.1"
+version = "3.8.2"
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.64"
 
 [badges]
 travis-ci = { repository = "kornelski/lodepng-rust" }
@@ -35,7 +35,7 @@ opt-level = 2
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
-rustdoc-args = ["--cfg", "docsrs"]
+rustdoc-args = ["--cfg", "docsrs", "--generate-link-to-definition"]
 
 [features]
 default = ["rust_backend"]

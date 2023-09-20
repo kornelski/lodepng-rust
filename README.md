@@ -1,4 +1,4 @@
-# [Rust](https://www.rust-lang.org) version of [LodePNG](https://lodev.org/lodepng)
+# [Rust](https://www.rust-lang.org) rewrite of [LodePNG](https://lodev.org/lodepng)
 
 This is a pure Rust PNG image decoder and encoder. Allows easy reading and writing of PNG files without any system dependencies.
 
@@ -6,10 +6,10 @@ To use the [lodepng crate](https://lib.rs/crates/lodepng), add to your `Cargo.to
 
 ```toml
 [dependencies]
-lodepng = "3.4"
+lodepng = "3.8"
 ```
 
-See [API reference](https://docs.rs/lodepng/) for details. Requires Rust 1.46 or later.
+See [the API reference](https://docs.rs/lodepng/) for details. Requires Rust 1.64 or later.
 
 ### Loading image example
 
@@ -37,10 +37,10 @@ let bytes: &[u8] = image.buffer.as_bytes();
 ### Saving image example
 
 ```rust
-lodepng::encode32_file("out.png", &buffer, width, height)
+lodepng::encode32_file("out.png", &buffer, width, height)?
 ```
 
-The buffer can be a slice of any type as long as it has 4 bytes per element (e.g. `struct RGBA` or `[u8; 4]`).
+The RGBA buffer can be a slice of any type, as long as it has 4 bytes per element (e.g. `struct RGBA` or `[u8; 4]`) and implements the [`Pod`](https://docs.rs/bytemuck) trait.
 
 ### Advanced
 
@@ -65,7 +65,7 @@ for chunk in state.info_png().unknown_chunks(ChunkPosition::IHDR) {
 let icc_data = state.get_icc();
 ```
 
-See [load_image](https://lib.rs/load_image) crate for an example how to use lodepng with color profiles.
+See [load_image](https://lib.rs/crates/load_image) crate for an example how to use lodepng with [color profiles](https://lib.rs/lcms2).
 
 ## Upgrading from 2.x
 
@@ -84,6 +84,6 @@ See [load_image](https://lib.rs/load_image) crate for an example how to use lode
 * `bitdepth` has a getter/setter.
 * There is no C any more!
 
-## Origin of the Rust version
+## It's a ship of Theseus
 
-This codebase is derived from [C LodePNG](https://lodev.org/lodepng/) by Lode Vandevenne. It has been converted to Rust using [Citrus C to Rust converter](https://gitlab.com/citrus-rs/citrus) and manual refactorings.
+This codebase has been derived from [the C LodePNG](https://lodev.org/lodepng/) by Lode Vandevenne. It has been converted to Rust using [Citrus C to Rust converter](https://gitlab.com/citrus-rs/citrus), and then significanlty refactored to be more idiomatic Rust. As a result, it's now a different library, with some of the original API.

@@ -13,11 +13,11 @@ fn encode<T: rgb::Pod>(pixels: &[T], in_type: ColorType, out_type: ColorType) ->
 #[test]
 fn bgr() {
     let png = encode(&[rgb::alt::BGR{r:1u8,g:2,b:3}], ColorType::BGR, ColorType::RGB).unwrap();
-    let img = decode24(&png).unwrap();
+    let img = decode24(png).unwrap();
     assert_eq!(img.buffer[0], rgb::RGB{r:1,g:2,b:3});
 
     let png = encode(&[rgb::alt::BGRA{r:1u8,g:2,b:3,a:111u8}], ColorType::BGRX, ColorType::RGB).unwrap();
-    let img = decode32(&png).unwrap();
+    let img = decode32(png).unwrap();
     assert_eq!(img.buffer[0], rgb::RGBA8{r:1,g:2,b:3,a:255});
 }
 
@@ -29,7 +29,7 @@ fn redecode1() {
         _ => panic!(),
     };
     let png = encode_memory(&img1.buffer, img1.width, img1.height, ColorType::GREY, 8).unwrap();
-    let img2 = decode_memory(&png, ColorType::GREY, 8).unwrap();
+    let img2 = decode_memory(png, ColorType::GREY, 8).unwrap();
     let img2 = match img2 {
         Image::Grey(a) => a,
         _ => panic!(),
@@ -41,7 +41,7 @@ fn redecode1() {
 fn redecode2() {
     let img1 = decode24_file("tests/fry-test.png").unwrap();
     let png = encode24(&img1.buffer, img1.width, img1.height).unwrap();
-    let img2 = decode24(&png).unwrap();
+    let img2 = decode24(png).unwrap();
 
     assert_eq!(img1.buffer, img2.buffer);
 }
@@ -54,7 +54,7 @@ fn random() {
     }
 
     let png = encode24(&data, 639, 479).unwrap();
-    let img2 = decode24(&png).unwrap();
+    let img2 = decode24(png).unwrap();
 
     use rgb::*;
     assert_eq!(data.as_rgb(), &img2.buffer[..]);
@@ -68,7 +68,7 @@ fn fourbit() {
 #[test]
 fn bgra() {
     let png = encode(&[rgb::alt::BGRA{r:1u8,g:2,b:3,a:4u8}], ColorType::BGRA, ColorType::RGBA).unwrap();
-    let img = decode32(&png).unwrap();
+    let img = decode32(png).unwrap();
     assert_eq!(img.buffer[0], rgb::RGBA8{r:1,g:2,b:3,a:4u8});
 }
 
@@ -76,7 +76,7 @@ fn bgra() {
 #[ignore] // slow
 fn huge() {
     let png = encode24(&vec![RGB::new(0u8,0,0); 67777*68888], 67777, 68888).unwrap();
-    let img = decode24(&png).unwrap();
+    let img = decode24(png).unwrap();
     assert_eq!(img.buffer[0], RGB::new(0,0,0));
     assert_eq!(img.width, 67777);
     assert_eq!(img.height, 68888);

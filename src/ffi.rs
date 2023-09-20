@@ -447,13 +447,13 @@ pub unsafe extern "C" fn lodepng_realloc(ptr: *mut c_void, size: usize) -> *mut 
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_free(ptr: *mut c_void) {
-    libc::free(ptr)
+    libc::free(ptr);
 }
 
 #[no_mangle]
 #[allow(deprecated)]
 pub unsafe extern "C" fn lodepng_state_init(state: *mut State) {
-    ptr::write(state, State::new())
+    ptr::write(state, State::new());
 }
 
 #[no_mangle]
@@ -556,7 +556,7 @@ pub unsafe extern "C" fn lodepng_get_raw_size_lct(w: c_uint, h: c_uint, colortyp
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_palette_clear(info: &mut ColorMode) {
-    info.palette_clear()
+    info.palette_clear();
 }
 
 #[no_mangle]
@@ -566,7 +566,7 @@ pub unsafe extern "C" fn lodepng_palette_add(info: &mut ColorMode, r: u8, g: u8,
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_clear_text(info: &mut Info) {
-    info.clear_text()
+    info.clear_text();
 }
 
 #[no_mangle]
@@ -680,7 +680,7 @@ pub unsafe extern "C" fn lodepng_chunk_check_crc(chunk: *const u8) -> c_uint {
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_generate_crc(chunk: *mut u8) {
-    rustimpl::lodepng_chunk_generate_crc(slice::from_raw_parts_mut(chunk, 0x7FFF_FFFF))
+    rustimpl::lodepng_chunk_generate_crc(slice::from_raw_parts_mut(chunk, 0x7FFF_FFFF));
 }
 
 #[no_mangle]
@@ -694,7 +694,7 @@ pub unsafe extern "C" fn lodepng_chunk_append(out: &mut *mut u8, outsize: &mut u
 }
 #[inline]
 fn chunk_append(out: &mut Vec<u8>, chunk: &[u8]) -> Result<(), crate::Error> {
-    let total_chunk_length = rustimpl::chunk_length(chunk) as usize + 12;
+    let total_chunk_length = rustimpl::chunk_length(chunk) + 12;
     out.try_reserve(total_chunk_length)?;
     out.extend_from_slice(&chunk[0..total_chunk_length]);
     Ok(())
@@ -789,7 +789,7 @@ pub unsafe extern "C" fn lodepng_info_copy(dest: *mut Info, source: &Info) -> Er
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_info_swap(a: &mut Info, b: &mut Info) {
-    mem::swap(a, b)
+    mem::swap(a, b);
 }
 
 #[no_mangle]

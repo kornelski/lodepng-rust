@@ -692,14 +692,14 @@ impl State {
             return Err(Error::new(89));
         }
         let iccp = iccp.as_ref().unwrap().data();
-        if iccp.first().cloned().unwrap_or(255) == 0 { // text min length is 1
+        if iccp.first().copied().unwrap_or(255) == 0 { // text min length is 1
             return Err(Error::new(89));
         }
 
         let name_len = cmp::min(iccp.len(), 80); // skip name
         for i in 0..name_len {
             if iccp[i] == 0 { // string terminator
-                if iccp.get(i+1).cloned().unwrap_or(255) != 0 { // compression type
+                if iccp.get(i+1).copied().unwrap_or(255) != 0 { // compression type
                     return Err(Error::new(72));
                 }
                 return zlib::decompress(&iccp[i+2 ..], &self.decoder.zlibsettings);
@@ -754,7 +754,7 @@ impl State {
     #[inline]
     pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = self.encode(image, w, h)?;
-        fs::write(filepath, &buf)?;
+        fs::write(filepath, buf)?;
         Ok(())
     }
 }
@@ -841,7 +841,7 @@ impl<PixelType: rgb::Pod> Bitmap<PixelType> {
             debug_assert!((buffer.len() / std::mem::size_of::<PixelType>()) >= area);
             unsafe {
                 let mut buffer = std::mem::ManuallyDrop::new(buffer);
-                Vec::from_raw_parts(buffer.as_mut_ptr() as *mut PixelType,
+                Vec::from_raw_parts(buffer.as_mut_ptr().cast::<PixelType>(),
                     buffer.len() / std::mem::size_of::<PixelType>(),
                     buffer.capacity() / std::mem::size_of::<PixelType>())
             }
@@ -883,7 +883,7 @@ fn new_bitmap(buffer: Vec<u8>, w: usize, h: usize, colortype: ColorType, bitdept
         (ColorType::GREY, 16) => Image::Grey16(Bitmap::from_buffer(buffer, w, h)?),
         (ColorType::GREY_ALPHA, 8) => Image::GreyAlpha(Bitmap::from_buffer(buffer, w, h)?),
         (ColorType::GREY_ALPHA, 16) => Image::GreyAlpha16(Bitmap::from_buffer(buffer, w, h)?),
-        (ColorType::PALETTE, b) | (ColorType::GREY, b) if b > 0 && b <= 8 => Image::RawData(Bitmap {
+        (ColorType::PALETTE | ColorType::GREY, b) if b > 0 && b <= 8 => Image::RawData(Bitmap {
             buffer,
             width: w,
             height: h,
@@ -952,7 +952,7 @@ pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Err
 ///  ```
 #[inline(always)]
 pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
-    decode_memory(&fs::read(filepath)?, colortype, bitdepth)
+    decode_memory(fs::read(filepath)?, colortype, bitdepth)
 }
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
@@ -982,13 +982,12 @@ fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize,
     let required_bytes = required_size(w, h, colortype, bitdepth);
 
     if image_bytes != required_bytes {
-        debug_assert_eq!(image_bytes, required_bytes, "Image is {} bytes large ({}x{}x{}), but needs to be {} ({:?}, {})",
-            image_bytes, w,h,px_bytes, required_bytes, colortype, bitdepth);
+        debug_assert_eq!(image_bytes, required_bytes, "Image is {image_bytes} bytes large ({w}x{h}x{px_bytes}), but needs to be {required_bytes} ({colortype:?}, {bitdepth})");
         return Err(Error::new(84));
     }
 
     unsafe {
-        Ok(slice::from_raw_parts(image.as_ptr() as *const u8, image_bytes))
+        Ok(slice::from_raw_parts(image.as_ptr().cast::<u8>(), image_bytes))
     }
 }
 
@@ -1030,7 +1029,7 @@ pub fn encode24<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) ->
 #[inline]
 pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = encode_memory(image, w, h, colortype, bitdepth)?;
-    fs::write(filepath, &encoded)?;
+    fs::write(filepath, encoded)?;
     Ok(())
 }
 
@@ -1171,7 +1170,7 @@ impl<'a> ChunkRefMut<'a> {
 
     #[inline]
     pub fn generate_crc(&mut self) {
-        rustimpl::lodepng_chunk_generate_crc(self.data)
+        rustimpl::lodepng_chunk_generate_crc(self.data);
     }
 }
 

@@ -1,4 +1,4 @@
-use rgb::*;
+use rgb::ComponentBytes;
 use std::path::Path;
 
 fn main() {
@@ -13,7 +13,7 @@ fn main() {
                 println!("The first pixel is {}", bitmap.buffer[0]);
                 println!("The raw bytes are {:?}", bitmap.buffer.as_bytes());
             },
-            x => println!("Decoded some other image format {:?}", x),
+            x => println!("Decoded some other image format {x:?}"),
         },
         Err(reason) => println!("Could not load {}, because: {}", path.display(), reason),
     }
