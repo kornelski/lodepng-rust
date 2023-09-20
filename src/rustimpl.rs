@@ -22,11 +22,11 @@ use crate::zlib;
 
 pub use rgb::RGBA8 as RGBA;
 use rgb::RGBA16;
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::fs;
 use std::io::prelude::*;
 use std::io;
-use std::ops::Range;
 use std::path::Path;
 use std::slice;
 
@@ -1814,58 +1814,72 @@ fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, b
     match filter_type {
         0 => out.copy_from_slice(scanline),
         1 => {
-            out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
-            for i in bytewidth..length {
-                // can't get rid of this bounds check
-                let tmp = unsafe { *out.get_unchecked(i - bytewidth) };
-                out[i] = scanline[i].wrapping_add(tmp);
+            let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
+            out[..bytewidth].copy_from_slice(scanline_start);
+            let out = Cell::from_mut(out).as_slice_of_cells();
+            let out_prev = &out[..length-bytewidth];
+            let out_next = &out[bytewidth..];
+            for (out, (s, out_prev)) in out_next.iter().zip(scanline_next.iter().zip(out_prev)) {
+                out.set(s.wrapping_add(out_prev.get()));
             }
         },
         2 => if let Some(prevline) = prevline {
             let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
-            for (out, (scanline, prevline)) in out.iter_mut().zip(scanline.iter().copied().zip(prevline.iter().copied())) {
-                *out = scanline.wrapping_add(prevline);
+            for (out, (s, p)) in out.iter_mut().zip(scanline.iter().copied().zip(prevline.iter().copied())) {
+                *out = s.wrapping_add(p);
             }
         } else {
             out.copy_from_slice(scanline);
         },
-        3 => if let Some(prevline) = prevline {
-            let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
-            for i in 0..bytewidth {
-                out[i] = scanline[i].wrapping_add(prevline[i] >> 1);
-            }
-            for i in bytewidth..length {
-                // can't get rid of this bounds check
-                let tmp = unsafe { *out.get_unchecked(i - bytewidth) };
-                let t = tmp as u16 + prevline[i] as u16;
-                out[i] = scanline[i].wrapping_add((t >> 1) as u8);
-            }
-        } else {
-            out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
-            for i in bytewidth..length {
-                // can't get rid of this bounds check
-                let tmp = unsafe { *out.get_unchecked(i - bytewidth) };
-                out[i] = scanline[i].wrapping_add(tmp >> 1);
+        3 => {
+            let (scanline_prev, scanline_next) = scanline.split_at(bytewidth);
+            if let Some(prevline) = prevline {
+                let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
+                let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
+                let out = Cell::from_mut(out).as_slice_of_cells();
+                let out_prev = &out[..length-bytewidth];
+                let out_next = &out[bytewidth..];
+                for (out, (s, p)) in out_prev.iter().zip(scanline_prev.iter().copied().zip(prevline_start.iter().copied())) {
+                    out.set(s.wrapping_add(p >> 1));
+                }
+                for ((out, out_prev), (s, p)) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied().zip(prevline_next.iter().copied())) {
+                    let t = out_prev.get() as u16 + p as u16;
+                    out.set(s.wrapping_add((t >> 1) as u8));
+                }
+            } else {
+                out[..bytewidth].copy_from_slice(scanline_prev);
+                let out = Cell::from_mut(out).as_slice_of_cells();
+                let out_prev = &out[..length-bytewidth];
+                let out_next = &out[bytewidth..];
+                for ((out, out_prev), s) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied()) {
+                    out.set(s.wrapping_add(out_prev.get() >> 1));
+                }
             }
         },
-        4 => if let Some(prevline) = prevline {
-            let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
-            for i in 0..bytewidth {
-                out[i] = scanline[i].wrapping_add(prevline[i]);
-            }
-            for i in bytewidth..length {
-                // can't get rid of this bounds check
-                let tmp = unsafe { *out.get_unchecked(i - bytewidth) };
-                let prevtmp = unsafe { *prevline.get_unchecked(i - bytewidth) };
-                let pred = paeth_predictor(tmp, prevline[i], prevtmp);
-                out[i] = scanline[i].wrapping_add(pred);
-            }
-        } else {
-            out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
-            for i in bytewidth..length {
-                // can't get rid of this bounds check
-                let tmp = unsafe { *out.get_unchecked(i - bytewidth) };
-                out[i] = scanline[i].wrapping_add(tmp);
+        4 => {
+            let (scanline_prev, scanline_next) = scanline.split_at(bytewidth);
+            if let Some(prevline) = prevline {
+                let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
+                let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
+                let prevline_prev = &prevline[..length-bytewidth];
+                let out = Cell::from_mut(out).as_slice_of_cells();
+                let out_prev = &out[..length-bytewidth];
+                let out_next = &out[bytewidth..];
+                for (out, (s, p)) in out_prev.iter().zip(scanline_prev.iter().copied().zip(prevline_start.iter().copied())) {
+                    out.set(s.wrapping_add(p));
+                }
+                for ((out, out_prev), (s, (p, p_prev))) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied().zip(prevline_next.iter().copied().zip(prevline_prev.iter().copied()))) {
+                    let pred = paeth_predictor(out_prev.get(), p, p_prev);
+                    out.set(s.wrapping_add(pred));
+                }
+            } else {
+                out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
+                let out = Cell::from_mut(out).as_slice_of_cells();
+                let out_prev = &out[..length-bytewidth];
+                let out_next = &out[bytewidth..];
+                for (out, (s, out_prev)) in out_next.iter().zip(scanline_next.iter().zip(out_prev)) {
+                    out.set(s.wrapping_add(out_prev.get()));
+                }
             }
         },
         _ => return Err(Error::new(36)),
@@ -1873,83 +1887,103 @@ fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, b
     Ok(())
 }
 
-/// Copy from libstd, because the original doesn't inline
-#[inline]
-fn copy_within<T: Copy>(slice: &mut [T], src: Range<usize>, dest: usize) {
-    let Range { start, end } = src;
-    let count = end - start;
-    assert!(dest <= slice.len() - count, "dest is out of bounds");
-    // SAFETY: the conditions for `ptr::copy` have all been checked above,
-    // as have those for `ptr::add`.
-    unsafe {
-        // Derive both `src_ptr` and `dest_ptr` from the same loan
-        let ptr = slice.as_mut_ptr();
-        let src_ptr = ptr.add(start);
-        let dest_ptr = ptr.add(dest);
-        ptr::copy(src_ptr, dest_ptr, count);
-    }
-}
-
-// Aliasing ruins all optimizations here
 #[inline(never)]
 fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8, length: usize) -> Option<()> {
     let bytewidth = bytewidth as usize;
-    if length > u32::MAX as usize || scanline_offset > u32::MAX as usize {
+    // help the optimizer remove bounds checks
+    if bytewidth > 8 || bytewidth < 1 || length > u32::MAX as usize || prevline.map_or(false, move |p| p.len() != length) || bytewidth > length {
+        debug_assert!(false);
         return None;
     }
-    if bytewidth > 8 || bytewidth > length {
-        return None;
-    }
-    if inout.len() < length || inout.len() < scanline_offset + length {
-        return None;
-    }
+
     match filter_type {
-        0 => copy_within(inout, scanline_offset..scanline_offset+length, 0),
+        0 => inout.copy_within(scanline_offset..scanline_offset+length, 0),
         1 => {
-            copy_within(inout, scanline_offset..scanline_offset+bytewidth, 0);
-            for i in bytewidth..length {
-                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(*inout.get(i - bytewidth)?);
+            inout.copy_within(scanline_offset..scanline_offset+bytewidth, 0);
+            let inout = Cell::from_mut(inout).as_slice_of_cells();
+            let out = inout.get(..length)?;
+            let scanline = inout.get(scanline_offset..scanline_offset+length)?;
+            let scanline_next = &scanline[bytewidth..];
+            let out_prev = &out[..length-bytewidth];
+            let out_next = &out[bytewidth..];
+            for (out, (s, out_prev)) in out_next.iter().zip(scanline_next.iter().zip(out_prev)) {
+                out.set(s.get().wrapping_add(out_prev.get()));
             }
         },
         2 => if let Some(prevline) = prevline {
-            if prevline.len() != length { return None; }
+            let prevline = prevline.get(..length)?;
+            let inout = Cell::from_mut(inout).as_slice_of_cells();
+            let out = inout.get(..length)?;
+            let scanline = inout.get(scanline_offset..scanline_offset+length)?;
 
-            for i in 0..length {
-                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(prevline[i]);
+            for (out, (s, p)) in out.iter().zip(scanline.iter().zip(prevline.iter().copied())) {
+                out.set(s.get().wrapping_add(p));
             }
         } else {
-            copy_within(inout, scanline_offset..scanline_offset+length, 0);
+            inout.copy_within(scanline_offset..scanline_offset+length, 0)
         },
-        3 => if let Some(prevline) = prevline {
-            if prevline.len() != length { return None; }
+        3 => {
+            if let Some(prevline) = prevline {
+                let prevline = prevline.get(..length)?;
+                let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
+                let inout = Cell::from_mut(inout).as_slice_of_cells();
+                let out = inout.get(..length)?;
+                let scanline = inout.get(scanline_offset..scanline_offset+length)?;
+                let (scanline_prev, scanline_next) = scanline.split_at(bytewidth);
+                let out_prev = &out[..length-bytewidth];
+                let out_next = &out[bytewidth..];
+                for (out, (s, p)) in out_prev.iter().zip(scanline_prev.iter().zip(prevline_start.iter().copied())) {
+                    out.set(s.get().wrapping_add(p >> 1));
+                }
+                for ((out, out_prev), (s, p)) in out_next.iter().zip(out_prev).zip(scanline_next.iter().zip(prevline_next.iter().copied())) {
+                    let o = out_prev.get();
+                    // SIMD-friendly average
+                    out.set(s.get().wrapping_add((o & p) + (o ^ p) >> 1));
+                }
+            } else {
+                inout.copy_within(scanline_offset..scanline_offset+bytewidth, 0);
+                let inout = Cell::from_mut(inout).as_slice_of_cells();
+                let out = inout.get(..length)?;
+                let scanline = inout.get(scanline_offset..scanline_offset+length)?;
+                let scanline_next = &scanline[bytewidth..];
 
-            for i in 0..bytewidth {
-                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(prevline[i] >> 1);
-            }
-            for i in bytewidth..length {
-                let t = *inout.get(i - bytewidth)? as u16 + prevline[i] as u16;
-                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add((t >> 1) as u8);
-            }
-        } else {
-            copy_within(inout, scanline_offset..scanline_offset+bytewidth, 0);
-            for i in bytewidth..length {
-                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(*inout.get(i - bytewidth)? >> 1);
+                let out_prev = &out[..length-bytewidth];
+                let out_next = &out[bytewidth..];
+                for ((out, out_prev), s) in out_next.iter().zip(out_prev).zip(scanline_next.iter()) {
+                    out.set(s.get().wrapping_add(out_prev.get() >> 1));
+                }
             }
         },
-        4 => if let Some(prevline) = prevline {
-            if prevline.len() != length { return None; }
+        4 => {
+            if let Some(prevline) = prevline {
+                let prevline = prevline.get(..length)?;
+                let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
+                let prevline_prev = &prevline[..length-bytewidth];
+                let inout = Cell::from_mut(inout).as_slice_of_cells();
+                let out = inout.get(..length)?;
+                let scanline = inout.get(scanline_offset..scanline_offset+length)?;
+                let (scanline_prev, scanline_next) = scanline.split_at(bytewidth);
 
-            for i in 0..bytewidth {
-                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(prevline[i]);
-            }
-            for i in bytewidth..length {
-                let pred = paeth_predictor(*inout.get(i - bytewidth)?, prevline[i], *prevline.get(i - bytewidth)?);
-                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(pred);
-            }
-        } else {
-            copy_within(inout, scanline_offset..scanline_offset+bytewidth, 0);
-            for i in bytewidth..length {
-                *inout.get_mut(i)? = inout.get(scanline_offset + i)?.wrapping_add(*inout.get(i - bytewidth)?);
+                let out_prev = &out[..length-bytewidth];
+                let out_next = &out[bytewidth..];
+                for (out, (s, p)) in out_prev.iter().zip(scanline_prev.iter().zip(prevline_start.iter().copied())) {
+                    out.set(s.get().wrapping_add(p));
+                }
+                for ((out, out_prev), (s, (p, p_prev))) in out_next.iter().zip(out_prev).zip(scanline_next.iter().zip(prevline_next.iter().copied().zip(prevline_prev.iter().copied()))) {
+                    let pred = paeth_predictor(out_prev.get(), p, p_prev);
+                    out.set(s.get().wrapping_add(pred));
+                }
+            } else {
+                inout.copy_within(scanline_offset..scanline_offset+bytewidth, 0);
+                let inout = Cell::from_mut(inout).as_slice_of_cells();
+                let out = inout.get(..length)?;
+                let scanline = inout.get(scanline_offset..scanline_offset+length)?;
+                let scanline_next = &scanline[bytewidth..];
+                let out_prev = &out[..length-bytewidth];
+                let out_next = &out[bytewidth..];
+                for (out, (s, out_prev)) in out_next.iter().zip(scanline_next.iter().zip(out_prev)) {
+                    out.set(s.get().wrapping_add(out_prev.get()));
+                }
             }
         },
         _ => return None,
