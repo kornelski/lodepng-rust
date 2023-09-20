@@ -2315,15 +2315,6 @@ pub(crate) fn lodepng_decode_file(filename: &Path, colortype: ColorType, bitdept
     lodepng_decode_memory(&buf, colortype, bitdepth)
 }
 
-/* load file into buffer that already has the correct allocated size. Returns error code.*/
-#[inline]
-pub(crate) fn lodepng_buffer_file(out: &mut [u8], filename: &Path) -> Result<(), Error> {
-    fs::File::open(filename)
-        .and_then(|mut f| f.read_exact(out))
-        .map_err(|_| Error::new(78))?;
-    Ok(())
-}
-
 #[inline]
 pub(crate) fn lodepng_load_file(filename: &Path) -> Result<Vec<u8>, Error> {
     fs::read(filename).map_err(|_| Error::new(78))
