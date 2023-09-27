@@ -24,10 +24,9 @@ pub use rgb::RGBA8 as RGBA;
 use rgb::RGBA16;
 use std::cell::Cell;
 use std::collections::HashMap;
-use std::fs;
 use std::io::prelude::*;
 use std::io;
-use std::path::Path;
+
 use std::slice;
 
 /*8 bytes PNG signature, aka the magic bytes*/
@@ -434,35 +433,6 @@ fn paeth_predictor(a: u8, b: u8, c: u8) -> u8 {
     } else {
         a as u8
     }
-}
-
-#[inline]
-pub(crate) fn lodepng_encode_file(filename: &Path, image: &[u8], w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> Result<(), Error> {
-    let v = lodepng_encode_memory(image, w, h, colortype, bitdepth)?;
-    lodepng_save_file(&v, filename)
-}
-
-#[inline]
-pub(crate) fn lodepng_get_bpp_lct(colortype: ColorType, bitdepth: u32) -> u32 {
-    assert!(bitdepth >= 1 && bitdepth <= 16);
-    /*bits per pixel is amount of channels * bits per channel*/
-    let ch = colortype.channels() as u32;
-    ch * if ch > 1 {
-        if bitdepth == 8 {
-            8
-        } else {
-            16
-        }
-    } else {
-        bitdepth
-    }
-}
-
-pub(crate) fn lodepng_get_raw_size_lct(w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> usize {
-    /*will not overflow for any color type if roughly w * h < 268435455*/
-    let bpp = lodepng_get_bpp_lct(colortype, bitdepth) as usize;
-    let n = w as usize * h as usize;
-    ((n / 8) * bpp) + ((n & 7) * bpp + 7) / 8
 }
 
 impl Info {
@@ -2310,23 +2280,6 @@ pub(crate) fn lodepng_decode_memory(inp: &[u8], colortype: ColorType, bitdepth: 
 }
 
 #[inline]
-pub(crate) fn lodepng_decode_file(filename: &Path, colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
-    let buf = lodepng_load_file(filename)?;
-    lodepng_decode_memory(&buf, colortype, bitdepth)
-}
-
-#[inline]
-pub(crate) fn lodepng_load_file(filename: &Path) -> Result<Vec<u8>, Error> {
-    fs::read(filename).map_err(|_| Error::new(78))
-}
-
-/*write given buffer to the file, overwriting the file, it doesn't append to it.*/
-pub(crate) fn lodepng_save_file(buffer: &[u8], filename: &Path) -> Result<(), Error> {
-    fs::write(filename, buffer)
-        .map_err(|_| Error::new(79))
-}
-
-#[inline]
 fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
     debug_assert!(ChunksIter { data }.all(|ch| ch.is_ok()));
     out.try_reserve(data.len())?;
@@ -2682,10 +2635,6 @@ pub(crate) fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &Colo
     Ok(mode_out)
 }
 
-#[inline]
-pub(crate) fn lodepng_filesize(filename: &Path) -> Option<u64> {
-    fs::metadata(filename).map(|m| m.len()).ok()
-}
 
 #[inline]
 pub(crate) fn lodepng_encode_memory(image: &[u8], w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> Result<Vec<u8>, Error> {

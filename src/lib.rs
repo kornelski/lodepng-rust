@@ -6,7 +6,7 @@ pub mod ffi;
 mod rustimpl;
 mod zlib;
 
-use crate::rustimpl::{chunk_length, lodepng_get_bpp_lct};
+use crate::rustimpl::chunk_length;
 
 mod error;
 pub use crate::error::*;
@@ -119,7 +119,7 @@ impl ColorMode {
     #[inline(always)]
     #[must_use]
     pub fn bpp(&self) -> u32 {
-        lodepng_get_bpp_lct(self.colortype, self.bitdepth()) /*4 or 6*/
+        self.colortype.bpp(self.bitdepth)
     }
 
     pub(crate) fn clear_key(&mut self) {
@@ -1052,7 +1052,7 @@ pub struct ChunkRef<'a> {
 }
 
 impl<'a> ChunkRef<'a> {
-    #[inline]
+    #[cfg(feature = "c_ffi")]
     pub(crate) unsafe fn from_ptr(data: *const u8) -> Result<Self, Error> {
         debug_assert!(!data.is_null());
         let head = std::slice::from_raw_parts(data, 4);

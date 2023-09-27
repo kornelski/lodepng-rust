@@ -40,6 +40,24 @@ pub enum ColorType {
     BGRX = 3 | 64,
 }
 
+impl ColorType {
+    #[must_use]
+    pub fn bpp(&self, bitdepth: u32) -> u32 {
+        assert!(bitdepth >= 1 && bitdepth <= 16);
+        /*bits per pixel is amount of channels * bits per channel*/
+        let ch = u32::from(self.channels());
+        ch * if ch > 1 {
+            if bitdepth == 8 {
+                8
+            } else {
+                16
+            }
+        } else {
+            bitdepth
+        }
+    }
+}
+
 /// Color mode of an image. Contains all information required to decode the pixel
 /// bits to RGBA colors. This information is the same as used in the PNG file
 /// format, and is used both for PNG and raw image data in LodePNG.

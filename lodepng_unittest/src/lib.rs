@@ -1,6 +1,6 @@
 extern crate lodepng;
 
-extern "C" {
+extern "C-unwind" {
     pub fn lode_unittest_main1() -> std::os::raw::c_uint;
     pub fn lode_unittest_main2() -> std::os::raw::c_uint;
     pub fn lode_unittest_main3() -> std::os::raw::c_uint;
