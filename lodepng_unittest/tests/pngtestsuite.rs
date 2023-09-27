@@ -1,18 +1,20 @@
+use png::BitDepth;
 use rgb::*;
 use std::fs::*;
 use std::path::*;
+
 fn decode(path: &Path) -> Vec<RGBA8> {
     let mut p = png::Decoder::new(File::open(path).unwrap());
-    p.set_transformations(png::Transformations::EXPAND);
-    let (info, mut reader) = p.read_info().unwrap();
-    let mut data = vec![0u8; info.buffer_size()];
+    p.set_transformations(png::Transformations::EXPAND | png::Transformations::STRIP_16);
+    let mut reader = p.read_info().unwrap();
+    let mut data = vec![0u8; reader.output_buffer_size()];
     reader.next_frame(&mut data).unwrap();
 
-    match info.color_type {
-        png::ColorType::RGBA => data.as_rgba().to_owned(),
-        png::ColorType::RGB => data.as_rgb().iter().map(|&p| p.alpha(255)).collect(),
-        png::ColorType::Grayscale => data.iter().map(|&p| RGBA::new(p,p,p,255)).collect(),
-        png::ColorType::GrayscaleAlpha => data.chunks(2).map(|c| RGBA::new(c[0],c[0],c[0],c[1])).collect(),
+    match reader.output_color_type() {
+        (png::ColorType::Rgba, BitDepth::Eight) => data.as_rgba().to_owned(),
+        (png::ColorType::Rgb, BitDepth::Eight) => data.as_rgb().iter().map(|&p| p.alpha(255)).collect(),
+        (png::ColorType::Grayscale, BitDepth::Eight) => data.iter().map(|&p| RGBA::new(p,p,p,255)).collect(),
+        (png::ColorType::GrayscaleAlpha, BitDepth::Eight) => data.chunks(2).map(|c| RGBA::new(c[0],c[0],c[0],c[1])).collect(),
         _ => panic!(),
     }
 }
