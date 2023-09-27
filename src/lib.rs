@@ -830,15 +830,11 @@ impl<PixelType: rgb::Pod> Bitmap<PixelType> {
         let area = width.checked_mul(height).ok_or(Error::new(77))?;
 
         // Can only cast Vec if alignment doesn't change, and capacity is a round number of pixels
-        let is_safe_to_transmute = 1 == std::mem::align_of::<PixelType>() && unsafe {
-            let whole_capacity_slice = buffer.as_slice();
-            let (before, _, after) = whole_capacity_slice.align_to::<PixelType>();
-            before.is_empty() && after.is_empty()
-        };
+        let is_safe_to_transmute = 1 == std::mem::align_of::<PixelType>() &&
+            0 == buffer.capacity() % std::mem::align_of::<PixelType>() &&
+            0 == buffer.len() % std::mem::align_of::<PixelType>();
 
         let buffer = if is_safe_to_transmute {
-            debug_assert_eq!(0, buffer.capacity() % std::mem::size_of::<PixelType>());
-            debug_assert!((buffer.len() / std::mem::size_of::<PixelType>()) >= area);
             unsafe {
                 let mut buffer = std::mem::ManuallyDrop::new(buffer);
                 Vec::from_raw_parts(buffer.as_mut_ptr().cast::<PixelType>(),
@@ -857,11 +853,15 @@ impl<PixelType: rgb::Pod> Bitmap<PixelType> {
             }
             out
         };
+        if buffer.len() < area {
+            return Err(Error::new(84));
+        }
         Ok(Self { buffer, width, height })
     }
 }
 
 impl<PixelType> fmt::Debug for Bitmap<PixelType> {
+    #[cold]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{{} × {} Bitmap}}", self.width, self.height)
     }
