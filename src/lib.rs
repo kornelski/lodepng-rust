@@ -629,7 +629,7 @@ impl State {
         self.encoder.filter_palette_zero = palette_filter_zero;
     }
 
-    /// See `Encoder'
+    /// See `Encoder`
     #[deprecated(note = "use flate2 crate features instead")]
     #[allow(deprecated)]
     pub fn set_custom_zlib(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
@@ -637,7 +637,7 @@ impl State {
         self.encoder.zlibsettings.custom_context = context;
     }
 
-    /// See `Encoder'
+    /// See `Encoder`
     #[deprecated(note = "use flate2 crate features instead")]
     #[allow(deprecated)]
     pub fn set_custom_deflate(&mut self, callback: ffi::custom_compress_callback, context: *const c_void) {
