@@ -10,12 +10,9 @@ license = "Zlib"
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/kornelski/lodepng-rust.git"
-version = "3.8.2"
+version = "3.9.0"
 edition = "2021"
 rust-version = "1.64"
-
-[badges]
-travis-ci = { repository = "kornelski/lodepng-rust" }
 
 [dependencies]
 libc = { version = "0.2.126", optional = true }
