@@ -19,7 +19,7 @@ libc = { version = "0.2.126", optional = true }
 rgb = { version = "0.8.34", features = ["as-bytes"] }
 flate2 = { version = "1.0.24", default-features = false }
 crc32fast = "1.3.2"
-fallible_collections = { version = "0.4.5", features = ["rust_1_57"] }
+fallible_collections = { version = "0.4.5", features = ["rust_1_57"], optional = true }
 
 [workspace]
 members = ["lodepng_unittest"]
@@ -35,7 +35,16 @@ targets = ["x86_64-unknown-linux-gnu"]
 rustdoc-args = ["--cfg", "docsrs", "--generate-link-to-definition"]
 
 [features]
-default = ["rust_backend", "c_ffi"]
-cfzlib = ["flate2/cloudflare_zlib"]
+default = ["rust_backend", "c_ffi", "deprecated_back_compat_error_type"]
+# Compress using pure-Rust miniz_oxide, which isn't the fastest
 rust_backend = ["flate2/rust_backend"]
+# Compress using cloudflare-zlib, which is faster, but written in C
+cfzlib = ["flate2/cloudflare_zlib"]
+# Compress using zlib-ng, which is faster, but written in C and requires `cmake`
+ngzlib = ["flate2/zlib-ng-compat"]
+# Export C API for use in C applications. It's mostly ABI-compatible with the original C lodepng.
 c_ffi = ["dep:libc"]
+
+# Deprecated. Implements `From<fallible_collections::TryReserveError> for Error`
+# Don't use this feature, don't rely on `fallible_collections`.
+deprecated_back_compat_error_type = ["dep:fallible_collections"]

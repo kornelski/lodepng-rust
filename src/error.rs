@@ -210,6 +210,7 @@ impl From<TryReserveError> for Error {
     }
 }
 
+#[cfg(feature = "deprecated_back_compat_error_type")]
 /// Back compat only
 impl From<fallible_collections::TryReserveError> for Error {
     #[cold]
