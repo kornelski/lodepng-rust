@@ -84,6 +84,7 @@ fn get_palette_translucency(palette: &[RGBA]) -> PaletteTranslucency {
 
 /*The opposite of the remove_padding_bits function
   olinebits must be >= ilinebits*/
+#[inline(never)]
 fn add_padding_bits_line(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usize, y: usize) {
     let iline = y * ilinebits;
     for i in 0..ilinebits {
@@ -133,6 +134,7 @@ fn filtered_scanlines(out: &mut dyn Write, inp: &[u8], w: usize, h: usize, info_
   out must be a buffer with as size: h + (w * h * bpp + 7) / 8, because there are
   the scanlines with 1 extra byte per scanline
   */
+#[inline(never)]
 fn filter(out: &mut dyn Write, inp: &[u8], w: usize, h: usize, info: &ColorMode, settings: &EncoderSettings) -> Result<(), Error> {
     debug_assert!(w != 0);
     debug_assert!(h != 0);
@@ -1165,6 +1167,7 @@ fn read_chunk_phys(info: &mut Info, data: &[u8]) -> Result<(), Error> {
     Ok(())
 }
 
+#[inline(never)]
 fn add_chunk_idat(out: &mut Vec<u8>, inp: &[u8], w: usize, h: usize, info_png: &Info, settings: &EncoderSettings, zlibsettings: &CompressSettings) -> Result<(), Error> {
     let mut ch = ChunkBuilder::new(out, b"IDAT");
 
@@ -1752,6 +1755,7 @@ fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: usize, 
   w and h are image dimensions or dimensions of reduced image, bpp is bits per pixel
   in and out are allowed to be the same memory address (but aren't the same size since in has the extra filter bytes)
   */
+#[inline(never)]
 fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h: usize, bpp: u8) -> Result<(), Error> {
     let mut prevline = None;
     /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
@@ -1796,7 +1800,6 @@ fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h
   the incoming scanlines do NOT include the filter_type byte, that one is given in the parameter filter_type instead
   out and scanline MAY be the same memory address! prevline must be disjoint.
   */
-#[inline(never)]
 fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8) -> Result<(), Error> {
     let bytewidth = bytewidth as usize;
     let length = out.len();
@@ -1883,7 +1886,6 @@ fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, b
     Ok(())
 }
 
-#[inline(never)]
 fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8, length: usize) -> Option<()> {
     let bytewidth = bytewidth as usize;
     // help the optimizer remove bounds checks
@@ -1996,6 +1998,7 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
   also used to move bits after earlier such operations happened, e.g. in a sequence of reduced images from Adam7
   only useful if (ilinebits - olinebits) is a value in the range 1..7
   */
+#[inline(never)]
 fn remove_padding_bits(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usize, h: usize) {
     for y in 0..h {
         let iline = y * ilinebits;
@@ -2007,6 +2010,7 @@ fn remove_padding_bits(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: 
     }
 }
 
+#[inline(never)]
 fn remove_padding_bits_aliased(inout: &mut [u8], out_off: usize, in_off: usize, olinebits: usize, ilinebits: usize, h: usize) {
     for y in 0..h {
         let iline = y * ilinebits;
@@ -2073,7 +2077,6 @@ pub(crate) fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks
         return Err(Error::new(27));
     }
     /*when decoding a new PNG image, make sure all parameters created after previous decoding are reset*/
-    let mut info_png = Info::new();
     if inp[0..8] != [137, 80, 78, 71, 13, 10, 26, 10] {
         /*error: the first 8 bytes are not the correct PNG signature*/
         return Err(Error::new(28));
@@ -2098,6 +2101,7 @@ pub(crate) fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks
     if bitdepth == 0 || bitdepth > 16 {
         return Err(Error::new(29));
     }
+    let mut info_png = Info::new();
     info_png.color.set_bitdepth(inp[24] as u32);
     info_png.color.colortype = match inp[25] {
         0 => ColorType::GREY,
@@ -2408,6 +2412,7 @@ pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) ->
 /*profile must already have been inited with mode.
 It's ok to set some parameters of profile to done already.*/
 /// basic flag is for internal use
+#[inline(never)]
 fn get_color_profile16(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> ColorProfile {
     let mut profile = ColorProfile::new();
     let numpixels: usize = w as usize * h as usize;
