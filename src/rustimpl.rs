@@ -1633,7 +1633,7 @@ pub(crate) fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, 
     let bytewidth_in = (mode_in.bpp() / 8) as usize;
     let bytewidth_out = (mode_out.bpp() / 8) as usize;
     if lodepng_color_mode_equal(mode_out, mode_in) {
-        let numbytes = mode_in.raw_size(w, h);
+        let numbytes = mode_in.raw_size_opt(w as _, h as _)?;
         out[..numbytes].copy_from_slice(&inp[..numbytes]);
         return Ok(());
     }
@@ -1715,15 +1715,16 @@ fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: usize, 
     if bpp == 0 {
         return Err(Error::new(31));
     }
+    let raw_size = info_png.color.raw_size_opt(w, h)?;
     Ok(if info_png.interlace_method == 0 {
         if bpp < 8 && linebits_exact(w, bpp) != linebits_rounded(w, bpp) {
             unfilter_aliased(&mut inp, 0, unfiltering_buffer, w, h, bpp)?;
-            let mut out = zero_vec(info_png.color.raw_size(w as u32, h as u32))?;
+            let mut out = zero_vec(raw_size)?;
             remove_padding_bits(&mut out, &inp, linebits_exact(w, bpp), linebits_rounded(w, bpp), h);
             out
         } else {
             unfilter_aliased(&mut inp, 0, unfiltering_buffer, w, h, bpp)?;
-            inp.truncate(info_png.color.raw_size(w as u32, h as u32));
+            inp.truncate(raw_size);
             inp
         }
     } else {
@@ -1742,7 +1743,7 @@ fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: usize, 
             offset_filtered += pass.filtered_len;
             offset_packed += pass.packed_len;
         }
-        let mut out = zero_vec(info_png.color.raw_size(w as u32, h as u32))?;
+        let mut out = zero_vec(raw_size)?;
         adam7_deinterlace(&mut out, &inp[unfiltering_buffer..], w, h, bpp);
         out
     })
@@ -2295,7 +2296,7 @@ pub(crate) fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, 
         if !(state.info_raw.colortype == ColorType::RGB || state.info_raw.colortype == ColorType::RGBA) && (state.info_raw.bitdepth() != 8) {
             return Err(Error::new(56)); /*unsupported color mode conversion*/
         }
-        let mut out = zero_vec(state.info_raw.raw_size(w as u32, h as u32))?;
+        let mut out = zero_vec(state.info_raw.raw_size_opt(w, h)?)?;
         lodepng_convert(&mut out, &decoded, &state.info_raw, &state.info_png.color, w as u32, h as u32)?;
         Ok((out, w, h))
     }
@@ -2320,10 +2321,7 @@ fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
 pub const LODEPNG_VERSION_STRING: &[u8] = b"20161127-Rust-3.0\0";
 
 #[inline(never)]
-pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result<Vec<u8>, Error> {
-    let w = w as usize;
-    let h = h as usize;
-
+pub(crate) fn lodepng_encode(image: &[u8], w: usize, h: usize, state: &mut State) -> Result<Vec<u8>, Error> {
     let mut info = state.info_png.clone();
     if (info.color.colortype == ColorType::PALETTE || state.encoder.force_palette) && (info.color.palette().is_empty() || info.color.palette().len() > 256) {
         return Err(Error::new(68));
@@ -2685,7 +2683,7 @@ pub(crate) fn lodepng_encode_memory(image: &[u8], w: u32, h: u32, colortype: Col
     state.info_raw_mut().set_bitdepth(bitdepth);
     state.info_png_mut().color.colortype = colortype;
     state.info_png_mut().color.set_bitdepth(bitdepth);
-    lodepng_encode(image, w, h, &mut state.state)
+    lodepng_encode(image, w as _, h as _, &mut state.state)
 }
 
 impl EncoderSettings {

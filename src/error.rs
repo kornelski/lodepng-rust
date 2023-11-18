@@ -15,7 +15,7 @@ impl ErrorCode {
     #[must_use]
     pub fn as_str(&self) -> &'static str {
         let s = self.c_description();
-        let s = &s[..s.len() - 1]; // trim \0
+        let s = s.get(..s.len() - 1).unwrap_or_default(); // trim \0
         std::str::from_utf8(s).unwrap_or("")
     }
 

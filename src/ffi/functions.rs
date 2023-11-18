@@ -568,7 +568,7 @@ pub unsafe extern "C" fn lodepng_encode(out: &mut *mut u8, outsize: &mut usize, 
     *out = ptr::null_mut();
     *outsize = 0;
     assert!(!image.is_null());
-    let res = lode_try_state!(state.error, rustimpl::lodepng_encode(slice::from_raw_parts(image, 0x1FFF_FFFF), w, h, state));
+    let res = lode_try_state!(state.error, rustimpl::lodepng_encode(slice::from_raw_parts(image, 0x1FFF_FFFF), w as _, h as _, state));
     let (data, size) = lode_try!(vec_into_raw(res));
     *out = data;
     *outsize = size;
