@@ -983,15 +983,16 @@ pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Err
 
 #[cfg_attr(debug_assertions, track_caller)]
 fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> Result<&[u8], Error> {
-    let bytes_per_pixel = bitdepth as usize/8;
-    assert!(mem::size_of::<PixelType>() <= 4*bytes_per_pixel, "Implausibly large {}-byte pixel data type", mem::size_of::<PixelType>());
+    let required_bytes = required_size(w, h, colortype, bitdepth)?;
 
     let px_bytes = mem::size_of::<PixelType>();
     let image_bytes = image.len() * px_bytes;
-    let required_bytes = required_size(w, h, colortype, bitdepth)?;
 
     if image_bytes != required_bytes {
-        debug_assert_eq!(image_bytes, required_bytes, "Image is {image_bytes} bytes large ({w}x{h}x{px_bytes}), but needs to be {required_bytes} ({colortype:?}, {bitdepth})");
+        let bpp = colortype.bpp(bitdepth) as usize;
+        let ch = colortype.channels();
+        assert!(px_bytes == 1 || px_bytes*8 == bpp, "Implausibly large {px_bytes}-byte pixel data type for {bpp}-bit pixels ({ch}ch)");
+        debug_assert_eq!(image_bytes, required_bytes, "Image is {image_bytes} bytes large ({w}x{h} {ch}ch), but needs to be {required_bytes}B ({colortype:?}, {bitdepth})");
         return Err(Error::new(84));
     }
 
@@ -1298,6 +1299,11 @@ mod test {
         assert_eq!(3, mem::size_of::<RGB<u8>>());
         assert_eq!(2, mem::size_of::<GreyAlpha<u8>>());
         assert_eq!(1, mem::size_of::<Grey<u8>>());
+
+        encode_memory(&[0u8, 1], 4, 4, crate::ColorType::GREY, 1).unwrap();
+        encode_memory(&[0u8, 1], 3, 2, crate::ColorType::GREY, 2).unwrap();
+        encode_memory(&[0u8, 1], 1, 4, crate::ColorType::GREY, 4).unwrap();
+        encode_memory(&[0u8, 1], 2, 1, crate::ColorType::GREY, 8).unwrap();
     }
 
     #[test]
