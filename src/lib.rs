@@ -68,6 +68,7 @@ impl ColorMode {
     }
 
     #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_bitdepth(&mut self, d: u32) {
         assert!(d >= 1 && d <= 16);
         self.bitdepth = d;
@@ -830,6 +831,7 @@ pub struct Bitmap<PixelType> {
 
 impl<PixelType: rgb::Pod> Bitmap<PixelType> {
     /// Convert Vec<u8> to Vec<PixelType>
+    #[cfg_attr(debug_assertions, track_caller)]
     fn from_buffer(buffer: Vec<u8>, width: usize, height: usize) -> Result<Self> {
         let area = width.checked_mul(height).ok_or(Error::new(77))?;
 
@@ -913,6 +915,7 @@ fn new_bitmap(buffer: Vec<u8>, w: usize, h: usize, colortype: ColorType, bitdept
 /// * `colortype`: the desired color type for the raw output image. See `ColorType`.
 /// * `bitdepth`: the desired bit depth for the raw output image. 1, 2, 4, 8 or 16. Typically 8.
 #[inline]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
     let input = input.as_ref();
     assert!(bitdepth > 0 && bitdepth <= 16);
@@ -978,6 +981,7 @@ pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Err
     }
 }
 
+#[cfg_attr(debug_assertions, track_caller)]
 fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> Result<&[u8], Error> {
     let bytes_per_pixel = bitdepth as usize/8;
     assert!(mem::size_of::<PixelType>() <= 4*bytes_per_pixel, "Implausibly large {}-byte pixel data type", mem::size_of::<PixelType>());
@@ -1010,6 +1014,7 @@ fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize,
 ///
 /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
 #[inline]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn encode_memory<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
     let image = buffer_for_type(image, w, h, colortype, bitdepth)?;
     rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)
@@ -1017,12 +1022,14 @@ pub fn encode_memory<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usiz
 
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
 #[inline(always)]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn encode32<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
 #[inline(always)]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn encode24<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGB, 8)
 }
@@ -1032,6 +1039,7 @@ pub fn encode24<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) ->
 ///
 /// NOTE: This overwrites existing files without warning!
 #[inline]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = encode_memory(image, w, h, colortype, bitdepth)?;
     fs::write(filepath, encoded)?;
@@ -1040,12 +1048,14 @@ pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[Pi
 
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
 #[inline(always)]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn encode32_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
 #[inline(always)]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn encode24_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGB, 8)
 }
