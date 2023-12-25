@@ -959,6 +959,7 @@ pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Err
 ///  }
 ///  ```
 #[inline(always)]
+#[cfg_attr(debug_assertions, track_caller)]
 pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
     decode_memory(fs::read(filepath)?, colortype, bitdepth)
 }
