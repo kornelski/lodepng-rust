@@ -4,9 +4,13 @@ name = "lodepng-fuzz"
 version = "0.0.1"
 authors = ["Automatically generated"]
 publish = false
+edition = "2021"
 
 [package.metadata]
 cargo-fuzz = true
+
+[dependencies]
+rgb = "0.8"
 
 [dependencies.lodepng]
 path = ".."
@@ -18,5 +22,8 @@ git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
 members = ["."]
 
 [[bin]]
-name = "decode32"
-path = "fuzz_targets/decode32.rs"
+name = "reencode8"
+path = "fuzz_targets/reencode8.rs"
+
+[dev-dependencies]
+png = "0.17.10"
