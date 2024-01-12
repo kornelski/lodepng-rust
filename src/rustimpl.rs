@@ -1838,8 +1838,8 @@ fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, b
                 let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
                 let out = Cell::from_mut(out).as_slice_of_cells();
                 let out_prev = &out[..length-bytewidth];
-                let out_next = &out[bytewidth..];
-                for (out, (s, p)) in out_prev.iter().zip(scanline_start.iter().copied().zip(prevline_start.iter().copied())) {
+                let (out_start, out_next) = out.split_at(bytewidth);
+                for (out, (s, p)) in out_start.iter().zip(scanline_start.iter().copied().zip(prevline_start.iter().copied())).take(bytewidth) {
                     out.set(s.wrapping_add(p >> 1));
                 }
                 for ((out, out_prev), (s, p)) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied().zip(prevline_next.iter().copied())) {
@@ -1864,8 +1864,8 @@ fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, b
                 let prevline_prev = &prevline[..length-bytewidth];
                 let out = Cell::from_mut(out).as_slice_of_cells();
                 let out_prev = &out[..length-bytewidth];
-                let out_next = &out[bytewidth..];
-                for (out, (s, p)) in out_prev.iter().zip(scanline_start.iter().copied().zip(prevline_start.iter().copied())) {
+                let (out_start, out_next) = out.split_at(bytewidth);
+                for (out, (s, p)) in out_start.iter().zip(scanline_start.iter().copied().zip(prevline_start.iter().copied())) {
                     out.set(s.wrapping_add(p));
                 }
                 for ((out, out_prev), (s, (p, p_prev))) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied().zip(prevline_next.iter().copied().zip(prevline_prev.iter().copied()))) {
@@ -1935,10 +1935,12 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
 
                 let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
                 let out_prev = &out[..length-bytewidth];
-                let out_next = &out[bytewidth..];
-                for (out, (s, p)) in out_prev.iter().zip(scanline_start.iter().zip(prevline_start.iter().copied())) {
+                let (out_start, out_next) = out.split_at(bytewidth);
+
+                for (out, (s, p)) in out_start.iter().zip(scanline_start.iter().zip(prevline_start.iter().copied())) {
                     out.set(s.get().wrapping_add(p >> 1));
                 }
+
                 for ((out, out_prev), (s, p)) in out_next.iter().zip(out_prev).zip(scanline_next.iter().zip(prevline_next.iter().copied())) {
                     let o = out_prev.get();
                     // SIMD-friendly average
@@ -1971,8 +1973,8 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
 
                 let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
                 let out_prev = &out[..length-bytewidth];
-                let out_next = &out[bytewidth..];
-                for (out, (s, p)) in out_prev.iter().zip(scanline_start.iter().zip(prevline_start.iter().copied())) {
+                let (out_start, out_next) = out.split_at(bytewidth);
+                for (out, (s, p)) in out_start.iter().zip(scanline_start.iter().zip(prevline_start.iter().copied())) {
                     out.set(s.get().wrapping_add(p));
                 }
                 for ((out, out_prev), (s, (p, p_prev))) in out_next.iter().zip(out_prev).zip(scanline_next.iter().zip(prevline_next.iter().copied().zip(prevline_prev.iter().copied()))) {
