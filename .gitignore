@@ -1,6 +1,6 @@
 target/
 .lock
-/Cargo.lock
+Cargo.lock
 write_test.png
 doc/lodepng/
 doc/src/

@@ -14,6 +14,7 @@ rgb = "0.8"
 
 [dependencies.lodepng]
 path = ".."
+
 [dependencies.libfuzzer-sys]
 git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
 
@@ -24,6 +25,9 @@ members = ["."]
 [[bin]]
 name = "reencode8"
 path = "fuzz_targets/reencode8.rs"
+[[bin]]
+name = "reencode24"
+path = "fuzz_targets/reencode24.rs"
 
 [dev-dependencies]
 png = "0.17.10"
