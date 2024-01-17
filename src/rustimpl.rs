@@ -345,7 +345,7 @@ fn test_filter_with_data(line1: &[u8], line2: &[u8], bytewidth: u8) {
         let mut unfiltered = vec![66u8; line_width * bytewidth as usize];
         for filter_type in 0..5 {
             filter_scanline(&mut filtered, &line1, Some(&line2), bytewidth, filter_type);
-            unfilter_scanline(&mut unfiltered, &filtered, Some(&line2), bytewidth, filter_type).unwrap();
+            unfilter_scanline1(&mut unfiltered, &filtered, &line2, bytewidth, filter_type).unwrap();
             assert_eq!(line1, &unfiltered, "width={line_width}, prev+filter={filter_type}, bytewidth={bytewidth}");
 
             for offset in [bytewidth as usize, bytewidth as usize+1, bytewidth as usize*2] {
@@ -357,9 +357,6 @@ fn test_filter_with_data(line1: &[u8], line2: &[u8], bytewidth: u8) {
         }
         for filter_type in 0..5 {
             filter_scanline(&mut filtered, &line1, None, bytewidth, filter_type);
-            unfilter_scanline(&mut unfiltered, &filtered, None, bytewidth, filter_type).unwrap();
-            assert_eq!(line1, &unfiltered, "width={line_width}, none+filter={filter_type}, bytewidth={bytewidth}");
-
             for offset in [bytewidth as usize, bytewidth as usize+1, bytewidth as usize*2] {
                 line3.clear(); line3.resize(offset, 0);
                 line3.extend_from_slice(&filtered);
@@ -1778,12 +1775,12 @@ fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: usize, 
     let raw_size = info_png.color.raw_size_opt(w, h)?;
     Ok(if info_png.interlace_method == 0 {
         if bpp < 8 && linebits_exact(w, bpp) != linebits_rounded(w, bpp) {
-            unfilter_aliased(&mut inp, 0, unfiltering_buffer, w, h, bpp)?;
+            unfilter_scanlines(&mut inp, unfiltering_buffer, w, h, bpp)?;
             let mut out = zero_vec(raw_size)?;
             remove_padding_bits(&mut out, &inp, linebits_exact(w, bpp), linebits_rounded(w, bpp), h);
             out
         } else {
-            unfilter_aliased(&mut inp, 0, unfiltering_buffer, w, h, bpp)?;
+            unfilter_scanlines(&mut inp, unfiltering_buffer, w, h, bpp)?;
             inp.truncate(raw_size);
             inp
         }
@@ -1793,7 +1790,7 @@ fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: usize, 
         let mut offset_filtered = unfiltering_buffer;
         let mut offset_packed = 0;
         for pass in passes {
-            unfilter_aliased(&mut inp, offset_padded, offset_filtered, pass.w, pass.h, bpp)?;
+            unfilter_scanlines(&mut inp[offset_padded..], offset_filtered-offset_padded, pass.w, pass.h, bpp)?;
             if bpp < 8 {
                 /*remove padding bits in scanlines; after this there still may be padding
                         bits between the different reduced images: each reduced image still starts nicely at a byte*/
@@ -1809,64 +1806,46 @@ fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: usize, 
     })
 }
 
-/*
-  For PNG filter method 0
-  this function unfilters a single image (e.g. without interlacing this is called once, with Adam7 seven times)
-  out must have enough bytes allocated already, in must have the scanlines + 1 filter_type byte per scanline
-  w and h are image dimensions or dimensions of reduced image, bpp is bits per pixel
-  in and out are allowed to be the same memory address (but aren't the same size since in has the extra filter bytes)
-  */
 #[inline(never)]
-fn unfilter_aliased(inout: &mut [u8], out_off: usize, in_off: usize, w: usize, h: usize, bpp: u8) -> Result<(), Error> {
-    let mut prevline = None;
-    /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
+fn unfilter_scanlines(mut inout: &mut [u8], input_offset: usize, w: usize, h: usize, bpp: u8) -> Result<(), Error> {
     let bytewidth = (bpp + 7) / 8;
     let linebytes = linebytes_rounded(w, bpp);
-    for y in 0..h {
-        let outindex = out_off + linebytes * y;
-        let inindex = in_off + (1 + linebytes) * y; /*the extra filterbyte added to each row*/
-        let filter_type = *inout.get(inindex).ok_or(Error::new(91))?;
-        let scanline = inindex + 1;
-        if outindex + linebytes > scanline {
-            let (prev, inout) = inout.split_at_mut(outindex);
-            let prev = prevline.and_then(|prevline| prev.get(prevline..prevline+linebytes));
-            unfilter_scanline_aliased(inout, scanline-outindex, prev, bytewidth, filter_type, linebytes)
-                .ok_or_else(|| Error::new(77))?;
-        } else {
-            let (out, inp) = inout.split_at_mut(outindex + linebytes);
-            let inp = &inp[scanline - (outindex + linebytes)..][..linebytes];
-            let (out, pre) = match prevline {
-                Some(prevline) => {
-                    let (pre, out) = out.split_at_mut(prevline + linebytes);
-                    let out_len = out.len();
-                    (&mut out[out_len - linebytes..], Some(&pre[pre.len() - linebytes..]))
-                },
-                None => {
-                    let out_len = out.len();
-                    (&mut out[out_len - linebytes..], None)
-                }
-            };
-            unfilter_scanline(out, inp, pre, bytewidth, filter_type)?;
-        }
-        prevline = Some(outindex);
+    if bpp == 0 || linebytes == 0 {
+        return Ok(())
+    }
+
+    let mut prev_line = None;
+    for input_offset in input_offset..input_offset+h {
+        let filter_type = *inout.get(input_offset).ok_or(Error::new(77))?;
+
+        prev_line = Some(match prev_line {
+            Some(prev) if input_offset >= linebytes => {
+                let (out, rest) = inout.split_at_mut(linebytes);
+                let inp = rest.get(input_offset + 1 - linebytes..input_offset + 1).ok_or(Error::new(77))?;
+                unfilter_scanline1(out, inp, prev, bytewidth, filter_type)?;
+                inout = rest;
+                &out[..]
+            },
+            prev => {
+                unfilter_scanline_aliased(inout, input_offset + 1, prev, bytewidth, filter_type, linebytes)
+                    .ok_or_else(|| Error::new(77))?;
+                if inout.len() < linebytes { return Err(Error::new(77)); }
+                let (out, rest) = inout.split_at_mut(linebytes);
+                inout = rest;
+                out
+            }
+        });
     }
     Ok(())
 }
 
-/*
-  For PNG filter method 0
-  unfilter a PNG image scanline by scanline. when the pixels are smaller than 1 byte,
-  the filter works byte per byte (bytewidth = 1)
-  prevline is the previous unfiltered scanline, out the result, scanline the current one
-  the incoming scanlines do NOT include the filter_type byte, that one is given in the parameter filter_type instead
-  out and scanline MAY be the same memory address! prevline must be disjoint.
-  */
-fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8) -> Result<(), Error> {
+#[inline]
+fn unfilter_scanline1(out: &mut [u8], scanline: &[u8], prevline: &[u8], bytewidth: u8, filter_type: u8) -> Result<(), Error> {
     let bytewidth = bytewidth as usize;
     let length = out.len();
     debug_assert_eq!(scanline.len(), length);
     // help the optimizer remove bounds checks
-    if bytewidth > 8 || bytewidth < 1 || length > u32::MAX as usize || length != scanline.len() || prevline.map_or(false, move |p| p.len() != length) || bytewidth > length {
+    if bytewidth > 8 || bytewidth < 1 || length > u32::MAX as usize || length != scanline.len() || prevline.len() != length || bytewidth > length {
         debug_assert!(false);
         return Err(Error::new(84));
     }
@@ -1883,63 +1862,41 @@ fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, b
                 out.set(s.wrapping_add(out_prev.get()));
             }
         },
-        2 => if let Some(prevline) = prevline {
+        2 => {
             let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
             for (out, (s, p)) in out.iter_mut().zip(scanline.iter().copied().zip(prevline.iter().copied())) {
                 *out = s.wrapping_add(p);
             }
-        } else {
-            out.copy_from_slice(scanline);
         },
         3 => {
             let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
-            if let Some(prevline) = prevline {
-                let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
-                let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
-                let out = Cell::from_mut(out).as_slice_of_cells();
-                let out_prev = &out[..length-bytewidth];
-                let (out_start, out_next) = out.split_at(bytewidth);
-                for (out, (s, p)) in out_start.iter().zip(scanline_start.iter().copied().zip(prevline_start.iter().copied())).take(bytewidth) {
-                    out.set(s.wrapping_add(p >> 1));
-                }
-                for ((out, out_prev), (s, p)) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied().zip(prevline_next.iter().copied())) {
-                    let t = out_prev.get() as u16 + p as u16;
-                    out.set(s.wrapping_add((t >> 1) as u8));
-                }
-            } else {
-                out[..bytewidth].copy_from_slice(scanline_start);
-                let out = Cell::from_mut(out).as_slice_of_cells();
-                let out_prev = &out[..length-bytewidth];
-                let out_next = &out[bytewidth..];
-                for ((out, out_prev), s) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied()) {
-                    out.set(s.wrapping_add(out_prev.get() >> 1));
-                }
+            let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
+            let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
+            let out = Cell::from_mut(out).as_slice_of_cells();
+            let out_prev = &out[..length-bytewidth];
+            let (out_start, out_next) = out.split_at(bytewidth);
+            for (out, (s, p)) in out_start.iter().zip(scanline_start.iter().copied().zip(prevline_start.iter().copied())).take(bytewidth) {
+                out.set(s.wrapping_add(p >> 1));
+            }
+            for ((out, out_prev), (s, p)) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied().zip(prevline_next.iter().copied())) {
+                let t = out_prev.get() as u16 + p as u16;
+                out.set(s.wrapping_add((t >> 1) as u8));
             }
         },
         4 => {
             let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
-            if let Some(prevline) = prevline {
-                let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
-                let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
-                let prevline_prev = &prevline[..length-bytewidth];
-                let out = Cell::from_mut(out).as_slice_of_cells();
-                let out_prev = &out[..length-bytewidth];
-                let (out_start, out_next) = out.split_at(bytewidth);
-                for (out, (s, p)) in out_start.iter().zip(scanline_start.iter().copied().zip(prevline_start.iter().copied())) {
-                    out.set(s.wrapping_add(p));
-                }
-                for ((out, out_prev), (s, (p, p_prev))) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied().zip(prevline_next.iter().copied().zip(prevline_prev.iter().copied()))) {
-                    let pred = paeth_predictor(out_prev.get(), p, p_prev);
-                    out.set(s.wrapping_add(pred));
-                }
-            } else {
-                out[..bytewidth].copy_from_slice(&scanline[..bytewidth]);
-                let out = Cell::from_mut(out).as_slice_of_cells();
-                let out_prev = &out[..length-bytewidth];
-                let out_next = &out[bytewidth..];
-                for (out, (s, out_prev)) in out_next.iter().zip(scanline_next.iter().zip(out_prev)) {
-                    out.set(s.wrapping_add(out_prev.get()));
-                }
+            let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
+            let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
+            let prevline_prev = &prevline[..length-bytewidth];
+            let out = Cell::from_mut(out).as_slice_of_cells();
+            let out_prev = &out[..length-bytewidth];
+            let (out_start, out_next) = out.split_at(bytewidth);
+            for (out, (s, p)) in out_start.iter().zip(scanline_start.iter().copied().zip(prevline_start.iter().copied())) {
+                out.set(s.wrapping_add(p));
+            }
+            for ((out, out_prev), (s, (p, p_prev))) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied().zip(prevline_next.iter().copied().zip(prevline_prev.iter().copied()))) {
+                let pred = paeth_predictor(out_prev.get(), p, p_prev);
+                out.set(s.wrapping_add(pred));
             }
         },
         _ => return Err(Error::new(36)),
@@ -1947,6 +1904,9 @@ fn unfilter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, b
     Ok(())
 }
 
+/// IDAT decompression ensures this is never needed
+#[inline(never)]
+#[cold]
 fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8, length: usize) -> Option<()> {
     let bytewidth = bytewidth as usize;
     // help the optimizer remove bounds checks
