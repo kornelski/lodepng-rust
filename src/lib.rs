@@ -22,6 +22,7 @@ use std::convert::TryInto;
 use std::fmt;
 use std::fs;
 use std::mem;
+use std::num::NonZeroU8;
 use std::os::raw::c_uint;
 use std::os::raw::c_void;
 use std::path::Path;
@@ -70,8 +71,17 @@ impl ColorMode {
     #[inline]
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_bitdepth(&mut self, d: u32) {
-        assert!(d >= 1 && d <= 16);
+        self.try_set_bitdepth(d).unwrap()
+    }
+
+    #[inline]
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn try_set_bitdepth(&mut self, d: u32) -> Result<(), Error> {
+        if d < 1 || (d > 8 && d != 16) {
+            return Err(Error::new(37));
+        }
         self.bitdepth = d;
+        Ok(())
     }
 
     /// Set color depth to 8-bit palette and set the colors
@@ -81,7 +91,7 @@ impl ColorMode {
             self.palette_add(c)?;
         }
         self.colortype = ColorType::PALETTE;
-        self.set_bitdepth(8);
+        self.try_set_bitdepth(8)?;
         Ok(())
     }
 
@@ -121,6 +131,12 @@ impl ColorMode {
     #[must_use]
     pub fn bpp(&self) -> u32 {
         self.colortype.bpp(self.bitdepth)
+    }
+
+    #[inline(always)]
+    #[must_use]
+    pub fn bpp_(&self) -> NonZeroU8 {
+        self.colortype.bpp_(self.bitdepth as u32)
     }
 
     pub(crate) fn clear_key(&mut self) {
@@ -994,7 +1010,7 @@ fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: impl TryInto<u32
     let image_bytes = image.len() * px_bytes;
 
     if image_bytes != required_bytes {
-        let bpp = colortype.bpp(bitdepth) as usize;
+        let bpp = colortype.bpp_(bitdepth).get() as usize;
         let ch = colortype.channels();
         assert!(px_bytes == 1 || px_bytes*8 == bpp, "Implausibly large {px_bytes}-byte pixel data type for {bpp}-bit pixels ({ch}ch)");
         debug_assert_eq!(image_bytes, required_bytes, "Image is {image_bytes} bytes large ({w}x{h} {ch}ch), but needs to be {required_bytes}B ({colortype:?}, {bitdepth})");

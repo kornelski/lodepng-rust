@@ -5,6 +5,7 @@
 use crate::rustimpl::RGBA;
 use std::fmt;
 use std::io;
+use std::num::NonZeroU8;
 use std::os::raw::{c_uint, c_void};
 
 #[cfg(not(unix))]
@@ -44,18 +45,24 @@ impl ColorType {
     /// Bits per pixel
     #[must_use]
     pub fn bpp(&self, bitdepth: u32) -> u32 {
-        debug_assert!(bitdepth >= 1 && bitdepth <= 16);
+        self.bpp_(bitdepth).get().into()
+    }
+
+    #[inline]
+    pub(crate) fn bpp_(&self, bitdepth: u32) -> NonZeroU8 {
+        let bitdepth = bitdepth as u8;
         /*bits per pixel is amount of channels * bits per channel*/
-        let ch = u32::from(self.channels());
-        ch * if ch > 1 {
-            if bitdepth == 8 {
+        let ch = self.channels();
+        NonZeroU8::new(if ch > 1 {
+            ch * if bitdepth == 8 {
                 8
             } else {
                 16
             }
         } else {
-            bitdepth
-        }
+            debug_assert!((bitdepth > 0 && bitdepth <= 8) || bitdepth == 16, "{bitdepth}x{ch}");
+            bitdepth.max(1)
+        }).unwrap()
     }
 }
 
