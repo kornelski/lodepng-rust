@@ -310,7 +310,68 @@ fn make_filter<'a>(w: usize, h: usize, info: &ColorMode, settings: &'a EncoderSe
 }
 
 #[test]
-fn test_filter() {
+fn test_filter_b1() {
+    test_filter_inner(1);
+}
+
+#[test]
+fn test_filter_b2() {
+    test_filter_inner(2);
+}
+
+#[test]
+fn test_filter_b3() {
+    test_filter_inner(3);
+}
+
+#[test]
+fn test_filter_b4() {
+    test_filter_inner(4);
+}
+
+#[test]
+fn test_filter_b8() {
+    test_filter_inner(8);
+}
+
+#[cfg(test)]
+fn test_filter_with_data(line1: &[u8], line2: &[u8], bytewidth: u8) {
+    let mut line3 = Vec::new();
+
+    for line_width in [1,2,3,4,5,6,7,8,9,15,16,31,32,128,line1.len()/bytewidth as usize] {
+        let line1 = &line1[..line_width * bytewidth as usize];
+        let line2 = &line2[..line_width * bytewidth as usize];
+        let mut filtered = vec![99u8; line_width * bytewidth as usize];
+        let mut unfiltered = vec![66u8; line_width * bytewidth as usize];
+        for filter_type in 0..5 {
+            filter_scanline(&mut filtered, &line1, Some(&line2), bytewidth, filter_type);
+            unfilter_scanline(&mut unfiltered, &filtered, Some(&line2), bytewidth, filter_type).unwrap();
+            assert_eq!(line1, &unfiltered, "width={line_width}, prev+filter={filter_type}, bytewidth={bytewidth}");
+
+            for offset in [bytewidth as usize, bytewidth as usize+1, bytewidth as usize*2] {
+                line3.clear(); line3.resize(offset, 0);
+                line3.extend_from_slice(&filtered);
+                unfilter_scanline_aliased(&mut line3, offset, Some(&line2), bytewidth, filter_type, line1.len());
+                assert_eq!(line1, &line3[..line1.len()], "aliased width={line_width}, prev+filter={filter_type}, bytewidth={bytewidth}");
+            }
+        }
+        for filter_type in 0..5 {
+            filter_scanline(&mut filtered, &line1, None, bytewidth, filter_type);
+            unfilter_scanline(&mut unfiltered, &filtered, None, bytewidth, filter_type).unwrap();
+            assert_eq!(line1, &unfiltered, "width={line_width}, none+filter={filter_type}, bytewidth={bytewidth}");
+
+            for offset in [bytewidth as usize, bytewidth as usize+1, bytewidth as usize*2] {
+                line3.clear(); line3.resize(offset, 0);
+                line3.extend_from_slice(&filtered);
+                unfilter_scanline_aliased(&mut line3, offset, None, bytewidth, filter_type, line1.len());
+                assert_eq!(line1, &line3[..line1.len()], "aliased width={line_width}, none+filter={filter_type}, bytewidth={bytewidth}");
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+fn test_filter_inner(bytewidth: u8) {
     let mut line1 = Vec::with_capacity(1 << 16);
     let mut line2 = Vec::with_capacity(1 << 16);
     for p in 0..256 {
@@ -319,19 +380,18 @@ fn test_filter() {
             line2.push(p as u8);
         }
     }
+    test_filter_with_data(&line1, &line2, bytewidth);
 
-    let mut filtered = vec![99u8; 1 << 16];
-    let mut unfiltered = vec![66u8; 1 << 16];
-    for filter_type in 0..5 {
-        filter_scanline(&mut filtered, &line1, Some(&line2), 1, filter_type);
-        unfilter_scanline(&mut unfiltered, &filtered, Some(&line2), 1, filter_type).unwrap();
-        assert_eq!(unfiltered, line1, "prev+filter={filter_type}");
-    }
-    for filter_type in 0..5 {
-        filter_scanline(&mut filtered, &line1, None, 1, filter_type);
-        unfilter_scanline(&mut unfiltered, &filtered, None, 1, filter_type).unwrap();
-        assert_eq!(unfiltered, line1, "none+filter={filter_type}");
-    }
+    let mut n = 0u64;
+    line1.iter_mut().for_each(|px| {
+        n = n.wrapping_add(13) ^ n.wrapping_mul(*px as _);
+        *px ^= n as u8;
+    });
+    line2.iter_mut().for_each(|px| {
+        n = n.wrapping_add(*px as _) ^ n.wrapping_mul(7);
+        *px ^= n as u8;
+    });
+    test_filter_with_data(&line1, &line2, bytewidth);
 }
 
 #[inline(never)]
