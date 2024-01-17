@@ -1942,9 +1942,8 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
                 }
 
                 for ((out, out_prev), (s, p)) in out_next.iter().zip(out_prev).zip(scanline_next.iter().zip(prevline_next.iter().copied())) {
-                    let o = out_prev.get();
-                    // SIMD-friendly average
-                    out.set(s.get().wrapping_add((o & p) + (o ^ p) >> 1));
+                    let t = out_prev.get() as u16 + p as u16;
+                    out.set(s.get().wrapping_add((t >> 1) as u8));
                 }
             } else {
                 inout.copy_within(scanline_offset..scanline_offset+bytewidth, 0);
