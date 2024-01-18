@@ -1138,7 +1138,7 @@ impl<'a> ChunkRef<'a> {
 
     #[inline]
     #[must_use]
-    pub fn data(&self) -> &[u8] {
+    pub fn data(&self) -> &'a [u8] {
         let len = self.len();
         &self.data[8..8 + len]
     }
