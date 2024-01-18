@@ -765,6 +765,9 @@ impl State {
 
     #[deprecated(note = "Use Encoder type instead of State")]
     pub fn encode<PixelType: rgb::Pod>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+        let w = w.try_into().map_err(|_| Error::new(93))?;
+        let h = h.try_into().map_err(|_| Error::new(93))?;
+
         let image = buffer_for_type(image, w, h, self.info_raw.colortype, self.info_raw.bitdepth)?;
         rustimpl::lodepng_encode(image, w, h, self)
     }

@@ -638,7 +638,7 @@ pub unsafe extern "C" fn lodepng_auto_choose_color(mode_out: &mut ColorMode, ima
     if image.is_null() {
         return ErrorCode(48);
     }
-    let mode = lode_try!(rustimpl::auto_choose_color(slice::from_raw_parts(image, 0x1FFF_FFFF), w as usize, h as usize, mode_in));
+    let mode = lode_try!(rustimpl::auto_choose_color(slice::from_raw_parts(image, 0x1FFF_FFFF), w as _, h as _, mode_in));
     ptr::write(mode_out, mode);
     ErrorCode(0)
 }

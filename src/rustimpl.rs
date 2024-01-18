@@ -86,8 +86,8 @@ fn get_palette_translucency(palette: &[RGBA]) -> PaletteTranslucency {
 /*The opposite of the remove_padding_bits function
   olinebits must be >= ilinebits*/
 #[inline(never)]
-fn add_padding_bits_line(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usize, y: usize) {
-    let iline = y * ilinebits;
+fn add_padding_bits_line(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usize, y: u32) {
+    let iline = y as usize * ilinebits;
     for i in 0..ilinebits {
         let bit = read_bit_from_reversed_stream(iline + i, inp);
         set_bit_of_reversed_stream(i, out, bit);
@@ -97,19 +97,19 @@ fn add_padding_bits_line(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits
     }
 }
 
-fn linebits_exact(w: usize, bpp: NonZeroU8) -> usize {
-    w * bpp.get() as usize
+fn linebits_exact(w: u32, bpp: NonZeroU8) -> usize {
+    w as usize * bpp.get() as usize
 }
 
-fn linebits_rounded(w: usize, bpp: NonZeroU8) -> usize {
+fn linebits_rounded(w: u32, bpp: NonZeroU8) -> usize {
     linebytes_rounded(w, bpp) * 8
 }
 
-fn linebytes_rounded(w: usize, bpp: NonZeroU8) -> usize {
-    (w * bpp.get() as usize + 7) / 8
+fn linebytes_rounded(w: u32, bpp: NonZeroU8) -> usize {
+    (w as usize * bpp.get() as usize + 7) / 8
 }
 
-fn filtered_scanlines(out: &mut dyn Write, inp: &[u8], w: usize, h: usize, info_png: &Info, settings: &EncoderSettings) -> Result<(), Error> {
+fn filtered_scanlines(out: &mut dyn Write, inp: &[u8], w: u32, h: u32, info_png: &Info, settings: &EncoderSettings) -> Result<(), Error> {
     if info_png.interlace_method == 0 {
         filter(out, inp, w, h, &info_png.color, settings)?;
     } else {
@@ -136,7 +136,7 @@ fn filtered_scanlines(out: &mut dyn Write, inp: &[u8], w: usize, h: usize, info_
   the scanlines with 1 extra byte per scanline
   */
 #[inline(never)]
-fn filter(out: &mut dyn Write, inp: &[u8], w: usize, h: usize, info: &ColorMode, settings: &EncoderSettings) -> Result<(), Error> {
+fn filter(out: &mut dyn Write, inp: &[u8], w: u32, h: u32, info: &ColorMode, settings: &EncoderSettings) -> Result<(), Error> {
     debug_assert!(w != 0);
     debug_assert!(h != 0);
     let bpp = info.bpp_();
@@ -158,7 +158,7 @@ fn filter(out: &mut dyn Write, inp: &[u8], w: usize, h: usize, info: &ColorMode,
         }
     } else {
         let mut prevline = None;
-        for inp in inp.chunks_exact(linebytes).take(h) {
+        for inp in inp.chunks_exact(linebytes).take(h as usize) {
             f(&mut out_buffer, inp, prevline);
             prevline = Some(inp);
             out.write_all(&out_buffer)?;
@@ -167,7 +167,7 @@ fn filter(out: &mut dyn Write, inp: &[u8], w: usize, h: usize, info: &ColorMode,
     Ok(())
 }
 
-fn make_filter<'a>(w: usize, h: usize, info: &ColorMode, settings: &'a EncoderSettings) -> Result<Box<dyn FnMut(&mut [u8], &[u8], Option<&[u8]>) + 'a>, Error> {
+fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettings) -> Result<Box<dyn FnMut(&mut [u8], &[u8], Option<&[u8]>) + 'a>, Error> {
     let bpp = info.bpp_();
     debug_assert!(w != 0);
     /*bytewidth is used for filtering, is 1 when bpp < 8, number of bytes per pixel otherwise*/
@@ -267,7 +267,7 @@ fn make_filter<'a>(w: usize, h: usize, info: &ColorMode, settings: &'a EncoderSe
             })
         },
         FilterStrategy::PREDEFINED => {
-            let mut filters = unsafe { settings.predefined_filters(h)? }.iter().copied();
+            let mut filters = unsafe { settings.predefined_filters(h as usize)? }.iter().copied();
             Box::new(move |out, inp, prevline| {
                 let type_ = filters.next().unwrap_or(0);
                 out[0] = type_;
@@ -1232,7 +1232,7 @@ fn read_chunk_phys(info: &mut Info, data: &[u8]) -> Result<(), Error> {
 }
 
 #[inline(never)]
-fn add_chunk_idat(out: &mut Vec<u8>, inp: &[u8], w: usize, h: usize, info_png: &Info, settings: &EncoderSettings, zlibsettings: &CompressSettings) -> Result<(), Error> {
+fn add_chunk_idat(out: &mut Vec<u8>, inp: &[u8], w: u32, h: u32, info_png: &Info, settings: &EncoderSettings, zlibsettings: &CompressSettings) -> Result<(), Error> {
     let mut ch = ChunkBuilder::new(out, b"IDAT");
 
     #[allow(deprecated)]
@@ -1490,18 +1490,18 @@ struct AdamPass {
     filtered_len: usize,
     padded_len: usize,
     packed_len: usize,
-    w: usize,
-    h: usize,
+    w: u32,
+    h: u32,
     adam: AdamConst,
 }
 
 #[inline]
-fn adam7_pass_values(w: usize, h: usize, bpp: NonZeroU8) -> impl Iterator<Item=AdamPass> + Clone {
+fn adam7_pass_values(w: u32, h: u32, bpp: NonZeroU8) -> impl Iterator<Item=AdamPass> + Clone {
     ADAM7.iter().map(move |adam| {
-        let mut p_w = (w + adam.dx as usize - adam.ix as usize - 1) / adam.dx as usize;
-        let mut p_h = (h + adam.dy as usize - adam.iy as usize - 1) / adam.dy as usize;
+        let mut p_w = ((w as usize + adam.dx as usize - adam.ix as usize - 1) / adam.dx as usize) as u32;
+        let mut p_h = ((h as usize + adam.dy as usize - adam.iy as usize - 1) / adam.dy as usize) as u32;
         let filtered_len = if p_w != 0 && p_h != 0 {
-            p_h * (1 + linebytes_rounded(p_w, bpp))
+            p_h as usize * (1 + linebytes_rounded(p_w, bpp))
         } else {
             if p_h == 0 {
                 p_w = 0;
@@ -1516,8 +1516,8 @@ fn adam7_pass_values(w: usize, h: usize, bpp: NonZeroU8) -> impl Iterator<Item=A
             w: p_w,
             h: p_h,
             filtered_len,
-            padded_len: p_h * linebytes_rounded(p_w, bpp),
-            packed_len: (p_h * p_w * bpp.get() as usize + 7) / 8,
+            padded_len: p_h as usize * linebytes_rounded(p_w, bpp),
+            packed_len: (p_h as usize * p_w as usize * bpp.get() as usize + 7) / 8,
         }
     })
 }
@@ -1534,19 +1534,19 @@ out must be big enough AND must be 0 everywhere if bpp < 8 in the current implem
 NOTE: comments about padding bits are only relevant if bpp < 8
 */
 #[cold]
-fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: NonZeroU8) {
+fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: u32, h: u32, bpp: NonZeroU8) {
     let passes = adam7_pass_values(w, h, bpp);
-    let bpp = bpp.get() as usize;
+    let bpp = bpp.get();
     let bytewidth = bpp / 8;
     let mut offset_packed = 0;
     if bpp >= 8 {
         for pass in passes {
             let adam = &pass.adam;
-            for y in 0..pass.h {
-                for x in 0..pass.w {
-                    let pixelinstart = offset_packed + (y * pass.w + x) * bytewidth;
-                    let pixeloutstart = ((adam.iy as usize + y * adam.dy as usize) * w + adam.ix as usize + x * adam.dx as usize) * bytewidth;
-                    out[pixeloutstart..(bytewidth + pixeloutstart)].copy_from_slice(&inp[pixelinstart..(bytewidth + pixelinstart)]);
+            for y in 0..pass.h as usize {
+                for x in 0..pass.w as usize {
+                    let pixelinstart = offset_packed + (y * pass.w as usize + x) * bytewidth as usize;
+                    let pixeloutstart = ((adam.iy as usize + y * adam.dy as usize) * w as usize + adam.ix as usize + x * adam.dx as usize) * bytewidth as usize;
+                    out[pixeloutstart..(bytewidth as usize + pixeloutstart)].copy_from_slice(&inp[pixelinstart..(bytewidth as usize + pixelinstart)]);
                 }
             }
             offset_packed += pass.packed_len;
@@ -1554,13 +1554,13 @@ fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: NonZer
     } else {
         for pass in passes {
             let adam = &pass.adam;
-            let ilinebits = bpp * pass.w;
-            let olinebits = bpp * w;
-            for y in 0..pass.h {
-                for x in 0..pass.w {
-                    let mut ibp = (8 * offset_packed) + (y * ilinebits + x * bpp);
+            let ilinebits = bpp as usize * pass.w as usize;
+            let olinebits = bpp as usize * w as usize;
+            for y in 0..pass.h as usize {
+                for x in 0..pass.w as usize {
+                    let mut ibp = (8 * offset_packed) + (y * ilinebits + x * bpp as usize);
                     let mut obp = (adam.iy as usize + y * adam.dy as usize) *
-                        olinebits + (adam.ix as usize + x * adam.dx as usize) * bpp;
+                        olinebits + (adam.ix as usize + x * adam.dx as usize) * bpp as usize;
                     for _ in 0..bpp {
                         let bit = read_bit_from_reversed_stream(ibp, inp); ibp += 1;
                         /*note that this function assumes the out buffer is completely 0, use set_bit_of_reversed_stream otherwise*/
@@ -1793,8 +1793,6 @@ return value is error*/
 fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: u32, h: u32, info_png: &Info) -> Result<Vec<u8>, Error> {
     let bpp = info_png.color.bpp_();
     let raw_size = info_png.color.raw_size_opt(w, h)?;
-    let w = w as usize;
-    let h = h as usize;
     Ok(if info_png.interlace_method == 0 {
         if bpp.get() < 8 && linebits_exact(w, bpp) != linebits_rounded(w, bpp) {
             unfilter_scanlines(&mut inp, unfiltering_buffer, w, h, bpp)?;
@@ -1829,7 +1827,7 @@ fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: u32, h:
 }
 
 #[inline(never)]
-fn unfilter_scanlines(mut inout: &mut [u8], input_offset: usize, w: usize, h: usize, bpp: NonZeroU8) -> Result<(), Error> {
+fn unfilter_scanlines(mut inout: &mut [u8], input_offset: usize, w: u32, h: u32, bpp: NonZeroU8) -> Result<(), Error> {
     let bytewidth = (bpp.get() + 7) / 8;
     let linebytes = linebytes_rounded(w, bpp);
     if linebytes == 0 {
@@ -1837,7 +1835,7 @@ fn unfilter_scanlines(mut inout: &mut [u8], input_offset: usize, w: usize, h: us
     }
 
     let mut prev_line = None;
-    for input_offset in input_offset..input_offset+h {
+    for input_offset in input_offset..input_offset+h as usize {
         let filter_type = *inout.get(input_offset).ok_or(Error::new(77))?;
 
         prev_line = Some(match prev_line {
@@ -2052,8 +2050,8 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
   only useful if (ilinebits - olinebits) is a value in the range 1..7
   */
 #[inline(never)]
-fn remove_padding_bits(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usize, h: usize) {
-    for y in 0..h {
+fn remove_padding_bits(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: usize, h: u32) {
+    for y in 0..h as usize {
         let iline = y * ilinebits;
         let oline = y * olinebits;
         for i in 0..olinebits {
@@ -2064,8 +2062,8 @@ fn remove_padding_bits(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits: 
 }
 
 #[inline(never)]
-fn remove_padding_bits_aliased(inout: &mut [u8], out_off: usize, in_off: usize, olinebits: usize, ilinebits: usize, h: usize) {
-    for y in 0..h {
+fn remove_padding_bits_aliased(inout: &mut [u8], out_off: usize, in_off: usize, olinebits: usize, ilinebits: usize, h: u32) {
+    for y in 0..h as usize {
         let iline = y * ilinebits;
         let oline = y * olinebits;
         for i in 0..olinebits {
@@ -2087,7 +2085,7 @@ out is possibly bigger due to padding bits between reduced images
 NOTE: comments about padding bits are only relevant if bpp < 8
 */
 #[cold]
-fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: NonZeroU8) {
+fn adam7_interlace(out: &mut [u8], inp: &[u8], w: u32, h: u32, bpp: NonZeroU8) {
     let passes = adam7_pass_values(w, h, bpp);
     let bpp = bpp.get() as usize;
     let mut offset_packed = 0;
@@ -2095,10 +2093,10 @@ fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: NonZeroU
         for pass in passes {
             let adam = &pass.adam;
             let bytewidth = bpp / 8;
-            for y in 0..pass.h {
-                for x in 0..pass.w {
-                    let pixelinstart = ((adam.iy as usize + y * adam.dy as usize) * w + adam.ix as usize + x * adam.dx as usize) * bytewidth;
-                    let pixeloutstart = offset_packed + (y * pass.w + x) * bytewidth;
+            for y in 0..pass.h as usize {
+                for x in 0..pass.w as usize {
+                    let pixelinstart = ((adam.iy as usize + y * adam.dy as usize) * w as usize + adam.ix as usize + x * adam.dx as usize) * bytewidth;
+                    let pixeloutstart = offset_packed + (y * pass.w as usize + x) * bytewidth;
                     out[pixeloutstart..(bytewidth + pixeloutstart)]
                         .copy_from_slice(&inp[pixelinstart..(bytewidth + pixelinstart)]);
                 }
@@ -2108,10 +2106,10 @@ fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: NonZeroU
     } else {
         for pass in passes {
             let adam = &pass.adam;
-            let ilinebits = bpp * pass.w;
-            let olinebits = bpp * w;
-            for y in 0..pass.h {
-                for x in 0..pass.w {
+            let ilinebits = bpp * pass.w as usize;
+            let olinebits = bpp * w as usize;
+            for y in 0..pass.h as usize {
+                for x in 0..pass.w as usize {
                     let mut ibp = (adam.iy as usize + y * adam.dy as usize) * olinebits + (adam.ix as usize + x * adam.dx as usize) * bpp;
                     let mut obp = (8 * offset_packed) + (y * ilinebits + x * bpp);
                     for _ in 0..bpp {
@@ -2389,7 +2387,11 @@ fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
 pub const LODEPNG_VERSION_STRING: &[u8] = b"20161127-Rust-3.0\0";
 
 #[inline(never)]
-pub(crate) fn lodepng_encode(image: &[u8], w: usize, h: usize, state: &mut State) -> Result<Vec<u8>, Error> {
+pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result<Vec<u8>, Error> {
+    if w == 0 || h == 0 {
+        return Err(Error::new(93));
+    }
+
     let mut info = state.info_png.clone();
     if (info.color.colortype == ColorType::PALETTE || state.encoder.force_palette) && (info.color.palette().is_empty() || info.color.palette().len() > 256) {
         return Err(Error::new(68));
@@ -2403,7 +2405,7 @@ pub(crate) fn lodepng_encode(image: &[u8], w: usize, h: usize, state: &mut State
     check_png_color_validity(info.color.colortype, info.color.bitdepth())?; /*tEXt and/or zTXt */
     check_lode_color_validity(state.info_raw.colortype, state.info_raw.bitdepth())?; /*LodePNG version id in text chunk */
 
-    let mut outv = Vec::new(); outv.try_reserve(1024 + w * h / 2)?;
+    let mut outv = Vec::new(); outv.try_reserve(1024 + w as usize * h as usize / 2)?;
     write_signature(&mut outv);
 
     add_chunk_ihdr(&mut outv, w as u32, h as u32, info.color.colortype, info.color.bitdepth() as u8, info.interlace_method)?;
@@ -2431,9 +2433,9 @@ pub(crate) fn lodepng_encode(image: &[u8], w: usize, h: usize, state: &mut State
     let mut converted;
     let mut image = image;
     if !lodepng_color_mode_equal(&state.info_raw, &info.color) {
-        let raw_size = h * linebytes_rounded(w, info.color.bpp_());
+        let raw_size = h as usize * linebytes_rounded(w, info.color.bpp_());
         converted = zero_vec(raw_size)?;
-        lodepng_convert(&mut converted, image, &info.color, &state.info_raw, w as u32, h as u32)?;
+        lodepng_convert(&mut converted, image, &info.color, &state.info_raw, w, h)?;
         image = &converted;
     }
     add_chunk_idat(&mut outv, image, w, h, &info, &state.encoder, &state.encoder.zlibsettings)?;
@@ -2679,9 +2681,9 @@ are less than 256 colors, …
 Updates values of mode with a potentially smaller color model. mode_out should
 contain the user chosen color model, but will be overwritten with the new chosen one.*/
 #[inline(never)]
-pub(crate) fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &ColorMode) -> Result<ColorMode, Error> {
+pub(crate) fn auto_choose_color(image: &[u8], w: u32, h: u32, mode_in: &ColorMode) -> Result<ColorMode, Error> {
     let mut mode_out = ColorMode::new();
-    let mut prof = get_color_profile(image, w as u32, h as u32, mode_in);
+    let mut prof = get_color_profile(image, w, h, mode_in);
 
     mode_out.clear_key();
     if prof.key && w * h <= 16 {
@@ -2703,7 +2705,7 @@ pub(crate) fn auto_choose_color(image: &[u8], w: usize, h: usize, mode_in: &Colo
         8
     };
     let palette_ok = (n <= 256 && prof.bits <= 8) &&
-        (w * h >= (n * 2) as usize) &&
+        (w as usize * h as usize >= (n * 2) as usize) &&
         (prof.colored || prof.bits > palettebits);
     if palette_ok {
         let pal = &prof.palette[0..prof.numcolors as usize];
