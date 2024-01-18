@@ -113,9 +113,9 @@ fn filtered_scanlines(out: &mut dyn Write, inp: &[u8], w: usize, h: usize, info_
     if info_png.interlace_method == 0 {
         filter(out, inp, w, h, &info_png.color, settings)?;
     } else {
-        let passes = adam7_get_pass_values(w, h, bpp);
+        let passes = adam7_pass_values(w, h, bpp);
         /*image size plus an extra byte per scanline + possible padding bits*/
-        let mut adam7 = zero_vec(passes.iter().map(|l| l.packed_len).sum::<usize>() + 1)?;
+        let mut adam7 = zero_vec(passes.clone().map(|l| l.packed_len).sum::<usize>() + 1)?;
         adam7_interlace(&mut adam7, inp, w, h, bpp);
         let mut adam7 = &mut adam7[..];
         for pass in passes {
@@ -1459,7 +1459,7 @@ impl Write for ChunkBuilder<'_> {
     }
 }
 
-static ADAM7: [AdamConst; 7] = [
+const ADAM7: [AdamConst; 7] = [
     AdamConst {ix: 0, iy: 0, dx: 8, dy: 8, },
     AdamConst {ix: 4, iy: 0, dx: 8, dy: 8, },
     AdamConst {ix: 0, iy: 4, dx: 4, dy: 8, },
@@ -1470,6 +1470,7 @@ static ADAM7: [AdamConst; 7] = [
 ];
 
 /// shared values used by multiple Adam7 related functions
+#[derive(Copy, Clone)]
 struct AdamConst {
     /// x start values
     ix: u8,
@@ -1480,33 +1481,40 @@ struct AdamConst {
     dy: u8,
 }
 
-#[derive(Default)]
 struct AdamPass {
     filtered_len: usize,
     padded_len: usize,
     packed_len: usize,
     w: usize,
     h: usize,
+    adam: AdamConst,
 }
 
-fn adam7_get_pass_values(w: usize, h: usize, bpp: u8) -> [AdamPass; 7] {
-    let mut p = <[AdamPass; 7]>::default();
-    for (p, adam) in p.iter_mut().zip(&ADAM7) {
-        p.w = (w + adam.dx as usize - adam.ix as usize - 1) / adam.dx as usize;
-        p.h = (h + adam.dy as usize - adam.iy as usize - 1) / adam.dy as usize;
-        if p.w == 0 {
-            p.h = 0;
+#[inline]
+fn adam7_pass_values(w: usize, h: usize, bpp: u8) -> impl Iterator<Item=AdamPass> + Clone {
+    ADAM7.iter().map(move |adam| {
+        let mut p_w = (w + adam.dx as usize - adam.ix as usize - 1) / adam.dx as usize;
+        let mut p_h = (h + adam.dy as usize - adam.iy as usize - 1) / adam.dy as usize;
+        let filtered_len = if p_w != 0 && p_h != 0 {
+            p_h * (1 + linebytes_rounded(p_w, bpp))
+        } else {
+            if p_h == 0 {
+                p_w = 0;
+            }
+            if p_w == 0 {
+                p_h = 0;
+            }
+            0
+        };
+        AdamPass {
+            adam: *adam,
+            w: p_w,
+            h: p_h,
+            filtered_len,
+            padded_len: p_h * linebytes_rounded(p_w, bpp),
+            packed_len: (p_h * p_w * bpp as usize + 7) / 8,
         }
-        if p.h == 0 {
-            p.w = 0;
-        }
-        if p.w != 0 && p.h != 0 {
-            p.filtered_len = p.h * (1 + linebytes_rounded(p.w, bpp));
-        }
-        p.padded_len = p.h * linebytes_rounded(p.w, bpp);
-        p.packed_len = (p.h * p.w * bpp as usize + 7) / 8;
-    }
-    p
+    })
 }
 
 /*
@@ -1520,13 +1528,15 @@ out must be big enough AND must be 0 everywhere if bpp < 8 in the current implem
 (because that's likely a little bit faster)
 NOTE: comments about padding bits are only relevant if bpp < 8
 */
+#[cold]
 fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
-    let passes = adam7_get_pass_values(w, h, bpp);
+    let passes = adam7_pass_values(w, h, bpp);
     let bpp = bpp as usize;
     let bytewidth = bpp / 8;
     let mut offset_packed = 0;
-    for (pass, adam) in passes.iter().zip(&ADAM7) {
-        if bpp >= 8 {
+    if bpp >= 8 {
+        for pass in passes {
+            let adam = &pass.adam;
             for y in 0..pass.h {
                 for x in 0..pass.w {
                     let pixelinstart = offset_packed + (y * pass.w + x) * bytewidth;
@@ -1534,7 +1544,11 @@ fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
                     out[pixeloutstart..(bytewidth + pixeloutstart)].copy_from_slice(&inp[pixelinstart..(bytewidth + pixelinstart)]);
                 }
             }
-        } else {
+            offset_packed += pass.packed_len;
+        }
+    } else {
+        for pass in passes {
+            let adam = &pass.adam;
             let ilinebits = bpp * pass.w;
             let olinebits = bpp * w;
             for y in 0..pass.h {
@@ -1549,8 +1563,8 @@ fn adam7_deinterlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
                     }
                 }
             }
+            offset_packed += pass.packed_len;
         }
-        offset_packed += pass.packed_len;
     }
 }
 
@@ -1787,7 +1801,7 @@ fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: usize, 
             inp
         }
     } else {
-        let passes = adam7_get_pass_values(w, h, bpp);
+        let passes = adam7_pass_values(w, h, bpp);
         let mut offset_padded = 0;
         let mut offset_filtered = unfiltering_buffer;
         let mut offset_packed = 0;
@@ -2066,12 +2080,14 @@ in has the following size in bits: w * h * bpp.
 out is possibly bigger due to padding bits between reduced images
 NOTE: comments about padding bits are only relevant if bpp < 8
 */
+#[cold]
 fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
-    let passes = adam7_get_pass_values(w, h, bpp);
+    let passes = adam7_pass_values(w, h, bpp);
     let bpp = bpp as usize;
     let mut offset_packed = 0;
-    for (pass, adam) in passes.iter().zip(&ADAM7) {
-        if bpp >= 8 {
+    if bpp >= 8 {
+        for pass in passes {
+            let adam = &pass.adam;
             let bytewidth = bpp / 8;
             for y in 0..pass.h {
                 for x in 0..pass.w {
@@ -2081,7 +2097,11 @@ fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
                         .copy_from_slice(&inp[pixelinstart..(bytewidth + pixelinstart)]);
                 }
             }
-        } else {
+            offset_packed += pass.packed_len;
+        }
+    } else {
+        for pass in passes {
+            let adam = &pass.adam;
             let ilinebits = bpp * pass.w;
             let olinebits = bpp * w;
             for y in 0..pass.h {
@@ -2094,8 +2114,8 @@ fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
                     }
                 }
             }
+            offset_packed += pass.packed_len;
         }
-        offset_packed += pass.packed_len;
     }
 }
 
