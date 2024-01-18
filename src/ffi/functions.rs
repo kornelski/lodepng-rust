@@ -513,7 +513,7 @@ pub unsafe extern "C" fn lodepng_decode24(out: &mut *mut u8, w: &mut c_uint, h: 
 }
 
 #[inline]
-fn decode_file(filename: &Path, colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
+fn decode_file(filename: &Path, colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, u32, u32), Error> {
     let buf = load_file(filename)?;
     rustimpl::lodepng_decode_memory(&buf, colortype, bitdepth)
 }

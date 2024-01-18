@@ -1783,12 +1783,14 @@ return value is error*/
   *) if adam7: 1) 7x unfilter 2) 7x remove padding bits 3) adam7_deinterlace
   NOTE: the in buffer will be overwritten with intermediate data!
   */
-fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: usize, h: usize, info_png: &Info) -> Result<Vec<u8>, Error> {
+fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: u32, h: u32, info_png: &Info) -> Result<Vec<u8>, Error> {
     let bpp = info_png.color.bpp() as u8;
     if bpp == 0 {
         return Err(Error::new(31));
     }
     let raw_size = info_png.color.raw_size_opt(w, h)?;
+    let w = w as usize;
+    let h = h as usize;
     Ok(if info_png.interlace_method == 0 {
         if bpp < 8 && linebits_exact(w, bpp) != linebits_rounded(w, bpp) {
             unfilter_scanlines(&mut inp, unfiltering_buffer, w, h, bpp)?;
@@ -2124,7 +2126,7 @@ fn adam7_interlace(out: &mut [u8], inp: &[u8], w: usize, h: usize, bpp: u8) {
 /* ////////////////////////////////////////////////////////////////////////// */
 /*read the information from the header and store it in the Info. return value is error*/
 #[inline(never)]
-pub(crate) fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool) -> Result<(Info, usize, usize), Error> {
+pub(crate) fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks: bool) -> Result<(Info, u32, u32), Error> {
     if inp.len() < 33 {
         /*error: the data length is smaller than the length of a PNG header*/
         return Err(Error::new(27));
@@ -2191,11 +2193,11 @@ pub(crate) fn lodepng_inspect(decoder: &DecoderSettings, inp: &[u8], read_chunks
         }
     }
     check_png_color_validity(info_png.color.colortype, info_png.color.bitdepth())?;
-    Ok((info_png, w as usize, h as usize))
+    Ok((info_png, w, h))
 }
 
 /*read a PNG, the result will be in the same color type as the PNG (hence "generic")*/
-fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usize), Error> {
+fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, u32, u32), Error> {
     let mut found_iend = false; /*the data from idat chunks*/
     /*for unknown chunk order*/
     let mut unknown = false;
@@ -2205,7 +2207,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     state.info_png = info;
 
     /*reads header and resets other parameters in state->info_png*/
-    let numpixels = match w.checked_mul(h) {
+    let numpixels = match (w as usize).checked_mul(h as usize) {
         Some(n) => n,
         None => {
             return Err(Error::new(92));
@@ -2225,7 +2227,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
       If the decompressed size does not match the prediction, the image must be corrupt.*/
     let predict = if state.info_png.interlace_method == 0 {
         /*The extra *h is added because this are the filter bytes every scanline starts with*/
-        state.info_png.color.raw_size_idat(w, h).ok_or(Error::new(91))? + h
+        state.info_png.color.raw_size_idat(w, h).ok_or(Error::new(91))? + h as usize
     } else {
         /*Adam-7 interlaced: predicted size is the sum of the 7 sub-images sizes*/
         let color = &state.info_png.color;
@@ -2236,7 +2238,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     let bytewidth = ((bpp + 7) / 8) as usize;
 
     // if unfiltering can shift the buffer by two lines, it can do unaliased unfiltering in-place
-    let unfiltering_buffer = if state.info_png.interlace_method == 0 { 2 * (1 + w * bytewidth) } else { 0 };
+    let unfiltering_buffer = if state.info_png.interlace_method == 0 { 2 * (1 + bytewidth * w as usize) } else { 0 };
 
     let mut scanlines = Vec::new();
     let capacity_required = predict + unfiltering_buffer;
@@ -2313,25 +2315,32 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usiz
     Ok((out, w, h))
 }
 
-fn adam7_expected_size(color: &ColorMode, w: usize, h: usize) -> Option<usize> {
-    let mut predict = color.raw_size_idat((w + 7) >> 3, (h + 7) >> 3)? + ((h + 7) >> 3);
+fn adam7_expected_size(color: &ColorMode, w: u32, h: u32) -> Option<usize> {
+    fn div_ceil(x: u32, d: u8) -> u32 {
+        ((x as u64 + (d as u64 - 1)) / d as u64) as u32
+    }
+
+    fn div_round(x: u32, d: u8) -> u32 {
+        ((x as u64 + ((d/2) as u64 - 1)) / d as u64) as u32
+    }
+    let mut predict = color.raw_size_idat(div_ceil(w, 8), div_ceil(h, 8))? + div_ceil(h, 8) as usize;
     if w > 4 {
-        predict += color.raw_size_idat((w + 3) >> 3, (h + 7) >> 3)? + ((h + 7) >> 3);
+        predict += color.raw_size_idat(div_round(w, 8), div_ceil(h, 8))? + div_ceil(h, 8) as usize;
     }
-    predict += color.raw_size_idat((w + 3) >> 2, (h + 3) >> 3)? + ((h + 3) >> 3);
+    predict += color.raw_size_idat(div_ceil(w, 4), div_round(h, 8))? + div_round(h, 8) as usize;
     if w > 2 {
-        predict += color.raw_size_idat((w + 1) >> 2, (h + 3) >> 2)? + ((h + 3) >> 2);
+        predict += color.raw_size_idat(div_round(w, 4), div_ceil(h, 4))? + div_ceil(h, 4) as usize;
     }
-    predict += color.raw_size_idat((w + 1) >> 1, (h + 1) >> 2)? + ((h + 1) >> 2);
+    predict += color.raw_size_idat(div_ceil(w, 2), div_round(h, 4))? + div_round(h, 4) as usize;
     if w > 1 {
-        predict += color.raw_size_idat((w + 0) >> 1, (h + 1) >> 1)? + ((h + 1) >> 1);
+        predict += color.raw_size_idat(w >> 1, div_ceil(h, 2))? + div_ceil(h, 2) as usize;
     }
-    predict += color.raw_size_idat(w + 0, (h + 0) >> 1)? + ((h + 0) >> 1);
+    predict += color.raw_size_idat(w, h >> 1)? + (h >> 1) as usize;
     Some(predict)
 }
 
 #[inline(never)]
-pub(crate) fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, usize, usize), Error> {
+pub(crate) fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, u32, u32), Error> {
     let (decoded, w, h) = decode_generic(state, inp)?;
 
     if !state.decoder.color_convert || lodepng_color_mode_equal(&state.info_raw, &state.info_png.color) {
@@ -2355,7 +2364,7 @@ pub(crate) fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, 
 }
 
 #[inline]
-pub(crate) fn lodepng_decode_memory(inp: &[u8], colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, usize, usize), Error> {
+pub(crate) fn lodepng_decode_memory(inp: &[u8], colortype: ColorType, bitdepth: u32) -> Result<(Vec<u8>, u32, u32), Error> {
     let mut state = Decoder::new();
     state.info_raw_mut().colortype = colortype;
     state.info_raw_mut().set_bitdepth(bitdepth);

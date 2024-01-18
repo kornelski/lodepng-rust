@@ -200,18 +200,17 @@ impl ColorMode {
     }
 
     #[inline]
-    fn raw_size_opt(&self, w: usize, h: usize) -> Result<usize, Error> {
+    fn raw_size_opt(&self, w: u32, h: u32) -> Result<usize, Error> {
         let bpp = self.bpp() as usize;
-        if w > u32::MAX as usize || h > u32::MAX as usize {
-            return Err(Error::new(77));
-        }
-        let n = w.checked_mul(h).ok_or(Error::new(77))?;
+        let n = (w as usize).checked_mul(h as usize).ok_or(Error::new(77))?;
         let res = (n / 8).checked_mul(bpp).ok_or(Error::new(77))?.checked_add(((n & 7) * bpp + 7) / 8).ok_or(Error::new(77))?;
         Ok(res)
     }
 
     /*in an idat chunk, each scanline is a multiple of 8 bits, unlike the lodepng output buffer*/
-    pub(crate) fn raw_size_idat(&self, w: usize, h: usize) -> Option<usize> {
+    pub(crate) fn raw_size_idat(&self, w: u32, h: u32) -> Option<usize> {
+        let w = w as usize;
+        let h = h as usize;
         let bpp = self.bpp() as usize;
         let line = (w / 8).checked_mul(bpp)?.checked_add(((w & 7) * bpp + 7) / 8)?;
         h.checked_mul(line)
@@ -745,7 +744,7 @@ impl State {
     pub fn inspect(&mut self, input: &[u8]) -> Result<(usize, usize), Error> {
         let (info, w, h) = rustimpl::lodepng_inspect(&self.decoder, input, true)?;
         self.info_png = info;
-        Ok((w, h))
+        Ok((w as _, h as _))
     }
 
     #[deprecated(note = "Use Encoder type instead of State")]
@@ -874,12 +873,14 @@ impl<PixelType> fmt::Debug for Bitmap<PixelType> {
 }
 
 #[inline]
-fn required_size(w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> Result<usize, Error> {
+fn required_size(w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> Result<usize, Error> {
     colortype.to_color_mode(bitdepth).raw_size_opt(w, h)
 }
 
-fn new_bitmap(buffer: Vec<u8>, w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Image> {
+fn new_bitmap(buffer: Vec<u8>, w: u32, h: u32, colortype: ColorType, bitdepth: c_uint) -> Result<Image> {
     debug_assert!(buffer.len() >= required_size(w, h, colortype, bitdepth)?);
+    let w = w as usize;
+    let h = h as usize;
 
     Ok(match (colortype, bitdepth) {
         (ColorType::RGBA, 8) => Image::RGBA(Bitmap::from_buffer(buffer, w, h)?),
@@ -983,7 +984,10 @@ pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Err
 }
 
 #[cfg_attr(debug_assertions, track_caller)]
-fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: u32) -> Result<&[u8], Error> {
+fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: impl TryInto<u32>, h: impl TryInto<u32>, colortype: ColorType, bitdepth: u32) -> Result<&[u8], Error> {
+    let w = w.try_into().map_err(|_| Error::new(93))?;
+    let h = h.try_into().map_err(|_| Error::new(93))?;
+
     let required_bytes = required_size(w, h, colortype, bitdepth)?;
 
     let px_bytes = mem::size_of::<PixelType>();
