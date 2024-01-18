@@ -2306,6 +2306,9 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, u32, u32), 
             break;
         }
     }
+    if !found_iend && !state.decoder.ignore_crc {
+        return Err(Error::new(52));
+    }
     let scanlines = idat_decompressor.finish()?;
     if scanlines.len() != predict + unfiltering_buffer {
         /*decompressed size doesn't match prediction*/
