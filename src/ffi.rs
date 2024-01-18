@@ -41,6 +41,7 @@ pub enum ColorType {
 }
 
 impl ColorType {
+    /// Bits per pixel
     #[must_use]
     pub fn bpp(&self, bitdepth: u32) -> u32 {
         debug_assert!(bitdepth >= 1 && bitdepth <= 16);

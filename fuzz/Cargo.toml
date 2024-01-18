@@ -14,6 +14,7 @@ rgb = "0.8"
 
 [dependencies.lodepng]
 path = ".."
+features = ["cfzlib"]
 
 [dependencies.libfuzzer-sys]
 git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
@@ -31,3 +32,9 @@ path = "fuzz_targets/reencode24.rs"
 
 [dev-dependencies]
 png = "0.17.10"
+
+[profile.dev.package.flate2]
+opt-level = 3
+
+[profile.dev.package.cloudflare-zlib-sys]
+opt-level = 3

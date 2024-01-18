@@ -35,6 +35,15 @@ fn decode_filter_1(bencher: &mut test::Bencher) {
 }
 
 #[bench]
+fn decode_filter_2(bencher: &mut test::Bencher) {
+    let res = test_png_with_filter(2);
+    bencher.bytes = res.len() as _;
+    bencher.iter(|| {
+        lodepng::decode24(&res)
+    });
+}
+
+#[bench]
 fn decode_filter_3(bencher: &mut test::Bencher) {
     let res = test_png_with_filter(3);
     bencher.bytes = res.len() as _;

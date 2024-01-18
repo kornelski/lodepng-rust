@@ -474,7 +474,9 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
                 *out = s_next.wrapping_sub(s_prev);
             }
         },
-        _ => {},
+        _ => {
+            debug_assert!(false);
+        },
     };
 }
 

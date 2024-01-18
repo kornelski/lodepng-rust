@@ -1,5 +1,10 @@
 use lodepng::*;
 
+// top-level files create new executables, which is slower
+mod roundtrip {
+    mod roundtrip_test;
+}
+
 fn encode<T: rgb::Pod>(pixels: &[T], in_type: ColorType, out_type: ColorType) -> Result<Vec<u8>, Error> {
     let mut state = Encoder::new();
     state.set_auto_convert(true);
