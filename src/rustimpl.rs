@@ -343,8 +343,14 @@ fn test_filter_with_data(line1: &[u8], line2: &[u8], bytewidth: u8) {
         let mut unfiltered = vec![66u8; line_width * bytewidth as usize];
         for filter_type in 0..5 {
             filter_scanline(&mut filtered, &line1, Some(&line2), bytewidth, filter_type);
-            unfilter_scanline1(&mut unfiltered, &filtered, &line2, bytewidth, filter_type).unwrap();
-            assert_eq!(line1, &unfiltered, "width={line_width}, prev+filter={filter_type}, bytewidth={bytewidth}");
+            if filter_type == 1 || filter_type == 3 {
+                if filter_type == 1 {
+                    unfilter_scanline_filter_1(&mut unfiltered, &filtered, bytewidth).unwrap();
+                } else {
+                    unfilter_scanline_filter_3(&mut unfiltered, &filtered, &line2, bytewidth).unwrap();
+                }
+                assert_eq!(line1, &unfiltered, "width={line_width}, prev+filter={filter_type}, bytewidth={bytewidth}");
+            }
 
             for offset in [bytewidth as usize, bytewidth as usize+1, bytewidth as usize*2] {
                 line3.clear(); line3.resize(offset, 0);
@@ -1836,109 +1842,118 @@ fn unfilter_scanlines(mut inout: &mut [u8], input_offset: usize, w: u32, h: u32,
 
     let mut prev_line = None;
     for input_offset in input_offset..input_offset+h as usize {
+        if inout.len() < linebytes { return Err(Error::new(77)); }
         let filter_type = *inout.get(input_offset).ok_or(Error::new(77))?;
-
-        prev_line = Some(match prev_line {
-            Some(prev) if input_offset >= linebytes => {
-                let (out, rest) = inout.split_at_mut(linebytes);
-                let inp = rest.get(input_offset + 1 - linebytes..input_offset + 1).ok_or(Error::new(77))?;
-                unfilter_scanline1(out, inp, prev, bytewidth, filter_type)?;
-                inout = rest;
-                &out[..]
-            },
-            prev => {
-                unfilter_scanline_aliased(inout, input_offset + 1, prev, bytewidth, filter_type, linebytes)
-                    .ok_or_else(|| Error::new(77))?;
-                if inout.len() < linebytes { return Err(Error::new(77)); }
-                let (out, rest) = inout.split_at_mut(linebytes);
-                inout = rest;
-                out
+        prev_line = if (filter_type == 1 || (filter_type == 3 && prev_line.is_some()) || (filter_type == 4 && prev_line.is_none())) && input_offset >= linebytes {
+            let (out, rest) = inout.split_at_mut(linebytes);
+            let inp = rest.get(input_offset + 1 - linebytes..input_offset + 1).ok_or(Error::new(77))?;
+            if filter_type == 1 || filter_type == 4 {
+                unfilter_scanline_filter_1(out, inp, bytewidth)?;
+            } else if let Some(prev) = prev_line {
+                unfilter_scanline_filter_3(out, inp, prev, bytewidth)?;
             }
-        });
+            inout = rest;
+            Some(&out[..])
+        } else {
+            unfilter_scanline_aliased(inout, input_offset + 1, prev_line, bytewidth, filter_type, linebytes)
+                .ok_or_else(|| Error::new(77))?;
+            let (out, rest) = inout.split_at_mut(linebytes);
+            inout = rest;
+            Some(out)
+        };
     }
     Ok(())
 }
 
-#[inline]
-fn unfilter_scanline1(out: &mut [u8], scanline: &[u8], prevline: &[u8], bytewidth: u8, filter_type: u8) -> Result<(), Error> {
+#[inline(never)]
+fn unfilter_scanline_filter_1(out: &mut [u8], scanline: &[u8], bytewidth: u8) -> Result<(), Error> {
     let bytewidth = bytewidth as usize;
     let length = out.len();
     debug_assert_eq!(scanline.len(), length);
     // help the optimizer remove bounds checks
-    if bytewidth > 8 || bytewidth < 1 || length > u32::MAX as usize || length != scanline.len() || prevline.len() != length || bytewidth > length {
+    if bytewidth > 8 || bytewidth < 1 || length < bytewidth || length != scanline.len() || length % bytewidth != 0 {
         debug_assert!(false);
         return Err(Error::new(84));
     }
 
-    match filter_type {
-        0 => out.copy_from_slice(scanline),
-        1 => {
-            let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
-            out[..bytewidth].copy_from_slice(scanline_start);
-            let out = Cell::from_mut(out).as_slice_of_cells();
-            let out_prev = &out[..length-bytewidth];
-            let out_next = &out[bytewidth..];
-            for (out, (s, out_prev)) in out_next.iter().zip(scanline_next.iter().zip(out_prev)) {
-                out.set(s.wrapping_add(out_prev.get()));
-            }
-        },
-        2 => {
-            let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
-            for (out, (s, p)) in out.iter_mut().zip(scanline.iter().copied().zip(prevline.iter().copied())) {
-                *out = s.wrapping_add(p);
-            }
-        },
-        3 => {
-            let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
-            let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
-            let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
-            let out = Cell::from_mut(out).as_slice_of_cells();
-            let out_prev = &out[..length-bytewidth];
-            let (out_start, out_next) = out.split_at(bytewidth);
-            for (out, (s, p)) in out_start.iter().zip(scanline_start.iter().copied().zip(prevline_start.iter().copied())).take(bytewidth) {
-                out.set(s.wrapping_add(p >> 1));
-            }
-            for ((out, out_prev), (s, p)) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied().zip(prevline_next.iter().copied())) {
-                let t = out_prev.get() as u16 + p as u16;
-                out.set(s.wrapping_add((t >> 1) as u8));
-            }
-        },
-        4 => {
-            let (scanline_start, scanline_next) = scanline.split_at(bytewidth);
-            let prevline = prevline.get(..length).ok_or_else(|| Error::new(84))?;
-            let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
-            let prevline_prev = &prevline[..length-bytewidth];
-            let out = Cell::from_mut(out).as_slice_of_cells();
-            let out_prev = &out[..length-bytewidth];
-            let (out_start, out_next) = out.split_at(bytewidth);
-            for (out, (s, p)) in out_start.iter().zip(scanline_start.iter().copied().zip(prevline_start.iter().copied())) {
-                out.set(s.wrapping_add(p));
-            }
-            for ((out, out_prev), (s, (p, p_prev))) in out_next.iter().zip(out_prev).zip(scanline_next.iter().copied().zip(prevline_next.iter().copied().zip(prevline_prev.iter().copied()))) {
-                let pred = paeth_predictor(out_prev.get(), p, p_prev);
-                out.set(s.wrapping_add(pred));
-            }
-        },
-        _ => return Err(Error::new(36)),
+    match bytewidth {
+        1 => filter_1::<1>(out, scanline),
+        2 => filter_1::<2>(out, scanline),
+        3 => filter_1::<3>(out, scanline),
+        4 => filter_1::<4>(out, scanline),
+        6 => filter_1::<6>(out, scanline),
+        8 => filter_1::<8>(out, scanline),
+        _ => {},
     }
     Ok(())
 }
 
-/// IDAT decompression ensures this is never needed
 #[inline(never)]
-#[cold]
+fn unfilter_scanline_filter_3(out: &mut [u8], scanline: &[u8], prevline: &[u8], bytewidth: u8) -> Result<(), Error> {
+    let bytewidth = bytewidth as usize;
+    let length = out.len();
+    debug_assert_eq!(scanline.len(), length);
+    // help the optimizer remove bounds checks
+    if bytewidth > 8 || bytewidth < 1 || length < bytewidth || length != scanline.len() || prevline.len() != length || length % bytewidth != 0 {
+        debug_assert!(false);
+        return Err(Error::new(84));
+    }
+    match bytewidth {
+        1 => filter_3::<1>(out, scanline, prevline),
+        2 => filter_3::<2>(out, scanline, prevline),
+        3 => filter_3::<3>(out, scanline, prevline),
+        4 => filter_3::<4>(out, scanline, prevline),
+        6 => filter_3::<6>(out, scanline, prevline),
+        8 => filter_3::<8>(out, scanline, prevline),
+        _ => {},
+    }
+    Ok(())
+}
+
+#[inline(always)]
+fn filter_3<const N: usize>(out: &mut [u8], scanline: &[u8], prevline: &[u8]) {
+    let mut out_prev = [0; N];
+    let out = out.chunks_exact_mut(N);
+    let scanline = scanline.chunks_exact(N);
+    let prevline = prevline.chunks_exact(N);
+
+    for (out, (s, up)) in out.zip(scanline.zip(prevline)) {
+        for (out, (s, (up, prev))) in out.iter_mut().zip(s.iter().copied().zip(up.iter().copied().zip(out_prev.iter().copied()))) {
+            let t = up as u16 + prev as u16;
+            *out = s.wrapping_add((t >> 1) as u8);
+        }
+        out_prev.copy_from_slice(out);
+    }
+}
+
+#[inline(always)]
+fn filter_1<const N: usize>(out: &mut [u8], scanline: &[u8]) {
+    let out = out.chunks_exact_mut(N);
+    let scanline = scanline.chunks_exact(N);
+    let mut out_prev = [0; N];
+    out.zip(scanline).for_each(|(out, s)| {
+        out.iter_mut().zip(s.iter().copied().zip(out_prev.iter().copied())).for_each(|(out, (s, out_prev))| {
+            *out = s.wrapping_add(out_prev);
+        });
+        out_prev.copy_from_slice(out);
+    });
+}
+
+/// IDAT decompression ensures this is never needed
 fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8, length: usize) -> Option<()> {
     let bytewidth = bytewidth as usize;
     // help the optimizer remove bounds checks
-    if bytewidth > 8 || bytewidth < 1 || length > u32::MAX as usize || prevline.map_or(false, move |p| p.len() != length) || bytewidth > length {
+    if bytewidth > 8 || bytewidth < 1 || bytewidth > length || prevline.map_or(false, move |p| p.len() != length) || inout.len() < scanline_offset+bytewidth {
         debug_assert!(false);
         return None;
     }
 
-    match filter_type {
-        0 => inout.copy_within(scanline_offset..scanline_offset+length, 0),
-        1 => {
-            inout.copy_within(scanline_offset..scanline_offset+bytewidth, 0);
+    match (filter_type, prevline) {
+        (0, _) | (2, None) => {
+            inout.copy_within(scanline_offset..scanline_offset.checked_add(length)?, 0)
+        },
+        (1, _) | (4, None) => {
+            inout.copy_within(scanline_offset..scanline_offset.checked_add(bytewidth)?, 0);
 
             let inout = Cell::from_mut(inout).as_slice_of_cells();
             let out = inout.get(..length)?;
@@ -1951,7 +1966,7 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
                 out.set(s.get().wrapping_add(out_prev.get()));
             }
         },
-        2 => if let Some(prevline) = prevline {
+        (2, Some(prevline)) => {
             let prevline = prevline.get(..length)?;
 
             let inout = Cell::from_mut(inout).as_slice_of_cells();
@@ -1961,11 +1976,8 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
             for (out, (s, p)) in out.iter().zip(scanline.iter().zip(prevline.iter().copied())) {
                 out.set(s.get().wrapping_add(p));
             }
-        } else {
-            inout.copy_within(scanline_offset..scanline_offset+length, 0);
         },
-        3 => {
-            if let Some(prevline) = prevline {
+        (3, Some(prevline)) => {
                 let prevline = prevline.get(..length)?;
                 let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
 
@@ -1985,7 +1997,8 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
                     let t = out_prev.get() as u16 + p as u16;
                     out.set(s.get().wrapping_add((t >> 1) as u8));
                 }
-            } else {
+        },
+        (3, None) => {
                 inout.copy_within(scanline_offset..scanline_offset+bytewidth, 0);
 
                 let inout = Cell::from_mut(inout).as_slice_of_cells();
@@ -1998,10 +2011,8 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
                 for ((out, out_prev), s) in out_next.iter().zip(out_prev).zip(scanline_next.iter()) {
                     out.set(s.get().wrapping_add(out_prev.get() >> 1));
                 }
-            }
         },
-        4 => {
-            if let Some(prevline) = prevline {
+        (4, Some(prevline)) => {
                 let prevline = prevline.get(..length)?;
                 let (prevline_start, prevline_next) = prevline.split_at(bytewidth);
                 let prevline_prev = &prevline[..length-bytewidth];
@@ -2020,22 +2031,11 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
                     let pred = paeth_predictor(out_prev.get(), p, p_prev);
                     out.set(s.get().wrapping_add(pred));
                 }
-            } else {
-                inout.copy_within(scanline_offset..scanline_offset+bytewidth, 0);
-
-                let inout = Cell::from_mut(inout).as_slice_of_cells();
-                let out = inout.get(..length)?;
-                let scanline = inout.get(scanline_offset..scanline_offset+length)?;
-
-                let scanline_next = &scanline[bytewidth..];
-                let out_prev = &out[..length-bytewidth];
-                let out_next = &out[bytewidth..];
-                for (out, (s, out_prev)) in out_next.iter().zip(scanline_next.iter().zip(out_prev)) {
-                    out.set(s.get().wrapping_add(out_prev.get()));
-                }
-            }
         },
-        _ => return None,
+        (bad_filter, _) => {
+            debug_assert!(bad_filter >= 5);
+            return None
+        },
     }
     Some(())
 }
