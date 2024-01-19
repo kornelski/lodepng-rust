@@ -1707,12 +1707,12 @@ const LODEPNG_CRC32_TABLE: [u32; 256] = [
 
 #[inline(never)]
 pub(crate) fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, mode_in: &ColorMode, w: u32, h: u32) -> Result<(), Error> {
-    if mode_in.bitdepth > 16 || mode_out.bitdepth > 16 || mode_in.bitdepth == 0 || mode_out.bitdepth == 0 {
-        return Err(Error::new(37));
-    }
     let numpixels = w as usize * h as usize;
     let bytewidth_in = (mode_in.bpp_().get() / 8) as usize;
     let bytewidth_out = (mode_out.bpp_().get() / 8) as usize;
+    if mode_in.bitdepth > 16 || mode_out.bitdepth > 16 || mode_in.bitdepth == 0 || mode_out.bitdepth == 0 {
+        return Err(Error::new(37));
+    }
     if lodepng_color_mode_equal(mode_out, mode_in) {
         let numbytes = mode_in.raw_size_opt(w as _, h as _)?;
         out[..numbytes].copy_from_slice(&inp[..numbytes]);
@@ -1733,7 +1733,7 @@ pub(crate) fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, 
             (*p, i as u8)
         }));
     }
-    if mode_in.bitdepth() == 16 && mode_out.bitdepth() == 16 {
+    if mode_in.bitdepth() == 16 && mode_out.bitdepth() == 16 && bytewidth_out > 0 && bytewidth_in > 0 {
         for (px, px_out) in inp.chunks_exact(bytewidth_in).zip(out.chunks_exact_mut(bytewidth_out)).take(numpixels) {
             let px = get_pixel_color_rgba16(px, mode_in);
             rgba16_to_pixel(px_out, mode_out, px);
@@ -1756,7 +1756,7 @@ pub(crate) fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, 
             let px = pal.get(index).copied().unwrap_or(RGBA::new(0, 0, 0, 255));
             rgba8_to_pixel(out, i, mode_out, &mut colormap, px)?;
         }
-    } else {
+    } else if bytewidth_in > 0 {
         for (i, pixel_in) in inp.chunks_exact(bytewidth_in).enumerate().take(numpixels) {
             let px = get_pixel_color_rgba8(pixel_in, mode_in);
             rgba8_to_pixel(out, i, mode_out, &mut colormap, px)?;
