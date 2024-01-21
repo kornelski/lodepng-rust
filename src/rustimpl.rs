@@ -261,15 +261,14 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
             This is very slow and gives only slightly smaller, sometimes even larger, result*/
             let mut best = zero_vec(linebytes)?;
             let mut attempt = zero_vec(linebytes)?;
-            let mut temp_buf = Vec::with_capacity(linebytes);
+            let mut prev_line_best = zero_vec(linebytes)?;
+            let mut gz = zlib::Estimator::new(linebytes);
             Box::new(move |out, inp, prevline| {
                 let mut smallest = 0;
                 let mut best_type = 0;
                 for type_ in 0..5 {
                     filter_scanline(&mut attempt, inp, prevline, bytewidth, type_ as u8);
-                    temp_buf.clear();
-                    zlib::compress_fast(&attempt, &mut temp_buf);
-                    let size = temp_buf.len();
+                    let size = gz.estimate_compressed_size(&mut attempt, &prev_line_best);
                     /*check if this is smallest size (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || size < smallest {
                         best_type = type_;
@@ -279,6 +278,7 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
                 }
                 out[0] = best_type as u8;
                 out[1..].copy_from_slice(&best);
+                std::mem::swap(&mut prev_line_best, &mut best);
             })
         },
     })

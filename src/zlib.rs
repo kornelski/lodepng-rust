@@ -116,8 +116,44 @@ pub(crate) fn compress_into(out: &mut dyn Write, inp: &[u8], settings: &Compress
     Ok(())
 }
 
-
-pub(crate) fn compress_fast(source: &[u8], destination: &mut Vec<u8>) {
-    let mut zlib = ZlibEncoder::new(destination, Compression::new(1));
-    let _ = zlib.write_all(source);
+pub struct Estimator {
+    gz: flate2::Compress,
+    tmp: Vec<u8>,
 }
+
+impl Estimator {
+    pub fn new(len: usize) -> Self {
+        #[cfg(not(any(feature = "cfzlib", feature = "ngzlib")))]
+        let gz = flate2::Compress::new(Compression::fast(), false);
+        #[cfg(any(feature = "cfzlib", feature = "ngzlib"))]
+        let gz = flate2::Compress::new_with_window_bits(Compression::fast(), false,
+                (len+270).max(1<<9).min(1<<14).next_power_of_two().trailing_zeros() as u8);
+        Self {
+            gz,
+            tmp: vec![0; len+270],
+        }
+    }
+
+    pub(crate) fn estimate_compressed_size(&mut self, mut source: &[u8], _dict: &[u8]) -> usize {
+        self.gz.reset();
+        #[cfg(any(feature = "cfzlib", feature = "ngzlib"))]
+        if !_dict.is_empty() {
+            let _ = self.gz.set_dictionary(&_dict[_dict.len().saturating_sub(1<<14)..]);
+        }
+
+        let init_total_out = self.gz.total_out();
+        loop {
+            let last_total_in = self.gz.total_in();
+            let last_total_out = self.gz.total_out();
+            let _ = self.gz.compress(source, &mut self.tmp, flate2::FlushCompress::Sync);
+            let consumed = (self.gz.total_in() - last_total_in) as usize;
+            let written = (self.gz.total_out() - last_total_out) as usize;
+            if (consumed == 0 && written == 0) || consumed >= source.len() {
+                break;
+            }
+            source = &source[consumed..];
+        }
+        (self.gz.total_out() - init_total_out) as _
+    }
+}
+
