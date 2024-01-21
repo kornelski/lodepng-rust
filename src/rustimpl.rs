@@ -235,18 +235,7 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
                 let mut best_type = 0;
                 for type_ in 0..5 {
                     filter_scanline(&mut attempt, inp, prevline, bytewidth, type_ as u8);
-                    let mut count = [0u32; 256];
-                    for byte in attempt.iter().copied() {
-                        count[byte as usize] += 1;
-                    }
-                    count[type_] += 1; /*the extra filterbyte added to each row*/
-                    let mut sum = 0.;
-                    for &c in &count {
-                        if c > 0 {
-                            let p = c as f32 / ((linebytes + 1) as f32);
-                            sum += (1. / p).log2() * p;
-                        }
-                    }
+                    let sum = entropy(&attempt, type_);
                     /*check if this is smallest sum (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || sum < smallest {
                         best_type = type_;
@@ -293,6 +282,19 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
             })
         },
     })
+}
+
+fn entropy(attempt: &[u8], type_: usize) -> f32 {
+    let mut count = [0u32; 256];
+    for byte in attempt.iter().copied() {
+        count[byte as usize] += 1;
+    }
+    /*the extra filterbyte added to each row*/
+    count[type_] += 1;
+    count.iter().copied().filter(|&c| c > 0).map(|c| {
+        let p = c as f32;
+        (1. / p).log2() * p
+    }).sum::<f32>()
 }
 
 #[test]
