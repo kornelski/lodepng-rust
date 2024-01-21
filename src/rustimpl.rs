@@ -2387,7 +2387,7 @@ fn add_unknown_chunks(out: &mut Vec<u8>, data: &[u8]) -> Result<(), Error> {
 pub const LODEPNG_VERSION_STRING: &[u8] = b"20161127-Rust-3.0\0";
 
 #[inline(never)]
-pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &mut State) -> Result<Vec<u8>, Error> {
+pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &State) -> Result<Vec<u8>, Error> {
     if w == 0 || h == 0 {
         return Err(Error::new(93));
     }
@@ -2753,7 +2753,7 @@ pub(crate) fn lodepng_encode_memory(image: &[u8], w: u32, h: u32, colortype: Col
     state.info_raw_mut().try_set_bitdepth(bitdepth)?;
     state.info_png_mut().color.colortype = colortype;
     state.info_png_mut().color.try_set_bitdepth(bitdepth)?;
-    lodepng_encode(image, w as _, h as _, &mut state.state)
+    lodepng_encode(image, w as _, h as _, &state.state)
 }
 
 impl EncoderSettings {

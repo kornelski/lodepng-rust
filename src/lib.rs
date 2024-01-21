@@ -495,7 +495,7 @@ impl Encoder {
     #[allow(deprecated)]
     #[track_caller]
     /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
-    pub fn encode<PixelType: rgb::Pod>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+    pub fn encode<PixelType: rgb::Pod>(&self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         if let Some(filters) = &self.predefined_filters {
             if filters.len() < h {
                 return Err(Error::new(88))
@@ -507,7 +507,7 @@ impl Encoder {
     #[inline(always)]
     #[allow(deprecated)]
     /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
-    pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+    pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         if let Some(filters) = &self.predefined_filters {
             if filters.len() < h {
                 return Err(Error::new(88));
@@ -766,7 +766,7 @@ impl State {
 
     #[deprecated(note = "Use Encoder type instead of State")]
     #[track_caller]
-    pub fn encode<PixelType: rgb::Pod>(&mut self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+    pub fn encode<PixelType: rgb::Pod>(&self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         let w = w.try_into().map_err(|_| Error::new(93))?;
         let h = h.try_into().map_err(|_| Error::new(93))?;
 
@@ -778,7 +778,7 @@ impl State {
     #[allow(deprecated)]
     #[inline]
     #[track_caller]
-    pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&mut self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+    pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = self.encode(image, w, h)?;
         fs::write(filepath, buf)?;
         Ok(())
