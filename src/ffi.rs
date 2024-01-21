@@ -347,6 +347,9 @@ pub struct EncoderSettings {
     pub text_compression: bool,
 }
 
+unsafe impl Send for EncoderSettings {}
+unsafe impl Sync for EncoderSettings {}
+
 /// The settings, state and information for extended encoding and decoding
 #[repr(C)]
 #[derive(Clone, Debug)]

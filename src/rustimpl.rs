@@ -2822,5 +2822,7 @@ fn get_value_required_bits(value: u8) -> u8 {
     }
 }
 
+unsafe impl Send for CompressSettings {}
 unsafe impl Sync for CompressSettings {}
 unsafe impl Sync for DecompressSettings {}
+unsafe impl Send for DecompressSettings {}
