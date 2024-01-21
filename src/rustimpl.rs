@@ -201,18 +201,13 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
             })
         },
         FilterStrategy::MINSUM => {
-            let mut attempt = [
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-            ];
+            let mut best = zero_vec(linebytes)?;
+            let mut attempt = zero_vec(linebytes)?;
             Box::new(move |out, inp, prevline| {
                 let mut smallest = 0;
                 let mut best_type = 0;
-                for (type_, attempt) in attempt.iter_mut().enumerate() {
-                    filter_scanline(attempt, inp, prevline, bytewidth, type_ as u8);
+                for type_ in 0..5 {
+                    filter_scanline(&mut attempt, inp, prevline, bytewidth, type_ as u8);
                     let sum = if type_ == 0 {
                         attempt.iter().map(|&s| s as usize).sum()
                     } else {
@@ -225,25 +220,21 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
                     if type_ == 0 || sum < smallest {
                         best_type = type_; /*now fill the out values*/
                         smallest = sum;
-                    };
+                        std::mem::swap(&mut attempt, &mut best);
+                    }
                 }
                 out[0] = best_type as u8;
-                out[1..].copy_from_slice(&attempt[best_type]);
+                out[1..].copy_from_slice(&best);
             })
         },
         FilterStrategy::ENTROPY => {
-            let mut attempt = [
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-            ];
+            let mut best = zero_vec(linebytes)?;
+            let mut attempt = zero_vec(linebytes)?;
             Box::new(move |out, inp, prevline| {
                 let mut smallest = 0.;
                 let mut best_type = 0;
-                for (type_, attempt) in attempt.iter_mut().enumerate() {
-                    filter_scanline(attempt, inp, prevline, bytewidth, type_ as u8);
+                for type_ in 0..5 {
+                    filter_scanline(&mut attempt, inp, prevline, bytewidth, type_ as u8);
                     let mut count = [0u32; 256];
                     for byte in attempt.iter().copied() {
                         count[byte as usize] += 1;
@@ -260,10 +251,11 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
                     if type_ == 0 || sum < smallest {
                         best_type = type_;
                         smallest = sum;
+                        std::mem::swap(&mut attempt, &mut best);
                     };
                 }
                 out[0] = best_type as u8; /*the first byte of a scanline will be the filter type*/
-                out[1..].copy_from_slice(&attempt[best_type]);
+                out[1..].copy_from_slice(&best);
             })
         },
         FilterStrategy::PREDEFINED => {
@@ -278,30 +270,26 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
             /*brute force filter chooser.
             deflate the scanline after every filter attempt to see which one deflates best.
             This is very slow and gives only slightly smaller, sometimes even larger, result*/
-            let mut attempt = [
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-                zero_vec(linebytes)?,
-            ];
+            let mut best = zero_vec(linebytes)?;
+            let mut attempt = zero_vec(linebytes)?;
             let mut temp_buf = Vec::with_capacity(linebytes);
             Box::new(move |out, inp, prevline| {
                 let mut smallest = 0;
                 let mut best_type = 0;
-                for (type_, attempt) in attempt.iter_mut().enumerate() {
-                    filter_scanline(attempt, inp, prevline, bytewidth, type_ as u8);
+                for type_ in 0..5 {
+                    filter_scanline(&mut attempt, inp, prevline, bytewidth, type_ as u8);
                     temp_buf.clear();
-                    zlib::compress_fast(attempt, &mut temp_buf);
+                    zlib::compress_fast(&attempt, &mut temp_buf);
                     let size = temp_buf.len();
                     /*check if this is smallest size (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || size < smallest {
                         best_type = type_;
                         smallest = size;
+                        std::mem::swap(&mut attempt, &mut best);
                     }
                 }
                 out[0] = best_type as u8;
-                out[1..].copy_from_slice(&attempt[best_type]);
+                out[1..].copy_from_slice(&best);
             })
         },
     })
