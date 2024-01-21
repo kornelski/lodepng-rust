@@ -806,6 +806,8 @@ pub use rgb::alt::GrayAlpha as GreyAlpha;
 ///
 /// Images with >=8bpp are stored with pixel per vec element.
 /// Images with <8bpp are represented as a bunch of bytes, with multiple pixels per byte.
+///
+/// Check `decoder.info_raw()` for more info about the image type.
 #[derive(Debug)]
 pub enum Image {
     /// Bytes of the image. See bpp how many pixels per element there are
@@ -824,6 +826,87 @@ pub enum Image {
     RGB(Bitmap<RGB<u8>>),
     RGBA16(Bitmap<rgb::RGBA<u16>>),
     RGB16(Bitmap<RGB<u16>>),
+}
+
+impl Image {
+    pub fn width(&self) -> usize {
+        match self {
+            Self::RawData(bitmap) => bitmap.width,
+            Self::Grey(bitmap) => bitmap.width,
+            Self::Grey16(bitmap) => bitmap.width,
+            Self::GreyAlpha(bitmap) => bitmap.width,
+            Self::GreyAlpha16(bitmap) => bitmap.width,
+            Self::RGBA(bitmap) => bitmap.width,
+            Self::RGB(bitmap) => bitmap.width,
+            Self::RGBA16(bitmap) => bitmap.width,
+            Self::RGB16(bitmap) => bitmap.width,
+        }
+    }
+
+    pub fn height(&self) -> usize {
+        match self {
+            Self::RawData(bitmap) => bitmap.height,
+            Self::Grey(bitmap) => bitmap.height,
+            Self::Grey16(bitmap) => bitmap.height,
+            Self::GreyAlpha(bitmap) => bitmap.height,
+            Self::GreyAlpha16(bitmap) => bitmap.height,
+            Self::RGBA(bitmap) => bitmap.height,
+            Self::RGB(bitmap) => bitmap.height,
+            Self::RGBA16(bitmap) => bitmap.height,
+            Self::RGB16(bitmap) => bitmap.height,
+        }
+    }
+
+    /// Raw bytes of the underlying buffer
+    pub fn bytes(&self) -> &[u8] {
+        use rgb::ComponentBytes;
+        match self {
+            Self::RawData(bitmap) => {
+                let slice = bitmap.buffer.as_slice();
+                slice
+            },
+            Self::Grey(bitmap) => {
+                let slice = bitmap.buffer.as_bytes();
+                debug_assert_eq!(slice.len(), bitmap.width * bitmap.height);
+                slice
+            },
+            Self::Grey16(bitmap) => {
+                let slice = bitmap.buffer.as_bytes();
+                debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 2);
+                slice
+            },
+            Self::GreyAlpha(bitmap) => {
+                let slice = bitmap.buffer.as_bytes();
+                debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 2);
+                slice
+            },
+            Self::GreyAlpha16(bitmap) => {
+                let slice = bitmap.buffer.as_bytes();
+                debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 4);
+                slice
+            },
+            Self::RGBA(bitmap) => {
+                let slice = bitmap.buffer.as_bytes();
+                debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 4);
+                slice
+            },
+            Self::RGB(bitmap) => {
+                let slice = bitmap.buffer.as_bytes();
+                debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 3);
+                slice
+            },
+            Self::RGBA16(bitmap) => {
+                let slice = bitmap.buffer.as_bytes();
+                debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 8);
+                slice
+            },
+            Self::RGB16(bitmap) => {
+                let slice = bitmap.buffer.as_bytes();
+                debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 6);
+                slice
+            },
+        }
+    }
 }
 
 /// Position in the file section after…
@@ -900,7 +983,7 @@ fn required_size(w: u32, h: u32, colortype: ColorType, bitdepth: u32) -> Result<
 }
 
 fn new_bitmap(buffer: Vec<u8>, w: u32, h: u32, colortype: ColorType, bitdepth: c_uint) -> Result<Image> {
-    debug_assert!(buffer.len() >= required_size(w, h, colortype, bitdepth)?);
+    debug_assert_eq!(buffer.len(), required_size(w, h, colortype, bitdepth)?);
     let w = w as usize;
     let h = h as usize;
 
@@ -1289,6 +1372,11 @@ impl EncoderSettings {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Zlib compression level 0=none, 9=best
+    pub fn set_level(&mut self, level: u8) {
+        self.zlibsettings.set_level(level);
     }
 }
 
