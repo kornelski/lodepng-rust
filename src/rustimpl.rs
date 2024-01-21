@@ -1247,8 +1247,9 @@ fn add_chunk_idat(out: &mut Vec<u8>, inp: &[u8], w: u32, h: u32, info_png: &Info
         filtered_scanlines(&mut tmp, inp, w, h, info_png, settings)?;
         (cb)(&tmp, &mut ch, zlibsettings)?;
     } else {
-        let mut z = zlib::new_compressor(&mut ch, zlibsettings)?;
+        let mut z = zlib::new_compressor(ch, zlibsettings)?;
         filtered_scanlines(&mut z, inp, w, h, info_png, settings)?;
+        ch = z.finish()?;
     }
     ch.finish()
 }
