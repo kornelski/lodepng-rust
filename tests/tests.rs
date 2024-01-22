@@ -126,3 +126,69 @@ fn text_chunks() {
     s.decode(data).unwrap();
     assert_eq!(1, s.info_png().text_keys().count());
 }
+
+#[test]
+fn low_bpp_1() {
+    test_low_bpp(1, false);
+    test_low_bpp(1, true);
+}
+
+#[test]
+fn low_bpp_2() {
+    test_low_bpp(2, false);
+    test_low_bpp(2, true);
+}
+
+#[test]
+fn low_bpp_4() {
+    test_low_bpp(4, false);
+    test_low_bpp(4, true);
+}
+
+#[test]
+fn low_bpp_8() {
+    test_low_bpp(8, false);
+    test_low_bpp(8, true);
+}
+
+fn test_low_bpp(bitdepth: u8, interlace: bool) {
+    let pixels = (0..1000).map(|i| (i % (1<<bitdepth)) as u8).collect::<Vec<_>>();
+    let mut enc = lodepng::Encoder::new();
+    enc.set_auto_convert(true);
+    enc.info_raw_mut().set_colortype(ColorType::GREY);
+    enc.info_raw_mut().set_bitdepth(8);
+    enc.info_png_mut().color.set_colortype(ColorType::GREY);
+    enc.info_png_mut().color.set_bitdepth(bitdepth.into());
+    enc.info_png_mut().interlace_method = interlace as _;
+
+    let file = enc.encode(&pixels, 50, 20).unwrap();
+
+    let mut d = lodepng::Decoder::new();
+    d.inspect(&file).unwrap();
+    assert_eq!(d.info_png().color.bitdepth(), bitdepth as _);
+    assert_eq!(d.info_png().interlace_method, interlace as _);
+
+    let check = lodepng::decode_memory(&file, ColorType::GREY, 8).unwrap();
+    assert_eq!(50, check.width());
+    assert_eq!(20, check.height());
+    assert_eq!(&pixels, &check.bytes());
+
+    let check = lodepng::decode32(&file).unwrap();
+    assert_eq!(50, check.width);
+    assert_eq!(20, check.height);
+    assert_eq!(check.buffer.len(), 1000);
+    assert!(check.buffer.iter().map(|px| {
+        debug_assert_eq!(px.r, px.g);
+        debug_assert_eq!(px.g, px.b);
+        debug_assert_eq!(px.a, 255);
+        px.r
+    }).eq(pixels.iter().copied()));
+
+    let check = lodepng::decode24(&file).unwrap();
+    assert_eq!(check.buffer.len(), 1000);
+    assert!(check.buffer.iter().map(|px| {
+        debug_assert_eq!(px.r, px.g);
+        debug_assert_eq!(px.g, px.b);
+        px.r
+    }).eq(pixels.iter().copied()))
+}
