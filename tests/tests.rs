@@ -79,6 +79,7 @@ fn bgra() {
 
 #[test]
 #[ignore] // slow
+#[cfg(target_pointer_width = "64")]
 fn huge() {
     let png = encode24(&vec![RGB::new(0u8,0,0); 67777*68888], 67777, 68888).unwrap();
     let img = decode24(png).unwrap();

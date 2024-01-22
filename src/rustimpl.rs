@@ -97,14 +97,17 @@ fn add_padding_bits_line(out: &mut [u8], inp: &[u8], olinebits: usize, ilinebits
     }
 }
 
+#[inline]
 fn linebits_exact(w: u32, bpp: NonZeroU8) -> usize {
     w as usize * bpp.get() as usize
 }
 
+#[inline]
 fn linebits_rounded(w: u32, bpp: NonZeroU8) -> usize {
     linebytes_rounded(w, bpp) * 8
 }
 
+#[inline]
 fn linebytes_rounded(w: u32, bpp: NonZeroU8) -> usize {
     (w as usize * bpp.get() as usize + 7) / 8
 }
@@ -169,6 +172,7 @@ fn filter(out: &mut dyn Write, inp: &[u8], w: u32, h: u32, info: &ColorMode, set
     Ok(())
 }
 
+#[inline(never)]
 fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettings) -> Result<Box<dyn FnMut(&mut [u8], &[u8], Option<&[u8]>) + 'a>, Error> {
     let bpp = info.bpp_();
     debug_assert!(w != 0);
@@ -178,6 +182,7 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
     /*the width of a scanline in bytes, not including the filter type*/
     let linebytes = linebytes_rounded(w, bpp);
     debug_assert!(linebytes > 0);
+
     /*
       There is a heuristic called the minimum sum of absolute differences heuristic, suggested by the PNG standard:
        *  If the image type is Palette, or the bit depth is smaller than 8, then do not filter the image (i.e.
@@ -199,17 +204,25 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
     Ok(match strategy {
         FilterStrategy::ZERO => {
             Box::new(move |out, inp, _prevline| {
-                out[0] = 0; out[1..].copy_from_slice(inp);
+                debug_assert_eq!(out.len(), 1+linebytes);
+                debug_assert_eq!(inp.len(), linebytes);
+
+                let Some((f, line)) = out.split_first_mut() else { return; };
+                *f = 0;
+                if line.len() == inp.len() {
+                    line.copy_from_slice(inp);
+                }
             })
         },
         FilterStrategy::MINSUM => {
-            let mut best = zero_vec(linebytes)?;
-            let mut attempt = zero_vec(linebytes)?;
+            let mut best = zero_vec(1 + linebytes)?;
+            let mut attempt = zero_vec(1 + linebytes)?;
             Box::new(move |out, inp, prevline| {
                 let mut smallest = 0;
-                let mut best_type = 0;
                 for type_ in 0..5 {
-                    filter_scanline(&mut attempt, inp, prevline, bytewidth, type_ as u8);
+                    let Some((f, line)) = attempt.split_first_mut() else { return; };
+                    *f = type_;
+                    filter_scanline(line, inp, prevline, bytewidth, type_);
                     let sum = if type_ == 0 {
                         attempt.iter().map(|&s| s as usize).sum()
                     } else {
@@ -220,79 +233,74 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
                     };
                     /*check if this is smallest sum (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || sum < smallest {
-                        best_type = type_; /*now fill the out values*/
                         smallest = sum;
                         std::mem::swap(&mut attempt, &mut best);
                     }
                 }
-                out[0] = best_type as u8;
-                out[1..].copy_from_slice(&best);
+                out.copy_from_slice(&best);
             })
         },
         FilterStrategy::ENTROPY => {
-            let mut best = zero_vec(linebytes)?;
-            let mut attempt = zero_vec(linebytes)?;
+            let mut best = zero_vec(1 + linebytes)?;
+            let mut attempt = zero_vec(1 + linebytes)?;
             Box::new(move |out, inp, prevline| {
                 let mut smallest = 0.;
-                let mut best_type = 0;
                 for type_ in 0..5 {
-                    filter_scanline(&mut attempt, inp, prevline, bytewidth, type_ as u8);
-                    let sum = entropy(&attempt, type_);
+                    let Some((f, line)) = attempt.split_first_mut() else { return; };
+                    *f = type_;
+                    filter_scanline(line, inp, prevline, bytewidth, type_);
+                    let sum = entropy(&attempt);
                     /*check if this is smallest sum (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || sum < smallest {
-                        best_type = type_;
                         smallest = sum;
                         std::mem::swap(&mut attempt, &mut best);
                     };
                 }
-                out[0] = best_type as u8; /*the first byte of a scanline will be the filter type*/
-                out[1..].copy_from_slice(&best);
+                out.copy_from_slice(&best);
             })
         },
         FilterStrategy::PREDEFINED => {
             let mut filters = unsafe { settings.predefined_filters(h as usize)? }.iter().copied();
             Box::new(move |out, inp, prevline| {
                 let type_ = filters.next().unwrap_or(0);
-                out[0] = type_;
-                filter_scanline(&mut out[1..], inp, prevline, bytewidth, type_);
+                let Some((f, line)) = out.split_first_mut() else { return; };
+                *f = type_;
+                filter_scanline(line, inp, prevline, bytewidth, type_);
             })
         },
         FilterStrategy::BRUTE_FORCE => {
             /*brute force filter chooser.
             deflate the scanline after every filter attempt to see which one deflates best.
             This is very slow and gives only slightly smaller, sometimes even larger, result*/
-            let mut best = zero_vec(linebytes)?;
-            let mut attempt = zero_vec(linebytes)?;
-            let mut prev_line_best = zero_vec(linebytes)?;
+            let mut best = zero_vec(1 + linebytes)?;
+            let mut attempt = zero_vec(1 + linebytes)?;
+            let mut prev_line_best = zero_vec(1 + linebytes)?;
             let mut gz = zlib::Estimator::new(linebytes);
             Box::new(move |out, inp, prevline| {
                 let mut smallest = 0;
-                let mut best_type = 0;
                 for type_ in 0..5 {
-                    filter_scanline(&mut attempt, inp, prevline, bytewidth, type_ as u8);
+                    let Some((f, line)) = attempt.split_first_mut() else { return; };
+                    *f = type_;
+                    filter_scanline(line, inp, prevline, bytewidth, type_);
                     let size = gz.estimate_compressed_size(&mut attempt, &prev_line_best);
                     /*check if this is smallest size (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || size < smallest {
-                        best_type = type_;
                         smallest = size;
                         std::mem::swap(&mut attempt, &mut best);
                     }
                 }
-                out[0] = best_type as u8;
-                out[1..].copy_from_slice(&best);
+                out.copy_from_slice(&best);
                 std::mem::swap(&mut prev_line_best, &mut best);
             })
         },
     })
 }
 
-fn entropy(attempt: &[u8], type_: usize) -> f32 {
+fn entropy(attempt: &[u8]) -> f32 {
     let mut count = [0u32; 256];
     for byte in attempt.iter().copied() {
         count[byte as usize] += 1;
     }
-    /*the extra filterbyte added to each row*/
-    count[type_] += 1;
     count.iter().copied().filter(|&c| c > 0).map(|c| {
         let p = c as f32;
         (1. / p).log2() * p
@@ -334,12 +342,12 @@ fn test_filter_with_data(line1: &[u8], line2: &[u8], bytewidth: u8) {
         let mut filtered = vec![99u8; line_width * bytewidth as usize];
         let mut unfiltered = vec![66u8; line_width * bytewidth as usize];
         for filter_type in 0..5 {
-            filter_scanline(&mut filtered, &line1, Some(&line2), bytewidth, filter_type);
+            filter_scanline(&mut filtered, line1, Some(line2), bytewidth, filter_type);
             if filter_type == 1 || filter_type == 3 {
                 if filter_type == 1 {
                     unfilter_scanline_filter_1(&mut unfiltered, &filtered, bytewidth).unwrap();
                 } else {
-                    unfilter_scanline_filter_3(&mut unfiltered, &filtered, &line2, bytewidth).unwrap();
+                    unfilter_scanline_filter_3(&mut unfiltered, &filtered, line2, bytewidth).unwrap();
                 }
                 assert_eq!(line1, &unfiltered, "width={line_width}, prev+filter={filter_type}, bytewidth={bytewidth}");
             }
@@ -347,12 +355,12 @@ fn test_filter_with_data(line1: &[u8], line2: &[u8], bytewidth: u8) {
             for offset in [bytewidth as usize, bytewidth as usize+1, bytewidth as usize*2] {
                 line3.clear(); line3.resize(offset, 0);
                 line3.extend_from_slice(&filtered);
-                unfilter_scanline_aliased(&mut line3, offset, Some(&line2), bytewidth, filter_type, line1.len());
+                unfilter_scanline_aliased(&mut line3, offset, Some(line2), bytewidth, filter_type, line1.len());
                 assert_eq!(line1, &line3[..line1.len()], "aliased width={line_width}, prev+filter={filter_type}, bytewidth={bytewidth}");
             }
         }
         for filter_type in 0..5 {
-            filter_scanline(&mut filtered, &line1, None, bytewidth, filter_type);
+            filter_scanline(&mut filtered, line1, None, bytewidth, filter_type);
             for offset in [bytewidth as usize, bytewidth as usize+1, bytewidth as usize*2] {
                 line3.clear(); line3.resize(offset, 0);
                 line3.extend_from_slice(&filtered);
@@ -658,9 +666,8 @@ fn rgba16_to_pixel(out: &mut [u8], mode: &ColorMode, px: RGBA16) {
         ColorType::BGRX |
         ColorType::PALETTE => {
             debug_assert!(false);
-            return
         },
-    };
+    }
 }
 
 fn get_pixel_low_bpp(inp: &[u8], i: usize, mode: &ColorMode) -> u8 {
@@ -1839,14 +1846,14 @@ fn unfilter_scanlines(mut inout: &mut [u8], input_offset: usize, w: u32, h: u32,
         let filter_type = *inout.get(input_offset).ok_or(Error::new(77))?;
         prev_line = if (filter_type == 1 || (filter_type == 3 && prev_line.is_some()) || (filter_type == 4 && prev_line.is_none())) && input_offset >= linebytes {
             let (out, rest) = inout.split_at_mut(linebytes);
-            let inp = rest.get(input_offset + 1 - linebytes..input_offset + 1).ok_or(Error::new(77))?;
+            let inp = rest.get((input_offset + 1 - linebytes)..=input_offset).ok_or(Error::new(77))?;
             if filter_type == 1 || filter_type == 4 {
                 unfilter_scanline_filter_1(out, inp, bytewidth)?;
             } else if let Some(prev) = prev_line {
                 unfilter_scanline_filter_3(out, inp, prev, bytewidth)?;
             }
             inout = rest;
-            Some(&out[..])
+            Some(out)
         } else {
             unfilter_scanline_aliased(inout, input_offset + 1, prev_line, bytewidth, filter_type, linebytes)
                 .ok_or_else(|| Error::new(77))?;
@@ -1943,7 +1950,7 @@ fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline:
 
     match (filter_type, prevline) {
         (0, _) | (2, None) => {
-            inout.copy_within(scanline_offset..scanline_offset.checked_add(length)?, 0)
+            inout.copy_within(scanline_offset..scanline_offset.checked_add(length)?, 0);
         },
         (1, _) | (4, None) => {
             inout.copy_within(scanline_offset..scanline_offset.checked_add(bytewidth)?, 0);
@@ -2356,7 +2363,7 @@ pub(crate) fn lodepng_decode(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, 
             return Err(Error::new(56)); /*unsupported color mode conversion*/
         }
         let mut out = zero_vec(state.info_raw.raw_size_opt(w, h)?)?;
-        lodepng_convert(&mut out, &decoded, &state.info_raw, &state.info_png.color, w as u32, h as u32)?;
+        lodepng_convert(&mut out, &decoded, &state.info_raw, &state.info_png.color, w, h)?;
         Ok((out, w, h))
     }
 }
@@ -2401,7 +2408,7 @@ pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &State) -> Res
     let mut outv = Vec::new(); outv.try_reserve(1024 + w as usize * h as usize / 2)?;
     write_signature(&mut outv);
 
-    add_chunk_ihdr(&mut outv, w as u32, h as u32, info.color.colortype, info.color.bitdepth() as u8, info.interlace_method)?;
+    add_chunk_ihdr(&mut outv, w, h, info.color.colortype, info.color.bitdepth() as u8, info.interlace_method)?;
     add_unknown_chunks(&mut outv, &info.unknown_chunks[ChunkPosition::IHDR as usize])?;
     if info.color.colortype == ColorType::PALETTE {
         add_chunk_plte(&mut outv, &info.color)?;
