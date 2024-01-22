@@ -158,7 +158,9 @@ fn filter(out: &mut dyn Write, inp: &[u8], w: u32, h: u32, info: &ColorMode, set
         }
     } else {
         let mut prevline = None;
-        for inp in inp.chunks_exact(linebytes).take(h as usize) {
+        // interlace gives larger buffers
+        let inp = inp.get(..h as usize * linebytes).ok_or(Error::new(31))?;
+        for inp in inp.chunks_exact(linebytes) {
             f(&mut out_buffer, inp, prevline);
             prevline = Some(inp);
             out.write_all(&out_buffer)?;
