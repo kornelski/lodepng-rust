@@ -47,10 +47,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }).min_by_key(|(_, a)| a.len()).unwrap();
 
     let file_name = Path::new(&path).file_stem().and_then(|f| f.to_str()).ok_or("Invalid path")?;
-    let new_file_name = format!("{}-optimized.png", file_name);
+    let new_file_name = format!("{file_name}-optimized.png");
     if new_png.len() < source_len && !Path::new(&new_file_name).exists() {
         std::fs::write(&new_file_name, new_png)?;
-        println!("Wrote optimized PNG to {} (best strategy: {strategy:?})", new_file_name);
+        println!("Wrote optimized PNG to {new_file_name} (best strategy: {strategy:?})");
     } else {
         println!("Strategy {strategy:?} was most effective.");
     }

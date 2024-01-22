@@ -49,7 +49,7 @@ impl ColorType {
     }
 
     #[inline]
-    pub(crate) fn bpp_(&self, bitdepth: u32) -> NonZeroU8 {
+    pub(crate) fn bpp_(self, bitdepth: u32) -> NonZeroU8 {
         let bitdepth = bitdepth as u8;
         /*bits per pixel is amount of channels * bits per channel*/
         let ch = self.channels();

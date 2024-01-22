@@ -168,5 +168,5 @@ fn encode_with_filter(filter: u8, strategy: FilterStrategy, level: u8, data: &[u
     state.info_png_mut().color.colortype = lodepng::ColorType::RGB;
     state.info_png_mut().color.set_bitdepth(8);
     state.settings_mut().set_level(level);
-    state.encode(&data, 640, 480).unwrap()
+    state.encode(data, 640, 480).unwrap()
 }

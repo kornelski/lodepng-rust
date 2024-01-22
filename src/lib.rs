@@ -1,4 +1,24 @@
+#![allow(clippy::cast_lossless)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_sign_loss)]
+#![allow(clippy::cognitive_complexity)]
+#![allow(clippy::doc_markdown)]
+#![allow(clippy::identity_op)]
+#![allow(clippy::if_same_then_else)]
+#![allow(clippy::inline_always)]
 #![allow(clippy::manual_range_contains)]
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::new_without_default)]
+#![allow(clippy::new_without_default)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::trivially_copy_pass_by_ref)]
+#![allow(clippy::type_complexity)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::verbose_bit_mask)]
+#![deny(clippy::unnecessary_mut_passed)]
 
 #[allow(non_camel_case_types)]
 pub mod ffi;
@@ -71,7 +91,7 @@ impl ColorMode {
     #[inline]
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_bitdepth(&mut self, d: u32) {
-        self.try_set_bitdepth(d).unwrap()
+        self.try_set_bitdepth(d).unwrap();
     }
 
     #[inline]
@@ -829,7 +849,7 @@ pub enum Image {
 }
 
 impl Image {
-    pub fn width(&self) -> usize {
+    #[must_use] pub fn width(&self) -> usize {
         match self {
             Self::RawData(bitmap) => bitmap.width,
             Self::Grey(bitmap) => bitmap.width,
@@ -843,7 +863,7 @@ impl Image {
         }
     }
 
-    pub fn height(&self) -> usize {
+    #[must_use] pub fn height(&self) -> usize {
         match self {
             Self::RawData(bitmap) => bitmap.height,
             Self::Grey(bitmap) => bitmap.height,
@@ -858,7 +878,7 @@ impl Image {
     }
 
     /// Raw bytes of the underlying buffer
-    pub fn bytes(&self) -> &[u8] {
+    #[must_use] pub fn bytes(&self) -> &[u8] {
         use rgb::ComponentBytes;
         match self {
             Self::RawData(bitmap) => {
@@ -1096,7 +1116,7 @@ fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: impl TryInto<u32
     let required_bytes = required_size(w, h, colortype, bitdepth)?;
 
     let px_bytes = mem::size_of::<PixelType>();
-    let image_bytes = image.len() * px_bytes;
+    let image_bytes = std::mem::size_of_val(image);
 
     if image_bytes != required_bytes {
         let bpp = colortype.bpp_(bitdepth).get() as usize;

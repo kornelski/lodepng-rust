@@ -1,16 +1,3 @@
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::identity_op))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::cast_lossless))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::unreadable_literal))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::doc_markdown))]
-#![cfg_attr(feature = "cargo-clippy", allow(new_without_default_derive))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::new_without_default))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::verbose_bit_mask))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::many_single_char_names))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::trivially_copy_pass_by_ref))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::type_complexity))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::if_same_then_else))]
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::too_many_arguments))]
-#![cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
 
 use crate::*;
 use crate::ffi::ColorProfile;
@@ -282,7 +269,7 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
                     let Some((f, line)) = attempt.split_first_mut() else { return; };
                     *f = type_;
                     filter_scanline(line, inp, prevline, bytewidth, type_);
-                    let size = gz.estimate_compressed_size(&mut attempt, &prev_line_best);
+                    let size = gz.estimate_compressed_size(&attempt, &prev_line_best);
                     /*check if this is smallest size (or if type == 0 it's the first case so always store the values)*/
                     if type_ == 0 || size < smallest {
                         smallest = size;
@@ -1246,7 +1233,7 @@ fn add_chunk_idat(out: &mut Vec<u8>, inp: &[u8], w: u32, h: u32, info_png: &Info
         filtered_scanlines(&mut tmp, inp, w, h, info_png, settings)?;
         (cb)(&tmp, &mut ch, zlibsettings)?;
     } else {
-        let mut z = zlib::new_compressor(ch, zlibsettings)?;
+        let mut z = zlib::new_compressor(ch, zlibsettings);
         filtered_scanlines(&mut z, inp, w, h, info_png, settings)?;
         ch = z.finish()?;
     }

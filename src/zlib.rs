@@ -63,7 +63,7 @@ impl Decoder<'_> {
     }
 }
 
-pub(crate) fn new_decompressor<'w>(out: Vec<u8>, zlib_data_size: usize, settings: &DecompressSettings) -> Decoder<'_> {
+pub(crate) fn new_decompressor(out: Vec<u8>, zlib_data_size: usize, settings: &DecompressSettings) -> Decoder<'_> {
     if settings.custom_zlib.is_some() {
         let mut buf = Vec::new();
         let _ = buf.try_reserve_exact(zlib_data_size);
@@ -93,14 +93,14 @@ pub(crate) fn decompress(inp: &[u8], settings: &DecompressSettings) -> Result<Ve
     }
 }
 
-pub(crate) fn new_compressor<W: Write>(outv: W, settings: &CompressSettings) -> Result<ZlibEncoder<W>, Error> {
+pub(crate) fn new_compressor<W: Write>(outv: W, settings: &CompressSettings) -> ZlibEncoder<W> {
     let level = settings.level();
     let level = if level == 0 {
         Compression::none()
     } else {
         Compression::new(level.min(9).into())
     };
-    Ok(ZlibEncoder::new(outv, level))
+    ZlibEncoder::new(outv, level)
 }
 
 #[inline(never)]
@@ -110,7 +110,7 @@ pub(crate) fn compress_into(out: &mut dyn Write, inp: &[u8], settings: &Compress
     if let Some(cb) = settings.custom_zlib {
         (cb)(inp, out, settings)?;
     } else {
-        let mut z = new_compressor(out, settings)?;
+        let mut z = new_compressor(out, settings);
         z.write_all(inp)?;
     }
     Ok(())

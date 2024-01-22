@@ -329,17 +329,17 @@ pub unsafe extern "C" fn lodepng_chunk_next_const(chunk: *const u8) -> *const u8
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_ancillary(chunk: *const u8) -> u8 {
-    ChunkRef::from_ptr(chunk).unwrap().is_ancillary() as u8
+    u8::from(ChunkRef::from_ptr(chunk).unwrap().is_ancillary())
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_private(chunk: *const u8) -> u8 {
-    ChunkRef::from_ptr(chunk).unwrap().is_private() as u8
+    u8::from(ChunkRef::from_ptr(chunk).unwrap().is_private())
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_chunk_safetocopy(chunk: *const u8) -> u8 {
-    ChunkRef::from_ptr(chunk).unwrap().is_safe_to_copy() as u8
+    u8::from(ChunkRef::from_ptr(chunk).unwrap().is_safe_to_copy())
 }
 
 #[no_mangle]
@@ -434,8 +434,9 @@ pub unsafe extern "C" fn lodepng_zlib_compress(out: &mut *mut u8, outsize: &mut 
         &[][..]
     };
     let mut v = vec_from_raw(*out, *outsize);
-    let err = lode_error!(zlib::new_compressor(&mut v, settings)
-        .map(|mut z| Ok::<_, crate::Error>(z.write_all(inp)?)));
+    let mut z = zlib::new_compressor(&mut v, settings);
+    let err = lode_error!(z.write_all(inp).map_err(Error::from));
+    drop(z);
     let (data, size) = lode_try!(vec_into_raw(v));
     *out = data;
     *outsize = size;
@@ -454,7 +455,7 @@ pub unsafe extern "C" fn zlib_compress(out: &mut *mut u8, outsize: &mut usize, i
     let mut vec = Vec::new();
     let _ = vec.try_reserve(inp.len() / 2);
     let res = zlib::compress_into(&mut vec, inp, settings);
-    try_vec_into_raw(out, outsize, res.map(move |_| vec))
+    try_vec_into_raw(out, outsize, res.map(move |()| vec))
 }
 
 #[no_mangle]
@@ -524,8 +525,8 @@ pub unsafe extern "C" fn lodepng_decode(out: &mut *mut u8, w_out: &mut c_uint, h
     }
     *out = ptr::null_mut();
     let (v, w, h) = lode_try_state!(state.error, rustimpl::lodepng_decode(state, slice::from_raw_parts(inp, insize)));
-    *w_out = w as u32;
-    *h_out = h as u32;
+    *w_out = w;
+    *h_out = h;
     let (data, _) = lode_try!(vec_into_raw(v));
     *out = data;
     ErrorCode(0)
@@ -538,8 +539,8 @@ pub unsafe extern "C" fn lodepng_decode_memory(out: &mut *mut u8, w_out: &mut c_
         return ErrorCode(48);
     }
     let (v, w, h) = lode_try!(rustimpl::lodepng_decode_memory(slice::from_raw_parts(inp, insize), colortype, bitdepth));
-    *w_out = w as u32;
-    *h_out = h as u32;
+    *w_out = w;
+    *h_out = h;
     let (data, _) = lode_try!(vec_into_raw(v));
     *out = data;
     ErrorCode(0)
@@ -565,8 +566,8 @@ fn decode_file(filename: &Path, colortype: ColorType, bitdepth: u32) -> Result<(
 pub unsafe extern "C" fn lodepng_decode_file(out: &mut *mut u8, w_out: &mut c_uint, h_out: &mut c_uint, filename: *const c_char, colortype: ColorType, bitdepth: c_uint) -> ErrorCode {
     *out = ptr::null_mut();
     let (v, w, h) = lode_try!(decode_file(&c_path(filename), colortype, bitdepth));
-    *w_out = w as u32;
-    *h_out = h as u32;
+    *w_out = w;
+    *h_out = h;
     let (data, _) = lode_try!(vec_into_raw(v));
     *out = data;
     ErrorCode(0)
@@ -590,7 +591,7 @@ pub unsafe extern "C" fn lodepng_decoder_settings_init(settings: *mut DecoderSet
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_buffer_file(out: *mut u8, size: usize, filename: *const c_char) -> ErrorCode {
     let out = slice::from_raw_parts_mut(out, size);
-    let res = std::fs::File::open(&c_path(filename))
+    let res = std::fs::File::open(c_path(filename))
         .and_then(|mut f| f.read_exact(out))
         .map_err(|_| crate::Error::new(78));
     lode_error!(res)
@@ -645,7 +646,7 @@ pub unsafe extern "C" fn lodepng_auto_choose_color(mode_out: &mut ColorMode, ima
 
 #[no_mangle]
 pub unsafe extern "C" fn lodepng_filesize(filename: *const c_char) -> c_long {
-    std::fs::metadata(&c_path(filename)).map(|m| m.len()).ok()
+    std::fs::metadata(c_path(filename)).map(|m| m.len()).ok()
         .map_or(-1, |l| l as c_long)
 }
 
