@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "cargo-clippy", allow(clippy::needless_borrow))]
+#![cfg_attr(clippy, allow(clippy::needless_borrow))]
 #![allow(clippy::missing_safety_doc)]
 #![allow(non_upper_case_globals)]
 
