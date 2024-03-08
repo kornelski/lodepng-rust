@@ -48,7 +48,7 @@ The RGBA buffer can be a slice of any type, as long as it has 4 bytes per elemen
 let mut state = lodepng::Decoder::new();
 state.remember_unknown_chunks(true);
 
-match state.decode("in.png") {
+match state.decode_file("in.png") {
     Ok(lodepng::Image::RGB(image)) => {…}
     Ok(lodepng::Image::RGBA(image)) => {…}
     Ok(lodepng::Image::RGBA16(image)) => {…}
