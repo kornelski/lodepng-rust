@@ -1735,11 +1735,12 @@ pub(crate) fn lodepng_convert(out: &mut [u8], inp: &[u8], mode_out: &ColorMode, 
         get_pixel_colors_rgba8(&mut out[..numpixels * 4], true, inp, mode_in);
     } else if mode_out.bitdepth() == 8 && mode_out.colortype == ColorType::RGB {
         get_pixel_colors_rgba8(&mut out[..numpixels * 3], false, inp, mode_in);
-    } else if mode_in.colortype == ColorType::PALETTE || mode_in.bpp_().get() < 8 {
-        let mut gray_pal = [RGBA::new(0,0,0,0); 256];
+    } else if mode_in.colortype == ColorType::PALETTE || (mode_in.colortype != ColorType::GREY_ALPHA && mode_in.bpp_().get() < 8) {
+        let mut gray_pal;
         let pal = if mode_in.colortype == ColorType::PALETTE {
             mode_in.palette()
         } else {
+            gray_pal = [RGBA::new(0,0,0,0); 256];
             gray_palette(mode_in, &mut gray_pal)
         };
         for i in 0..numpixels {
