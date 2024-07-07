@@ -12,7 +12,7 @@ fn decode(path: &Path) -> Vec<RGBA8> {
 
     match reader.output_color_type() {
         (png::ColorType::Rgba, BitDepth::Eight) => data.as_rgba().to_owned(),
-        (png::ColorType::Rgb, BitDepth::Eight) => data.as_rgb().iter().map(|&p| p.alpha(255)).collect(),
+        (png::ColorType::Rgb, BitDepth::Eight) => data.as_rgb().iter().map(|&p| p.with_alpha(255)).collect(),
         (png::ColorType::Grayscale, BitDepth::Eight) => data.iter().map(|&p| RGBA::new(p,p,p,255)).collect(),
         (png::ColorType::GrayscaleAlpha, BitDepth::Eight) => data.chunks(2).map(|c| RGBA::new(c[0],c[0],c[0],c[1])).collect(),
         _ => panic!(),
