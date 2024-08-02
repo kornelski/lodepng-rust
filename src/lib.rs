@@ -18,6 +18,7 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::verbose_bit_mask)]
+#![allow(unexpected_cfgs)]
 #![deny(clippy::unnecessary_mut_passed)]
 
 #[allow(non_camel_case_types)]
@@ -1303,18 +1304,21 @@ impl<'a> ChunkRef<'a> {
     }
 }
 
+#[deprecated]
+#[allow(dead_code)]
 pub struct ChunkRefMut<'a> {
     data: &'a mut [u8],
 }
 
+#[allow(dead_code, deprecated)]
 impl<'a> ChunkRefMut<'a> {
-    #[inline]
+    #[deprecated]
     pub fn data_mut(&mut self) -> &mut [u8] {
         let len = ChunkRef::new(self.data).unwrap().len();
         &mut self.data[8..8 + len]
     }
 
-    #[inline]
+    #[deprecated]
     pub fn generate_crc(&mut self) {
         rustimpl::lodepng_chunk_generate_crc(self.data);
     }
