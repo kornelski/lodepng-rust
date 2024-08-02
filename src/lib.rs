@@ -34,8 +34,8 @@ pub use crate::error::*;
 mod iter;
 use crate::iter::{ChunksIterFragile, ITextKeysIter, TextKeysIter};
 
-pub use rgb::Pod;
-pub use rgb::RGB;
+pub use rgb::bytemuck::Pod;
+pub use rgb::Rgb as RGB;
 pub use rgb::RGBA8 as RGBA;
 
 use std::cmp;
@@ -516,7 +516,7 @@ impl Encoder {
     #[allow(deprecated)]
     #[track_caller]
     /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
-    pub fn encode<PixelType: rgb::Pod>(&self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+    pub fn encode<PixelType: Pod>(&self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         if let Some(filters) = &self.predefined_filters {
             if filters.len() < h {
                 return Err(Error::new(88))
@@ -528,7 +528,7 @@ impl Encoder {
     #[inline(always)]
     #[allow(deprecated)]
     /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
-    pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+    pub fn encode_file<PixelType: Pod, P: AsRef<Path>>(&self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         if let Some(filters) = &self.predefined_filters {
             if filters.len() < h {
                 return Err(Error::new(88));
@@ -787,7 +787,7 @@ impl State {
 
     #[deprecated(note = "Use Encoder type instead of State")]
     #[track_caller]
-    pub fn encode<PixelType: rgb::Pod>(&self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+    pub fn encode<PixelType: Pod>(&self, image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
         let w = w.try_into().map_err(|_| Error::new(93))?;
         let h = h.try_into().map_err(|_| Error::new(93))?;
 
@@ -799,7 +799,7 @@ impl State {
     #[allow(deprecated)]
     #[inline]
     #[track_caller]
-    pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(&self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+    pub fn encode_file<PixelType: Pod, P: AsRef<Path>>(&self, filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
         let buf = self.encode(image, w, h)?;
         fs::write(filepath, buf)?;
         Ok(())
@@ -845,7 +845,7 @@ pub enum Image {
     RGBA(Bitmap<RGBA>),
     #[cfg_attr(docsrs, doc(alias = "RGB8"))]
     RGB(Bitmap<RGB<u8>>),
-    RGBA16(Bitmap<rgb::RGBA<u16>>),
+    RGBA16(Bitmap<rgb::Rgba<u16>>),
     RGB16(Bitmap<RGB<u16>>),
 }
 
@@ -954,7 +954,7 @@ pub struct Bitmap<PixelType> {
     pub height: usize,
 }
 
-impl<PixelType: rgb::Pod> Bitmap<PixelType> {
+impl<PixelType: Pod> Bitmap<PixelType> {
     /// Convert Vec<u8> to Vec<PixelType>
     #[cfg_attr(debug_assertions, track_caller)]
     fn from_buffer(buffer: Vec<u8>, width: usize, height: usize) -> Result<Self> {
@@ -1110,7 +1110,7 @@ pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Err
 }
 
 #[cfg_attr(debug_assertions, track_caller)]
-fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: impl TryInto<u32>, h: impl TryInto<u32>, colortype: ColorType, bitdepth: u32) -> Result<&[u8], Error> {
+fn buffer_for_type<PixelType: Pod>(image: &[PixelType], w: impl TryInto<u32>, h: impl TryInto<u32>, colortype: ColorType, bitdepth: u32) -> Result<&[u8], Error> {
     let w = w.try_into().map_err(|_| Error::new(93))?;
     let h = h.try_into().map_err(|_| Error::new(93))?;
 
@@ -1147,7 +1147,7 @@ fn buffer_for_type<PixelType: rgb::Pod>(image: &[PixelType], w: impl TryInto<u32
 /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn encode_memory<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
+pub fn encode_memory<PixelType: Pod>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
     let image = buffer_for_type(image, w, h, colortype, bitdepth)?;
     rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)
 }
@@ -1155,14 +1155,14 @@ pub fn encode_memory<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usiz
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn encode32<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+pub fn encode32<PixelType: Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn encode24<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
+pub fn encode24<PixelType: Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGB, 8)
 }
 
@@ -1172,7 +1172,7 @@ pub fn encode24<PixelType: rgb::Pod>(image: &[PixelType], w: usize, h: usize) ->
 /// NOTE: This overwrites existing files without warning!
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
+pub fn encode_file<PixelType: Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = encode_memory(image, w, h, colortype, bitdepth)?;
     fs::write(filepath, encoded)?;
     Ok(())
@@ -1181,14 +1181,14 @@ pub fn encode_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[Pi
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn encode32_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode32_file<PixelType: Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGBA, 8)
 }
 
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
-pub fn encode24_file<PixelType: rgb::Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
+pub fn encode24_file<PixelType: Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGB, 8)
 }
 
