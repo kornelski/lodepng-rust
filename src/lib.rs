@@ -157,7 +157,7 @@ impl ColorMode {
     #[inline(always)]
     #[must_use]
     pub fn bpp_(&self) -> NonZeroU8 {
-        self.colortype.bpp_(self.bitdepth as u32)
+        self.colortype.bpp_(self.bitdepth)
     }
 
     pub(crate) fn clear_key(&mut self) {

@@ -371,14 +371,14 @@ fn test_filter_inner(bytewidth: u8) {
     test_filter_with_data(&line1, &line2, bytewidth);
 
     let mut n = 0u64;
-    line1.iter_mut().for_each(|px| {
+    for px in &mut line1 {
         n = n.wrapping_add(13) ^ n.wrapping_mul(*px as _);
         *px ^= n as u8;
-    });
-    line2.iter_mut().for_each(|px| {
+    }
+    for px in &mut line2 {
         n = n.wrapping_add(*px as _) ^ n.wrapping_mul(7);
         *px ^= n as u8;
-    });
+    }
     test_filter_with_data(&line1, &line2, bytewidth);
 }
 

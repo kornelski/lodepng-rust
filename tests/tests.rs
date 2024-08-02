@@ -29,16 +29,10 @@ fn bgr() {
 #[test]
 fn redecode1() {
     let img1 = decode_file("tests/graytest.png", ColorType::GREY, 8).unwrap();
-    let img1 = match img1 {
-        Image::Grey(a) => a,
-        _ => panic!(),
-    };
+    let Image::Grey(img1) = img1 else { panic!() };
     let png = encode_memory(&img1.buffer, img1.width, img1.height, ColorType::GREY, 8).unwrap();
     let img2 = decode_memory(png, ColorType::GREY, 8).unwrap();
-    let img2 = match img2 {
-        Image::Grey(a) => a,
-        _ => panic!(),
-    };
+    let Image::Grey(img2) = img2 else { panic!() };
     assert_eq!(img1.buffer, img2.buffer);
 }
 
@@ -159,14 +153,14 @@ fn test_low_bpp(bitdepth: u8, interlace: bool) {
     enc.info_raw_mut().set_bitdepth(8);
     enc.info_png_mut().color.set_colortype(ColorType::GREY);
     enc.info_png_mut().color.set_bitdepth(bitdepth.into());
-    enc.info_png_mut().interlace_method = interlace as _;
+    enc.info_png_mut().interlace_method = interlace.into();
 
     let file = enc.encode(&pixels, 50, 20).unwrap();
 
     let mut d = lodepng::Decoder::new();
     d.inspect(&file).unwrap();
-    assert_eq!(d.info_png().color.bitdepth(), bitdepth as _);
-    assert_eq!(d.info_png().interlace_method, interlace as _);
+    assert_eq!(d.info_png().color.bitdepth(), bitdepth.into());
+    assert_eq!(d.info_png().interlace_method, interlace.into());
 
     let check = lodepng::decode_memory(&file, ColorType::GREY, 8).unwrap();
     assert_eq!(50, check.width());
@@ -190,5 +184,5 @@ fn test_low_bpp(bitdepth: u8, interlace: bool) {
         debug_assert_eq!(px.r, px.g);
         debug_assert_eq!(px.g, px.b);
         px.r
-    }).eq(pixels.iter().copied()))
+    }).eq(pixels.iter().copied()));
 }

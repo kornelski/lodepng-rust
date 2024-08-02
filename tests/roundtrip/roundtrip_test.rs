@@ -48,7 +48,7 @@ fn roundtrip_color(colortype: ColorType, bitdepths: &[u32]) {
 }
 
 fn randomize(data: &mut [u8]) {
-    let mut seed = data[0] as u32;
+    let mut seed = u32::from(data[0]);
     for b in data {
         seed = 1103515245u32.wrapping_mul(seed).wrapping_add(12345);
         *b ^= (seed >> 17) as u8;

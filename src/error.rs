@@ -34,7 +34,7 @@ impl Error {
     #[cold]
     #[must_use]
     pub const fn new(code: u32) -> Self {
-        Self(match NonZeroU32::new(code) { Some(s) => s, None => panic!() })
+        Self(if let Some(s) = NonZeroU32::new(code) { s } else { panic!() })
     }
 }
 
