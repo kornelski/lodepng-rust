@@ -1,5 +1,5 @@
-use rgb::ComponentBytes;
 use lodepng::*;
+use rgb::bytemuck::cast_slice;
 
 #[test]
 fn roundtrip_grey() {
@@ -76,15 +76,15 @@ fn rountrip_data(data: &[u8], width: usize, height: usize, interlace: u8, colort
     let file = encoder.encode(data, width, height).unwrap();
     let img = lodepng::decode_memory(file, colortype, bitdepth).unwrap();
     match img {
-        Image::RGB(img) => assert_img_equals(&img, img.buffer.as_slice().as_bytes(), width, height, data),
-        Image::RGBA(img) => assert_img_equals(&img, img.buffer.as_slice().as_bytes(), width, height, data),
-        Image::GreyAlpha(img) => assert_img_equals(&img, img.buffer.as_slice().as_bytes(), width, height, data),
-        Image::Grey(img) => assert_img_equals(&img, img.buffer.as_slice().as_bytes(), width, height, data),
+        Image::RGB(img) => assert_img_equals(&img, cast_slice(&img.buffer), width, height, data),
+        Image::RGBA(img) => assert_img_equals(&img, cast_slice(&img.buffer), width, height, data),
+        Image::GreyAlpha(img) => assert_img_equals(&img, cast_slice(&img.buffer), width, height, data),
+        Image::Grey(img) => assert_img_equals(&img, cast_slice(&img.buffer), width, height, data),
         Image::RawData(_) => unreachable!(),
-        Image::Grey16(img) => assert_img_equals(&img, img.buffer.as_slice().as_bytes(), width, height, data),
-        Image::GreyAlpha16(img) => assert_img_equals(&img, img.buffer.as_slice().as_bytes(), width, height, data),
-        Image::RGBA16(img) => assert_img_equals(&img, img.buffer.as_slice().as_bytes(), width, height, data),
-        Image::RGB16(img) => assert_img_equals(&img, img.buffer.as_slice().as_bytes(), width, height, data),
+        Image::Grey16(img) => assert_img_equals(&img, cast_slice(&img.buffer), width, height, data),
+        Image::GreyAlpha16(img) => assert_img_equals(&img, cast_slice(&img.buffer), width, height, data),
+        Image::RGBA16(img) => assert_img_equals(&img, cast_slice(&img.buffer), width, height, data),
+        Image::RGB16(img) => assert_img_equals(&img, cast_slice(&img.buffer), width, height, data),
 
     }
 }

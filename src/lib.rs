@@ -819,9 +819,9 @@ impl Default for State {
 }
 
 #[cfg_attr(docsrs, doc(alias = "Gray"))]
-pub use rgb::alt::Gray as Grey;
+pub use rgb::Gray as Grey;
 #[cfg_attr(docsrs, doc(alias = "GrayAlpha"))]
-pub use rgb::alt::GrayAlpha as GreyAlpha;
+pub use rgb::GrayAlpha as GreyAlpha;
 
 /// Bitmap types.
 ///
@@ -844,7 +844,7 @@ pub enum Image {
     #[cfg_attr(docsrs, doc(alias = "RGBA8"))]
     RGBA(Bitmap<RGBA>),
     #[cfg_attr(docsrs, doc(alias = "RGB8"))]
-    RGB(Bitmap<RGB<u8>>),
+    RGB(Bitmap<rgb::Rgb<u8>>),
     RGBA16(Bitmap<rgb::Rgba<u16>>),
     RGB16(Bitmap<RGB<u16>>),
 }
@@ -880,49 +880,50 @@ impl Image {
 
     /// Raw bytes of the underlying buffer
     #[must_use] pub fn bytes(&self) -> &[u8] {
-        use rgb::ComponentBytes;
+        use rgb::bytemuck::cast_slice;
+
         match self {
             Self::RawData(bitmap) => {
-                let slice = bitmap.buffer.as_slice();
+                let slice = cast_slice(&bitmap.buffer);
                 slice
             },
             Self::Grey(bitmap) => {
-                let slice = bitmap.buffer.as_bytes();
+                let slice = cast_slice(&bitmap.buffer);
                 debug_assert_eq!(slice.len(), bitmap.width * bitmap.height);
                 slice
             },
             Self::Grey16(bitmap) => {
-                let slice = bitmap.buffer.as_bytes();
+                let slice = cast_slice(&bitmap.buffer);
                 debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 2);
                 slice
             },
             Self::GreyAlpha(bitmap) => {
-                let slice = bitmap.buffer.as_bytes();
+                let slice = cast_slice(&bitmap.buffer);
                 debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 2);
                 slice
             },
             Self::GreyAlpha16(bitmap) => {
-                let slice = bitmap.buffer.as_bytes();
+                let slice = cast_slice(&bitmap.buffer);
                 debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 4);
                 slice
             },
             Self::RGBA(bitmap) => {
-                let slice = bitmap.buffer.as_bytes();
+                let slice = cast_slice(&bitmap.buffer);
                 debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 4);
                 slice
             },
             Self::RGB(bitmap) => {
-                let slice = bitmap.buffer.as_bytes();
+                let slice = cast_slice(&bitmap.buffer);
                 debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 3);
                 slice
             },
             Self::RGBA16(bitmap) => {
-                let slice = bitmap.buffer.as_bytes();
+                let slice = cast_slice(&bitmap.buffer);
                 debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 8);
                 slice
             },
             Self::RGB16(bitmap) => {
-                let slice = bitmap.buffer.as_bytes();
+                let slice = cast_slice(&bitmap.buffer);
                 debug_assert_eq!(slice.len(), bitmap.width * bitmap.height * 6);
                 slice
             },

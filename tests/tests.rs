@@ -5,7 +5,7 @@ mod roundtrip {
     mod roundtrip_test;
 }
 
-fn encode<T: rgb::Pod>(pixels: &[T], in_type: ColorType, out_type: ColorType) -> Result<Vec<u8>, Error> {
+fn encode<T: lodepng::Pod>(pixels: &[T], in_type: ColorType, out_type: ColorType) -> Result<Vec<u8>, Error> {
     let mut state = Encoder::new();
     state.set_auto_convert(true);
     state.info_raw_mut().colortype = in_type;
@@ -17,11 +17,11 @@ fn encode<T: rgb::Pod>(pixels: &[T], in_type: ColorType, out_type: ColorType) ->
 
 #[test]
 fn bgr() {
-    let png = encode(&[rgb::alt::BGR{r:1u8,g:2,b:3}], ColorType::BGR, ColorType::RGB).unwrap();
+    let png = encode(&[rgb::Bgr{r:1u8,g:2,b:3}], ColorType::BGR, ColorType::RGB).unwrap();
     let img = decode24(png).unwrap();
-    assert_eq!(img.buffer[0], rgb::RGB{r:1,g:2,b:3});
+    assert_eq!(img.buffer[0], rgb::Rgb{r:1,g:2,b:3});
 
-    let png = encode(&[rgb::alt::BGRA{r:1u8,g:2,b:3,a:111u8}], ColorType::BGRX, ColorType::RGB).unwrap();
+    let png = encode(&[rgb::Bgra{r:1u8,g:2,b:3,a:111u8}], ColorType::BGRX, ColorType::RGB).unwrap();
     let img = decode32(png).unwrap();
     assert_eq!(img.buffer[0], rgb::RGBA8{r:1,g:2,b:3,a:255});
 }
@@ -55,8 +55,7 @@ fn random() {
     let png = encode24(&data, 639, 479).unwrap();
     let img2 = decode24(png).unwrap();
 
-    use rgb::*;
-    assert_eq!(data.as_rgb(), &img2.buffer[..]);
+    assert_eq!(rgb::bytemuck::cast_slice::<u8, rgb::RGB8>(&data), &img2.buffer[..]);
 }
 
 #[test]
@@ -66,7 +65,7 @@ fn fourbit() {
 
 #[test]
 fn bgra() {
-    let png = encode(&[rgb::alt::BGRA{r:1u8,g:2,b:3,a:4u8}], ColorType::BGRA, ColorType::RGBA).unwrap();
+    let png = encode(&[rgb::Bgra{r:1u8,g:2,b:3,a:4u8}], ColorType::BGRA, ColorType::RGBA).unwrap();
     let img = decode32(png).unwrap();
     assert_eq!(img.buffer[0], rgb::RGBA8{r:1,g:2,b:3,a:4u8});
 }

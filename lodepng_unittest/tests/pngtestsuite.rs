@@ -2,6 +2,7 @@ use png::BitDepth;
 use rgb::*;
 use std::fs::*;
 use std::path::*;
+use rgb::bytemuck::cast_slice;
 
 fn decode(path: &Path) -> Vec<RGBA8> {
     let mut p = png::Decoder::new(File::open(path).unwrap());
@@ -11,10 +12,10 @@ fn decode(path: &Path) -> Vec<RGBA8> {
     reader.next_frame(&mut data).unwrap();
 
     match reader.output_color_type() {
-        (png::ColorType::Rgba, BitDepth::Eight) => data.as_rgba().to_owned(),
-        (png::ColorType::Rgb, BitDepth::Eight) => data.as_rgb().iter().map(|&p| p.with_alpha(255)).collect(),
-        (png::ColorType::Grayscale, BitDepth::Eight) => data.iter().map(|&p| RGBA::new(p,p,p,255)).collect(),
-        (png::ColorType::GrayscaleAlpha, BitDepth::Eight) => data.chunks(2).map(|c| RGBA::new(c[0],c[0],c[0],c[1])).collect(),
+        (png::ColorType::Rgba, BitDepth::Eight) => cast_slice::<_, RGBA8>(&data).to_owned(),
+        (png::ColorType::Rgb, BitDepth::Eight) => cast_slice::<_, RGB8>(&data).iter().map(|&p| p.with_alpha(255)).collect(),
+        (png::ColorType::Grayscale, BitDepth::Eight) => data.iter().map(|&p| RGBA8::new(p,p,p,255)).collect(),
+        (png::ColorType::GrayscaleAlpha, BitDepth::Eight) => data.chunks(2).map(|c| RGBA8::new(c[0],c[0],c[0],c[1])).collect(),
         _ => panic!(),
     }
 }

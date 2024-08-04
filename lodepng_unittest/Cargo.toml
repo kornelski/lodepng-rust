@@ -17,4 +17,4 @@ features = ["c_ffi"]
 [dev-dependencies]
 glob = "0.3.0"
 png = "0.17"
-rgb = "0.8.29"
+rgb = ">0.7, <0.9"

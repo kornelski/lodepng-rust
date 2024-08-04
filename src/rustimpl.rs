@@ -9,7 +9,6 @@ use crate::zlib;
 use std::num::NonZeroU8;
 
 pub use rgb::RGBA8 as RGBA;
-use rgb::ComponentSlice;
 use rgb::RGBA16;
 use std::cell::Cell;
 use std::collections::HashMap;
@@ -2655,7 +2654,7 @@ fn has_any_16_bit_pixels(inp: &[u8], bytewidth: u8, numpixels: usize, mode: &Col
     if bytewidth == 0 { debug_assert!(false); return false; }
     for px in inp.chunks_exact(bytewidth as usize).take(numpixels) {
         let px = get_pixel_color_rgba16(px, mode);
-        if px.as_slice().iter().any(|c| (c >> 8) != (c & 0xFF)) {
+        if px.as_ref().iter().any(|c| (c >> 8) != (c & 0xFF)) {
             return true;
         }
     }

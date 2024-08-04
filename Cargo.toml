@@ -10,13 +10,13 @@ license = "Zlib"
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/kornelski/lodepng-rust.git"
-version = "3.10.3"
+version = "3.10.4"
 edition = "2021"
 rust-version = "1.71"
 
 [dependencies]
 libc = { version = "0.2.126", optional = true }
-rgb = { version = "0.8.45", features = ["bytemuck"] }
+rgb = { version = "0.8.47", features = ["bytemuck"], default-features = false }
 flate2 = { version = "1.0.24", default-features = false }
 crc32fast = "1.3.2"
 fallible_collections = { version = "0.4.5", features = ["rust_1_57"], optional = true }
