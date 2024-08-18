@@ -51,17 +51,28 @@ use std::path::Path;
 use std::ptr;
 use std::slice;
 
+#[doc(inline)]
 pub use crate::ffi::ColorType;
+#[doc(inline)]
 pub use crate::ffi::CompressSettings;
+#[doc(inline)]
 pub use crate::ffi::DecoderSettings;
+#[doc(inline)]
 pub use crate::ffi::DecompressSettings;
+#[doc(inline)]
 pub use crate::ffi::EncoderSettings;
+#[doc(hidden)]
 pub use crate::ffi::ErrorCode;
+#[doc(inline)]
 pub use crate::ffi::FilterStrategy;
+#[doc(hidden)]
 pub use crate::ffi::State;
+#[doc(inline)]
 pub use crate::ffi::Time;
 
+#[doc(inline)]
 pub use crate::ffi::ColorMode;
+#[doc(inline)]
 pub use crate::ffi::Info;
 
 pub use iter::ChunksIter;
@@ -1308,6 +1319,7 @@ impl<'a> ChunkRef<'a> {
 
 #[deprecated]
 #[allow(dead_code)]
+#[doc(hidden)]
 pub struct ChunkRefMut<'a> {
     data: &'a mut [u8],
 }
