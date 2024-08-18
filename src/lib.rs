@@ -34,6 +34,7 @@ pub use crate::error::*;
 mod iter;
 use crate::iter::{ChunksIterFragile, ITextKeysIter, TextKeysIter};
 
+pub use rgb::bytemuck;
 pub use rgb::bytemuck::Pod;
 pub use rgb::Rgb as RGB;
 pub use rgb::RGBA8 as RGBA;
