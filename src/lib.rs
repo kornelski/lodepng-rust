@@ -833,7 +833,7 @@ impl Default for State {
 #[cfg_attr(docsrs, doc(alias = "Gray"))]
 pub use rgb::Gray as Grey;
 #[cfg_attr(docsrs, doc(alias = "GrayAlpha"))]
-pub use rgb::GrayAlpha as GreyAlpha;
+pub use rgb::alt::GrayAlpha as GreyAlpha;
 
 /// Bitmap types.
 ///
