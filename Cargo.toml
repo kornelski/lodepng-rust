@@ -19,7 +19,7 @@ libc = { version = "0.2.126", optional = true }
 rgb = { version = "0.8.50", features = ["bytemuck"], default-features = false }
 flate2 = { version = "1.0.24", default-features = false }
 crc32fast = "1.3.2"
-fallible_collections = { version = "0.4.5", features = ["rust_1_57"], optional = true }
+fallible_collections = { version = "0.5.1", features = ["rust_1_57"], optional = true }
 
 [workspace]
 members = ["lodepng_unittest"]
