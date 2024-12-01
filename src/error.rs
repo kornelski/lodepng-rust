@@ -210,15 +210,6 @@ impl From<TryReserveError> for Error {
     }
 }
 
-#[cfg(feature = "deprecated_back_compat_error_type")]
-/// Back compat only
-impl From<fallible_collections::TryReserveError> for Error {
-    #[cold]
-    fn from(_: fallible_collections::TryReserveError) -> Self {
-        Self(NonZeroU32::new(83).unwrap())
-    }
-}
-
 #[test]
 fn error_str() {
     assert_eq!(ErrorCode(83).as_str(), "memory allocation failed");
