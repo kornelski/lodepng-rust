@@ -470,21 +470,18 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
     };
 }
 
+/// From stb_image.h 2.30
 #[inline]
 fn paeth_predictor(a: u8, b: u8, c: u8) -> u8 {
-    let a = a as i16;
-    let b = b as i16;
-    let c = c as i16;
-    let pa = (b - c).abs();
-    let pb = (a - c).abs();
-    let pc = (a + b - c - c).abs();
-    if pc < pa && pc < pb {
-        c as u8
-    } else if pb < pa {
-        b as u8
-    } else {
-        a as u8
-    }
+   // This formulation looks very different from the reference in the PNG spec, but is
+   // actually equivalent and has favorable data dependencies and admits straightforward
+   // generation of branch-free code, which helps performance significantly.
+   let thresh = c as i16 * 3 - (a as i16 + b as i16);
+   let lo = a.min(b);
+   let hi = a.max(b);
+   let t0 = if thresh >= hi as i16 { lo } else { c };
+   let t1 = if thresh <= lo as i16 { hi } else { t0 };
+   t1
 }
 
 impl Info {
