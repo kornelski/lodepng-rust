@@ -105,7 +105,7 @@ impl ErrorCode {
             11 => "error in code tree made it jump outside of huffman tree\0",
 
             /*while huffman decoding*/
-            13 | 14 | 15 => "problem while processing dynamic deflate block\0",
+            13..=15 => "problem while processing dynamic deflate block\0",
             16 => "unexisting code while processing dynamic deflate block\0",
             18 => "invalid distance code while inflating\0",
             17 | 19 | 22 => "end of out buffer memory reached while inflating\0",

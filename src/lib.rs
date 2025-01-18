@@ -1325,7 +1325,7 @@ pub struct ChunkRefMut<'a> {
 }
 
 #[allow(dead_code, deprecated)]
-impl<'a> ChunkRefMut<'a> {
+impl ChunkRefMut<'_> {
     #[deprecated]
     pub fn data_mut(&mut self) -> &mut [u8] {
         let len = ChunkRef::new(self.data).unwrap().len();

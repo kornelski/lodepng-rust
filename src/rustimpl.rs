@@ -386,7 +386,7 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
     let bytewidth = bytewidth as usize;
     let length = out.len();
     // help the optimizer remove bounds checks
-    if bytewidth > 8 || bytewidth < 1 || length > u32::MAX as usize || length != scanline.len() || prevline.map_or(false, move |p| p.len() != length) || bytewidth > length {
+    if bytewidth > 8 || bytewidth < 1 || length > u32::MAX as usize || length != scanline.len() || prevline.is_some_and(move |p| p.len() != length) || bytewidth > length {
         debug_assert!(false);
         return;
     }
@@ -480,8 +480,8 @@ fn paeth_predictor(a: u8, b: u8, c: u8) -> u8 {
    let lo = a.min(b);
    let hi = a.max(b);
    let t0 = if thresh >= hi as i16 { lo } else { c };
-   let t1 = if thresh <= lo as i16 { hi } else { t0 };
-   t1
+   
+   if thresh <= lo as i16 { hi } else { t0 }
 }
 
 impl Info {
@@ -1927,7 +1927,7 @@ fn filter_1<const N: usize>(out: &mut [u8], scanline: &[u8]) {
 fn unfilter_scanline_aliased(inout: &mut [u8], scanline_offset: usize, prevline: Option<&[u8]>, bytewidth: u8, filter_type: u8, length: usize) -> Option<()> {
     let bytewidth = bytewidth as usize;
     // help the optimizer remove bounds checks
-    if bytewidth > 8 || bytewidth < 1 || bytewidth > length || prevline.map_or(false, move |p| p.len() != length) || inout.len() < scanline_offset+bytewidth {
+    if bytewidth > 8 || bytewidth < 1 || bytewidth > length || prevline.is_some_and(move |p| p.len() != length) || inout.len() < scanline_offset+bytewidth {
         debug_assert!(false);
         return None;
     }
@@ -2448,10 +2448,10 @@ pub(crate) fn lodepng_encode(image: &[u8], w: u32, h: u32, state: &State) -> Res
         }
     }
     for (k, l, t, s) in info.itext_keys() {
-        if k.as_bytes().len() > 79 {
+        if k.len() > 79 {
             return Err(Error::new(66));
         }
-        if k.as_bytes().is_empty() {
+        if k.is_empty() {
             return Err(Error::new(67));
         }
         add_chunk_itxt(&mut outv, state.encoder.text_compression, k, l, t, s, &state.encoder.zlibsettings)?;
