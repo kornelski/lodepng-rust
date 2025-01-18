@@ -86,7 +86,7 @@ impl ColorMode {
 
     #[inline(always)]
     #[must_use]
-    pub fn colortype(&self) -> ColorType {
+    pub const fn colortype(&self) -> ColorType {
         self.colortype
     }
 
@@ -97,7 +97,7 @@ impl ColorMode {
 
     #[inline(always)]
     #[must_use]
-    pub fn bitdepth(&self) -> u32 {
+    pub const fn bitdepth(&self) -> u32 {
         self.bitdepth
     }
 
@@ -1325,7 +1325,7 @@ pub struct ChunkRefMut<'a> {
 }
 
 #[allow(dead_code, deprecated)]
-impl<'a> ChunkRefMut<'a> {
+impl ChunkRefMut<'_> {
     #[deprecated]
     pub fn data_mut(&mut self) -> &mut [u8] {
         let len = ChunkRef::new(self.data).unwrap().len();
