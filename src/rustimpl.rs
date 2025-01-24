@@ -6,6 +6,7 @@ use crate::ffi::LatinText;
 use crate::ffi::State;
 use crate::ChunkPosition;
 use crate::zlib;
+use std::borrow::Cow;
 use std::num::NonZeroU8;
 
 pub use rgb::RGBA8 as RGBA;
@@ -487,26 +488,49 @@ fn paeth_predictor(a: u8, b: u8, c: u8) -> u8 {
 impl Info {
     /// It's supposed to be in UTF-8, but trusting chunk data to be valid would be naive
     pub(crate) fn push_itext(&mut self, key: &[u8], langtag: &[u8], transkey: &[u8], value: &[u8]) -> Result<(), Error> {
+        fn to_utf8_boxed_str(maybe_utf8_str: &[u8]) -> Result<Box<str>, Error> {
+            // write checks it better
+            if maybe_utf8_str.len() > i32::MAX as usize {
+                return Err(Error::new(83));
+            }
+            Ok(match String::from_utf8_lossy(maybe_utf8_str) {
+                Cow::Owned(o) => o,
+                Cow::Borrowed(b) => {
+                    let mut s = String::new();
+                    s.try_reserve_exact(b.len())?;
+                    s.push_str(b);
+                    s
+                }
+            }.into_boxed_str())
+        }
         self.itexts.push(IntlText {
-            key: String::from_utf8_lossy(key).into_owned().into(),
-            langtag: String::from_utf8_lossy(langtag).into_owned().into(),
-            transkey: String::from_utf8_lossy(transkey).into_owned().into(),
-            value: String::from_utf8_lossy(value).into_owned().into(),
+            key: to_utf8_boxed_str(key)?,
+            langtag: to_utf8_boxed_str(langtag)?,
+            transkey: to_utf8_boxed_str(transkey)?,
+            value: to_utf8_boxed_str(value)?,
         });
         Ok(())
     }
 
+    #[inline(never)]
     pub(crate) fn push_text(&mut self, k: &[u8], v: &[u8]) -> Result<(), Error> {
+        if k.len() > i32::MAX as usize || v.len() > i32::MAX as usize {
+            return Err(Error::new(83));
+        }
         self.texts.push(LatinText {
-            key: k.into(),
-            value: v.into(),
+            key: try_boxed(k)?,
+            value: try_boxed(v)?,
         });
         Ok(())
     }
 
     fn push_unknown_chunk(&mut self, critical_pos: ChunkPosition, chunk: &[u8]) -> Result<(), Error> {
-        self.unknown_chunks[critical_pos as usize].try_reserve(chunk.len())?;
-        self.unknown_chunks[critical_pos as usize].extend_from_slice(chunk);
+        if chunk.len() > i32::MAX as usize {
+            return Err(Error::new(83));
+        }
+        let ch = &mut self.unknown_chunks[critical_pos as usize];
+        ch.try_reserve(chunk.len())?;
+        ch.extend_from_slice(chunk);
         Ok(())
     }
 }

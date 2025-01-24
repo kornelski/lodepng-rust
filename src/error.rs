@@ -78,10 +78,11 @@ impl error::Error for Error {}
 #[doc(hidden)]
 impl std::convert::From<io::Error> for Error {
     #[cold]
-    fn from(err: io::Error) -> Error {
+    fn from(err: io::Error) -> Self {
         match err.kind() {
-            io::ErrorKind::NotFound | io::ErrorKind::UnexpectedEof => Error::new(78),
-            _ => Error::new(79),
+            io::ErrorKind::NotFound | io::ErrorKind::UnexpectedEof => Self::new(78),
+            io::ErrorKind::OutOfMemory => Self::new(83),
+            _ => Self::new(79),
         }
     }
 }

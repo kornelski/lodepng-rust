@@ -1441,6 +1441,14 @@ fn zero_vec(size: usize) -> Result<Vec<u8>, Error> {
     Ok(vec)
 }
 
+#[inline]
+fn try_boxed(bytes: &[u8]) -> Result<Box<[u8]>, Error> {
+    let mut vec = Vec::new();
+    vec.try_reserve_exact(bytes.len())?;
+    vec.extend_from_slice(bytes);
+    Ok(vec.into_boxed_slice())
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
