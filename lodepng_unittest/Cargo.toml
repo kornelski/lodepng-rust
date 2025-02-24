@@ -8,13 +8,12 @@ edition = "2021"
 publish = false
 
 [build-dependencies]
-cc = "1.0.72"
+cc = { workspace = true }
 
-[dependencies.lodepng]
-path = ".."
-features = ["c_ffi"]
+[dependencies]
+lodepng= { workspace = true, features = ["c_ffi"] }
 
 [dev-dependencies]
-glob = "0.3.0"
-png = "0.17"
+glob = { workspace = true }
+png = { workspace = true }
 rgb = ">0.7, <0.9"
