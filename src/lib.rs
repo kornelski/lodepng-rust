@@ -1212,7 +1212,7 @@ pub struct ChunkRef<'a> {
 }
 
 impl<'a> ChunkRef<'a> {
-    #[cfg(feature = "c_ffi")]
+    #[cfg(any(feature = "c_ffi", feature = "_deprecated_c_ffi_default_"))]
     pub(crate) unsafe fn from_ptr(data: *const u8) -> Result<Self, Error> {
         debug_assert!(!data.is_null());
         let head = std::slice::from_raw_parts(data, 4);

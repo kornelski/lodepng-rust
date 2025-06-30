@@ -11,7 +11,7 @@ use std::os::raw::{c_uint, c_void};
 #[cfg(not(unix))]
 use std::path::PathBuf;
 
-#[cfg(feature = "c_ffi")]
+#[cfg(any(feature = "c_ffi", feature = "_deprecated_c_ffi_default_"))]
 mod functions;
 
 #[repr(C)]

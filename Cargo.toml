@@ -34,7 +34,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 rustdoc-args = ["--cfg", "docsrs", "--generate-link-to-definition"]
 
 [features]
-default = ["zlibrs"]
+default = ["zlibrs", "_deprecated_c_ffi_default_"]
 # Compress using pure-Rust miniz_oxide, which isn't the fastest
 rust_backend = ["flate2/rust_backend"]
 # Compress using zlib-rs. Recommended if you want to avoid C dependencies.
@@ -45,3 +45,5 @@ cfzlib = ["flate2/cloudflare_zlib"]
 ngzlib = ["flate2/zlib-ng-compat"]
 # Export C API for use in C applications. It's mostly ABI-compatible with the original C lodepng.
 c_ffi = ["dep:libc"]
+# Enable `c_ffi` explicitly
+_deprecated_c_ffi_default_ = ["dep:libc"]
