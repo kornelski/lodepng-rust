@@ -17,7 +17,7 @@ fn roundtrip(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn encode_filter_0(bencher: &mut test::Bencher) {
+fn level_0_filter_0(bencher: &mut test::Bencher) {
     let data = pixels_to_filter(ColorType::RGB, 8);
     bencher.bytes = data.len() as _;
     bencher.iter(move || {
@@ -26,7 +26,7 @@ fn encode_filter_0(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn encode_filter_1(bencher: &mut test::Bencher) {
+fn level_0_filter_1(bencher: &mut test::Bencher) {
     let data = pixels_to_filter(ColorType::RGB, 8);
     bencher.bytes = data.len() as _;
     bencher.iter(move || {
@@ -35,7 +35,7 @@ fn encode_filter_1(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn encode_filter_2(bencher: &mut test::Bencher) {
+fn level_0_filter_2(bencher: &mut test::Bencher) {
     let data = pixels_to_filter(ColorType::RGB, 8);
     bencher.bytes = data.len() as _;
     bencher.iter(move || {
@@ -44,7 +44,7 @@ fn encode_filter_2(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn encode_filter_3(bencher: &mut test::Bencher) {
+fn level_0_filter_3(bencher: &mut test::Bencher) {
     let data = pixels_to_filter(ColorType::RGB, 8);
     bencher.bytes = data.len() as _;
     bencher.iter(move || {
@@ -53,7 +53,7 @@ fn encode_filter_3(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn encode_filter_4(bencher: &mut test::Bencher) {
+fn level_0_filter_4(bencher: &mut test::Bencher) {
     let data = pixels_to_filter(ColorType::RGB, 8);
     bencher.bytes = data.len() as _;
     bencher.iter(move || {
@@ -62,7 +62,7 @@ fn encode_filter_4(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn filter_encode_strategy_a_zero(bencher: &mut test::Bencher) {
+fn level_6_filter_strategy_a_zero(bencher: &mut test::Bencher) {
     let data = pixels_to_filter(ColorType::RGB, 8);
     bencher.bytes = data.len() as _;
     bencher.iter(move || {
@@ -71,7 +71,7 @@ fn filter_encode_strategy_a_zero(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn filter_encode_strategy_b_minsum(bencher: &mut test::Bencher) {
+fn level_6_filter_strategy_b_minsum(bencher: &mut test::Bencher) {
     let data = pixels_to_filter(ColorType::RGB, 8);
     bencher.bytes = data.len() as _;
     bencher.iter(move || {
@@ -80,7 +80,7 @@ fn filter_encode_strategy_b_minsum(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn filter_encode_strategy_c_entropy(bencher: &mut test::Bencher) {
+fn level_6_filter_strategy_c_entropy(bencher: &mut test::Bencher) {
     let data = pixels_to_filter(ColorType::RGB, 8);
     bencher.bytes = data.len() as _;
     bencher.iter(move || {
@@ -89,7 +89,7 @@ fn filter_encode_strategy_c_entropy(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn filter_encode_strategy_d_brute_force(bencher: &mut test::Bencher) {
+fn level_6_filter_strategy_d_brute_force(bencher: &mut test::Bencher) {
     let data = pixels_to_filter(ColorType::RGB, 8);
     bencher.bytes = data.len() as _;
     bencher.iter(move || {
@@ -98,8 +98,8 @@ fn filter_encode_strategy_d_brute_force(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn decode_filter_0(bencher: &mut test::Bencher) {
-    let res = test_png_with_filter(0, 0, ColorType::RGB, 8);
+fn decode_level_8_filter_0(bencher: &mut test::Bencher) {
+    let res = test_png_with_filter(0, 8, ColorType::RGB, 8);
     bencher.bytes = res.len() as _;
     bencher.iter(|| {
         lodepng::decode24(&res)
@@ -107,8 +107,8 @@ fn decode_filter_0(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn decode_filter_1(bencher: &mut test::Bencher) {
-    let res = test_png_with_filter(1, 0, ColorType::RGB, 8);
+fn decode_level_8_filter_1(bencher: &mut test::Bencher) {
+    let res = test_png_with_filter(1, 8, ColorType::RGB, 8);
     bencher.bytes = res.len() as _;
     bencher.iter(|| {
         lodepng::decode24(&res)
@@ -116,8 +116,8 @@ fn decode_filter_1(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn decode_filter_2(bencher: &mut test::Bencher) {
-    let res = test_png_with_filter(2, 0, ColorType::RGB, 8);
+fn decode_level_8_filter_2(bencher: &mut test::Bencher) {
+    let res = test_png_with_filter(2, 8, ColorType::RGB, 8);
     bencher.bytes = res.len() as _;
     bencher.iter(|| {
         lodepng::decode24(&res)
@@ -125,8 +125,8 @@ fn decode_filter_2(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn decode_filter_3(bencher: &mut test::Bencher) {
-    let res = test_png_with_filter(3, 0, ColorType::RGB, 8);
+fn decode_level_8_filter_3(bencher: &mut test::Bencher) {
+    let res = test_png_with_filter(3, 8, ColorType::RGB, 8);
     bencher.bytes = res.len() as _;
     bencher.iter(|| {
         lodepng::decode24(&res)
@@ -134,8 +134,8 @@ fn decode_filter_3(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn decode_filter_4_rgb(bencher: &mut test::Bencher) {
-    let res = test_png_with_filter(4, 0, ColorType::RGB, 8);
+fn decode_level_8_filter_4_rgb(bencher: &mut test::Bencher) {
+    let res = test_png_with_filter(4, 8, ColorType::RGB, 8);
     bencher.bytes = res.len() as _;
     bencher.iter(|| {
         lodepng::decode24(&res)
@@ -143,8 +143,8 @@ fn decode_filter_4_rgb(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn decode_filter_4_rgb16(bencher: &mut test::Bencher) {
-    let res = test_png_with_filter(4, 0, ColorType::RGB, 16);
+fn decode_level_8_filter_4_rgb16(bencher: &mut test::Bencher) {
+    let res = test_png_with_filter(4, 8, ColorType::RGB, 16);
     bencher.bytes = res.len() as _;
     bencher.iter(|| {
         lodepng::decode24(&res)
@@ -152,8 +152,8 @@ fn decode_filter_4_rgb16(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn decode_filter_4_rgba(bencher: &mut test::Bencher) {
-    let res = test_png_with_filter(4, 0, ColorType::RGBA, 8);
+fn decode_level_8_filter_4_rgba(bencher: &mut test::Bencher) {
+    let res = test_png_with_filter(4, 8, ColorType::RGBA, 8);
     bencher.bytes = res.len() as _;
     bencher.iter(|| {
         lodepng::decode24(&res)
@@ -161,8 +161,8 @@ fn decode_filter_4_rgba(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn decode_filter_4_g(bencher: &mut test::Bencher) {
-    let res = test_png_with_filter(4, 0, ColorType::GREY, 8);
+fn decode_level_8_filter_4_g(bencher: &mut test::Bencher) {
+    let res = test_png_with_filter(4, 8, ColorType::GREY, 8);
     bencher.bytes = res.len() as _;
     bencher.iter(|| {
         lodepng::decode24(&res)
@@ -170,8 +170,8 @@ fn decode_filter_4_g(bencher: &mut test::Bencher) {
 }
 
 #[bench]
-fn decode_filter_4_ga(bencher: &mut test::Bencher) {
-    let res = test_png_with_filter(4, 0, ColorType::GREY_ALPHA, 8);
+fn decode_level_8_filter_4_ga(bencher: &mut test::Bencher) {
+    let res = test_png_with_filter(4, 8, ColorType::GREY_ALPHA, 8);
     bencher.bytes = res.len() as _;
     bencher.iter(|| {
         lodepng::decode24(&res)
