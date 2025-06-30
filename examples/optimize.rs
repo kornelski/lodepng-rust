@@ -7,8 +7,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cfg!(debug_assertions) {
         eprintln!("warning: this example should be built in release mode (cargo run --release)");
     }
-    if cfg!(not(any(feature = "cfzlib", feature = "ngzlib"))) {
-        eprintln!("warning: build with --features=cfzlib or --features=ngzlib for better results");
+    if cfg!(not(any(feature = "cfzlib", feature = "ngzlib", feature = "zlibrs"))) {
+        eprintln!("warning: build with --features=cfzlib or --features=zlibrs for better results");
     }
 
     let path = std::env::args().nth(1).ok_or("Specify a path to a PNG file")?;

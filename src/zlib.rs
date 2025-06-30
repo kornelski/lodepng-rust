@@ -123,9 +123,9 @@ pub struct Estimator {
 
 impl Estimator {
     pub fn new(len: usize) -> Self {
-        #[cfg(not(any(feature = "cfzlib", feature = "ngzlib")))]
+        #[cfg(not(any(feature = "cfzlib", feature = "ngzlib", feature = "zlibrs")))]
         let gz = flate2::Compress::new(Compression::fast(), false);
-        #[cfg(any(feature = "cfzlib", feature = "ngzlib"))]
+        #[cfg(any(feature = "cfzlib", feature = "ngzlib", feature = "zlibrs"))]
         let gz = flate2::Compress::new_with_window_bits(Compression::fast(), false,
                 (len+270).max(1<<9).min(1<<14).next_power_of_two().trailing_zeros() as u8);
         Self {
@@ -136,7 +136,7 @@ impl Estimator {
 
     pub(crate) fn estimate_compressed_size(&mut self, mut source: &[u8], _dict: &[u8]) -> usize {
         self.gz.reset();
-        #[cfg(any(feature = "cfzlib", feature = "ngzlib"))]
+        #[cfg(any(feature = "cfzlib", feature = "ngzlib", feature = "zlibrs"))]
         if !_dict.is_empty() {
             let _ = self.gz.set_dictionary(&_dict[_dict.len().saturating_sub(1<<14)..]);
         }
