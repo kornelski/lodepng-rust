@@ -241,7 +241,7 @@ fn make_filter<'a>(w: u32, h: u32, info: &ColorMode, settings: &'a EncoderSettin
                     if type_ == 0 || sum < smallest {
                         smallest = sum;
                         std::mem::swap(&mut attempt, &mut best);
-                    };
+                    }
                 }
                 out.copy_from_slice(&best);
             })
@@ -468,7 +468,7 @@ fn filter_scanline(out: &mut [u8], scanline: &[u8], prevline: Option<&[u8]>, byt
         _ => {
             debug_assert!(false);
         },
-    };
+    }
 }
 
 /// From stb_image.h 2.30
@@ -569,7 +569,7 @@ fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, colormap: &mut Col
             } else {
                 let grey = (grey >> (8 - mode.bitdepth)) & ((1 << mode.bitdepth) - 1); /*no error*/
                 add_color_bits(out, i, mode.bitdepth, grey.into());
-            };
+            }
         },
         ColorType::RGB => if mode.bitdepth == 8 {
             out[i * 3 + 0] = px.r;
@@ -590,7 +590,7 @@ fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, colormap: &mut Col
                 out[i] = index;
             } else {
                 add_color_bits(out, i, mode.bitdepth, u32::from(index));
-            };
+            }
         },
         ColorType::GREY_ALPHA => {
             let grey = px.r;
@@ -626,7 +626,7 @@ fn rgba8_to_pixel(out: &mut [u8], i: usize, mode: &ColorMode, colormap: &mut Col
         ColorType::BGRX => {
             return Err(Error::new(31));
         },
-    };
+    }
     Ok(())
 }
 
@@ -827,7 +827,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                         } else {
                             255
                         };
-                    };
+                    }
                 }
             } else {
                 let highest = (1 << mode.bitdepth()) - 1;
@@ -846,9 +846,9 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                         } else {
                             255
                         };
-                    };
+                    }
                 }
-            };
+            }
         },
         ColorType::RGB => {
             if mode.bitdepth() == 8 {
@@ -860,7 +860,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                         } else {
                             255
                         };
-                    };
+                    }
                 }
             } else {
                 debug_assert_eq!(16, mode.bitdepth);
@@ -877,9 +877,9 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                         } else {
                             255
                         };
-                    };
+                    }
                 }
-            };
+            }
         },
         ColorType::PALETTE => {
             let mut j = 0;
@@ -910,7 +910,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                     if has_alpha {
                         buffer[3] = p.a;
                     }
-                };
+                }
             }
         },
         ColorType::GREY_ALPHA => if mode.bitdepth() == 8 {
@@ -918,7 +918,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                 buffer[..3].fill(inp[0]);
                 if has_alpha {
                     buffer[3] = inp[1];
-                };
+                }
             }
         } else {
             debug_assert_eq!(16, mode.bitdepth);
@@ -926,7 +926,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                 buffer[..3].fill(inp[0]);
                 if has_alpha {
                     buffer[3] = inp[2];
-                };
+                }
             }
         },
         ColorType::RGBA => if mode.bitdepth() == 8 {
@@ -958,7 +958,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                     } else {
                         255
                     };
-                };
+                }
             }
         },
         ColorType::BGRX => {
@@ -972,7 +972,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                     } else {
                         255
                     };
-                };
+                }
             }
         },
         ColorType::BGRA => {
@@ -985,7 +985,7 @@ fn get_pixel_colors_rgba8(buffer: &mut [u8], has_alpha: bool, inp: &[u8], mode: 
                 }
             }
         },
-    };
+    }
 }
 /*Get RGBA16 color of pixel with index i (y * width + x) from the raw image with
 given color type, but the given color type must be 16-bit itself.*/
@@ -1346,7 +1346,7 @@ fn add_chunk_trns(out: &mut Vec<u8>, info: &ColorMode) -> Result<(), Error> {
                 amount -= 1;
             } else {
                 break;
-            };
+            }
             i -= 1;
         }
         for p in &palette[0..amount] {
@@ -1355,13 +1355,13 @@ fn add_chunk_trns(out: &mut Vec<u8>, info: &ColorMode) -> Result<(), Error> {
     } else if info.colortype == ColorType::GREY {
         if let Some((r, _, _)) = info.key() {
             trns.write_u16be(r);
-        };
+        }
     } else if info.colortype == ColorType::RGB {
         if let Some((r, g, b)) = info.key() {
             trns.write_u16be(r);
             trns.write_u16be(g);
             trns.write_u16be(b);
-        };
+        }
     }
     trns.finish()
 }
@@ -1829,7 +1829,7 @@ fn postprocess_scanlines(mut inp: Vec<u8>, unfiltering_buffer: usize, w: u32, h:
                 /*remove padding bits in scanlines; after this there still may be padding
                         bits between the different reduced images: each reduced image still starts nicely at a byte*/
                 remove_padding_bits_aliased(&mut inp, offset_packed, offset_padded, linebits_exact(pass.w as _, bpp), linebits_rounded(pass.w as _, bpp), pass.h);
-            };
+            }
             offset_padded += pass.padded_len;
             offset_filtered += pass.filtered_len;
             offset_packed += pass.packed_len;
@@ -2308,7 +2308,7 @@ fn decode_generic(state: &mut State, inp: &[u8]) -> Result<(Vec<u8>, u32, u32), 
                     state.info_png.push_unknown_chunk(critical_pos, ch.whole_chunk_data())?;
                 }
             },
-        };
+        }
         if !state.decoder.ignore_crc && !unknown && !ch.check_crc() {
             return Err(Error::new(57));
         }
@@ -2523,11 +2523,11 @@ fn get_color_profile16(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> ColorPro
                 profile.alpha = true;
                 profile.key = false;
                 alpha_done = true;
-            };
+            }
         }
         if alpha_done && colored_done {
             break;
-        };
+        }
     }
     if profile.key && !profile.alpha {
         for px in inp.chunks_exact(bytewidth as usize).take(numpixels) {
@@ -2560,7 +2560,7 @@ fn get_color_profile_low_bpp(inp: &[u8], w: u32, h: u32, mode: &ColorMode) -> Co
         }
     }
 
-    let mut gray_pal = [RGBA::new(0,0,0,0); 256];
+    let mut gray_pal = [RGBA::new(0, 0, 0, 0); 256];
     let palette = if mode.colortype == ColorType::PALETTE {
         mode.palette()
     } else {
@@ -2624,7 +2624,7 @@ pub(crate) fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) ->
             let bits = get_value_required_bits(px.r);
             if bits > profile.bits {
                 profile.bits = bits;
-            };
+            }
         }
         bits_done = profile.bits >= bpp.get();
         if !colored_done && (px.r != px.g || px.r != px.b) {
@@ -2632,10 +2632,10 @@ pub(crate) fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) ->
             colored_done = true;
             if profile.bits < 8 {
                 profile.bits = 8;
-            };
+            }
             /*PNG has no colored modes with less than 8-bit per channel*/
         }
-        if !alpha_done && profile.check_alpha(px){
+        if !alpha_done && profile.check_alpha(px) {
             alpha_done = true;
         }
         if !numcolors_done && colormap.get(&px).is_none() {
@@ -2648,12 +2648,16 @@ pub(crate) fn get_color_profile(inp: &[u8], w: u32, h: u32, mode: &ColorMode) ->
         }
         if alpha_done && numcolors_done && colored_done && bits_done {
             break;
-        };
+        }
     }
     if profile.key && !profile.alpha {
         for px in inp.chunks_exact(bytewidth as usize).take(numpixels) {
             let px = get_pixel_color_rgba8(px, mode);
-            if px.a != 0 && px.r as u16 == profile.key_r && px.g as u16 == profile.key_g && px.b as u16 == profile.key_b {
+            if px.a != 0
+                && px.r as u16 == profile.key_r
+                && px.g as u16 == profile.key_g
+                && px.b as u16 == profile.key_b
+            {
                 profile.alpha = true;
                 profile.key = false;
                 /*PNG has no alphachannel modes with less than 8-bit per channel*/
@@ -2682,7 +2686,6 @@ fn has_any_16_bit_pixels(inp: &[u8], bytewidth: u8, numpixels: usize, mode: &Col
     false
 }
 
-
 /*Automatically chooses color type that gives smallest amount of bits in the
 output image, e.g. grey if there are only greyscale pixels, palette if there
 are less than 256 colors, …
@@ -2700,7 +2703,7 @@ pub(crate) fn auto_choose_color(image: &[u8], w: u32, h: u32, mode_in: &ColorMod
         /*PNG has no alphachannel modes with less than 8-bit per channel*/
         if prof.bits < 8 {
             prof.bits = 8;
-        };
+        }
     }
     let n = prof.numcolors;
     let palettebits = if n <= 2 {
@@ -2727,7 +2730,7 @@ pub(crate) fn auto_choose_color(image: &[u8], w: u32, h: u32, mode_in: &ColorMod
         if mode_in.colortype == ColorType::PALETTE && mode_in.palette().len() >= mode_out.palette().len() && mode_in.bitdepth == mode_out.bitdepth {
             /*If input should have same palette colors, keep original to preserve its order and prevent conversion*/
             mode_out = mode_in.clone();
-        };
+        }
     } else {
         mode_out.try_set_bitdepth(prof.bits.into())?;
         mode_out.colortype = if prof.alpha {
@@ -2748,7 +2751,7 @@ pub(crate) fn auto_choose_color(image: &[u8], w: u32, h: u32, mode_in: &ColorMod
                 prof.key_r & mask,
                 prof.key_g & mask,
                 prof.key_b & mask);
-        };
+        }
     }
     Ok(mode_out)
 }
@@ -2811,7 +2814,7 @@ impl ColorProfile {
             self.key = false;
             if self.bits < 8 {
                 self.bits = 8;
-            };
+            }
             return true;
         }
         false

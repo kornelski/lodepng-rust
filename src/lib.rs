@@ -299,13 +299,10 @@ impl ColorType {
     #[must_use]
     pub fn channels(&self) -> u8 {
         match *self {
-            ColorType::GREY | ColorType::PALETTE => 1,
-            ColorType::GREY_ALPHA => 2,
-            ColorType::BGR |
-            ColorType::RGB => 3,
-            ColorType::BGRA |
-            ColorType::BGRX |
-            ColorType::RGBA => 4,
+            Self::GREY | Self::PALETTE => 1,
+            Self::GREY_ALPHA => 2,
+            Self::BGR | Self::RGB => 3,
+            Self::BGRA | Self::BGRX | Self::RGBA => 4,
         }
     }
 }
@@ -862,7 +859,8 @@ pub enum Image {
 }
 
 impl Image {
-    #[must_use] pub fn width(&self) -> usize {
+    #[must_use]
+    pub fn width(&self) -> usize {
         match self {
             Self::RawData(bitmap) => bitmap.width,
             Self::Grey(bitmap) => bitmap.width,
@@ -876,7 +874,8 @@ impl Image {
         }
     }
 
-    #[must_use] pub fn height(&self) -> usize {
+    #[must_use]
+    pub fn height(&self) -> usize {
         match self {
             Self::RawData(bitmap) => bitmap.height,
             Self::Grey(bitmap) => bitmap.height,
@@ -891,7 +890,8 @@ impl Image {
     }
 
     /// Raw bytes of the underlying buffer
-    #[must_use] pub fn bytes(&self) -> &[u8] {
+    #[must_use]
+    pub fn bytes(&self) -> &[u8] {
         use rgb::bytemuck::cast_slice;
 
         match self {
@@ -1342,7 +1342,7 @@ impl CompressSettings {
     /// Default compression settings
     #[inline(always)]
     #[must_use]
-    pub fn new() -> CompressSettings {
+    pub fn new() -> Self {
         Self::default()
     }
 }
@@ -1499,7 +1499,7 @@ mod test {
         let mut state = Encoder::new();
         {
             let info = state.info_png_mut();
-            for _ in info.try_unknown_chunks(ChunkPosition::IHDR) {
+            if let Some(_) = info.try_unknown_chunks(ChunkPosition::IHDR).next() {
                 panic!("no chunks yet");
             }
 
@@ -1514,7 +1514,7 @@ mod test {
 
             for _ in info.try_unknown_chunks(ChunkPosition::IDAT) {}
             let chunk = info.try_unknown_chunks(ChunkPosition::IHDR).next().unwrap().unwrap();
-            assert_eq!("foob".as_bytes(), chunk.name());
+            assert_eq!(*b"foob", chunk.name());
             assert!(chunk.is_type("foob"));
             assert!(!chunk.is_type("foobar"));
             assert!(!chunk.is_type("foo"));
@@ -1529,7 +1529,7 @@ mod test {
         dec.remember_unknown_chunks(true);
         dec.decode(img).unwrap();
         let chunk = dec.info_png().try_unknown_chunks(ChunkPosition::IHDR).next().unwrap().unwrap();
-        assert_eq!("foob".as_bytes(), chunk.name());
+        assert_eq!(*b"foob", chunk.name());
         dec.info_png().get("foob").unwrap();
     }
 
@@ -1541,10 +1541,10 @@ mod test {
         f.unwrap();
         let icc = s.info_png().get("iCCP").unwrap();
         assert_eq!(275, icc.len());
-        assert_eq!("ICC Pro".as_bytes(), &icc.data()[0..7]);
+        assert_eq!(b"ICC Pro", &icc.data()[0..7]);
 
         let data = s.get_icc().unwrap();
-        assert_eq!("appl".as_bytes(), &data[4..8]);
+        assert_eq!(b"appl", &data[4..8]);
     }
 
     #[test]

@@ -336,7 +336,7 @@ pub unsafe extern "C" fn lodepng_chunk_type(type_: &mut [u8; 5], chunk: *const u
 #[no_mangle]
 #[cfg_attr(not(feature = "c_ffi"), deprecated(note = "enable c_ffi feature in lodepng to use the C API"))]
 pub unsafe extern "C" fn lodepng_chunk_type_equals(chunk: *const u8, name: &[u8; 4]) -> u8 {
-    if name.iter().any(|&t| t == 0) {
+    if name.contains(&0) {
         return 0;
     }
     let ch = ChunkRef::from_ptr(chunk).unwrap();

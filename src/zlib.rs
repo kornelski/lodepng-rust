@@ -130,7 +130,7 @@ impl Estimator {
                 (len+270).max(1<<9).min(1<<14).next_power_of_two().trailing_zeros() as u8);
         Self {
             gz,
-            tmp: vec![0; len+270],
+            tmp: vec![0; len + 270],
         }
     }
 
@@ -156,4 +156,3 @@ impl Estimator {
         (self.gz.total_out() - init_total_out) as _
     }
 }
-

@@ -1,5 +1,5 @@
-use std::collections::TryReserveError;
 use crate::ffi::ErrorCode;
+use std::collections::TryReserveError;
 use std::error;
 use std::fmt;
 use std::io;
@@ -48,7 +48,7 @@ impl From<ErrorCode> for Result<(), Error> {
 impl From<Error> for ErrorCode {
     #[inline(always)]
     fn from(err: Error) -> Self {
-        ErrorCode(err.0.get())
+        Self(err.0.get())
     }
 }
 

@@ -47,9 +47,9 @@ fn redecode2() {
 
 #[test]
 fn random() {
-    let mut data = vec![0u8; 639*479*3];
+    let mut data = vec![0u8; 639 * 479 * 3];
     for (i, px) in data.iter_mut().enumerate() {
-        *px = ((i ^ (13 + i * 17) ^ (i * 13) ^ (i/113 * 11)) >> 5) as u8;
+        *px = ((i ^ (13 + i * 17) ^ (i * 13) ^ (i / 113 * 11)) >> 5) as u8;
     }
 
     let png = encode24(&data, 639, 479).unwrap();
@@ -74,9 +74,10 @@ fn bgra() {
 #[ignore] // slow
 #[cfg(target_pointer_width = "64")]
 fn huge() {
-    let png = encode24(&vec![RGB::new(0u8,0,0); 67777*68888], 67777, 68888).unwrap();
+    let png = encode24(&vec![RGB::new(0u8, 0, 0); 67777 * 68888], 67777, 68888)
+        .unwrap();
     let img = decode24(png).unwrap();
-    assert_eq!(img.buffer[0], RGB::new(0,0,0));
+    assert_eq!(img.buffer[0], RGB::new(0, 0, 0));
     assert_eq!(img.width, 67777);
     assert_eq!(img.height, 68888);
 }
@@ -85,11 +86,11 @@ fn huge() {
 fn rgb_with_trns_inspect() {
     let mut state = Encoder::new();
     state.info_raw_mut().colortype = ColorType::RGB;
-    state.info_raw_mut().set_key(0,0,0);
+    state.info_raw_mut().set_key(0, 0, 0);
     state.info_png_mut().color.colortype = ColorType::RGB;
-    state.info_png_mut().color.set_key(0,0,0);
+    state.info_png_mut().color.set_key(0, 0, 0);
     state.set_auto_convert(false);
-    let png_data = state.encode(&[1u8,2,3,0,0,0], 2, 1).unwrap();
+    let png_data = state.encode(&[1u8, 2, 3, 0, 0, 0], 2, 1).unwrap();
 
     let mut decoder = lodepng::Decoder::new();
     decoder.decode(&png_data).unwrap();
