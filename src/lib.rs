@@ -430,7 +430,7 @@ impl Info {
 }
 
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 /// Make an image with custom settings
 pub struct Encoder {
     state: State,
@@ -555,7 +555,7 @@ impl Encoder {
 
 #[derive(Clone, Debug, Default)]
 /// Read an image with custom settings
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub struct Decoder {
     pub(crate) state: State,
 }
@@ -1058,7 +1058,7 @@ fn new_bitmap(buffer: Vec<u8>, w: u32, h: u32, colortype: ColorType, bitdepth: c
 /// * `bitdepth`: the desired bit depth for the raw output image. 1, 2, 4, 8 or 16. Typically 8.
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
     let input = input.as_ref();
     assert!(bitdepth > 0 && bitdepth <= 16);
@@ -1068,7 +1068,7 @@ pub fn decode_memory<Bytes: AsRef<[u8]>>(input: Bytes, colortype: ColorType, bit
 
 /// Same as `decode_memory`, but always decodes to 32-bit RGBA raw image
 #[inline]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA>, Error> {
     match decode_memory(input, ColorType::RGBA, 8)? {
         Image::RGBA(img) => Ok(img),
@@ -1078,7 +1078,7 @@ pub fn decode32<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGBA>, Error>
 
 /// Same as `decode_memory`, but always decodes to 24-bit RGB raw image
 #[inline]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Error> {
     match decode_memory(input, ColorType::RGB, 8)? {
         Image::RGB(img) => Ok(img),
@@ -1105,14 +1105,14 @@ pub fn decode24<Bytes: AsRef<[u8]>>(input: Bytes) -> Result<Bitmap<RGB<u8>>, Err
 ///  ```
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn decode_file<P: AsRef<Path>>(filepath: P, colortype: ColorType, bitdepth: c_uint) -> Result<Image, Error> {
     decode_memory(fs::read(filepath)?, colortype, bitdepth)
 }
 
 /// Same as `decode_file`, but always decodes to 32-bit RGBA raw image
 #[inline]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA>, Error> {
     match decode_file(filepath, ColorType::RGBA, 8)? {
         Image::RGBA(img) => Ok(img),
@@ -1122,7 +1122,7 @@ pub fn decode32_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGBA>, Error>
 
 /// Same as `decode_file`, but always decodes to 24-bit RGB raw image
 #[inline]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn decode24_file<P: AsRef<Path>>(filepath: P) -> Result<Bitmap<RGB<u8>>, Error> {
     match decode_file(filepath, ColorType::RGB, 8)? {
         Image::RGB(img) => Ok(img),
@@ -1168,7 +1168,7 @@ fn buffer_for_type<PixelType: Pod>(image: &[PixelType], w: impl TryInto<u32>, h:
 /// Takes any pixel type, but for safety the type has to be marked as "plain old data"
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn encode_memory<PixelType: Pod>(image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<Vec<u8>, Error> {
     let image = buffer_for_type(image, w, h, colortype, bitdepth)?;
     rustimpl::lodepng_encode_memory(image, w as u32, h as u32, colortype, bitdepth)
@@ -1177,7 +1177,7 @@ pub fn encode_memory<PixelType: Pod>(image: &[PixelType], w: usize, h: usize, co
 /// Same as `encode_memory`, but always encodes from 32-bit RGBA raw image
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn encode32<PixelType: Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGBA, 8)
 }
@@ -1185,7 +1185,7 @@ pub fn encode32<PixelType: Pod>(image: &[PixelType], w: usize, h: usize) -> Resu
 /// Same as `encode_memory`, but always encodes from 24-bit RGB raw image
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn encode24<PixelType: Pod>(image: &[PixelType], w: usize, h: usize) -> Result<Vec<u8>, Error> {
     encode_memory(image, w, h, ColorType::RGB, 8)
 }
@@ -1196,7 +1196,7 @@ pub fn encode24<PixelType: Pod>(image: &[PixelType], w: usize, h: usize) -> Resu
 /// NOTE: This overwrites existing files without warning!
 #[inline]
 #[cfg_attr(debug_assertions, track_caller)]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn encode_file<PixelType: Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize, colortype: ColorType, bitdepth: c_uint) -> Result<(), Error> {
     let encoded = encode_memory(image, w, h, colortype, bitdepth)?;
     fs::write(filepath, encoded)?;
@@ -1206,7 +1206,7 @@ pub fn encode_file<PixelType: Pod, P: AsRef<Path>>(filepath: P, image: &[PixelTy
 /// Same as `encode_file`, but always encodes from 32-bit RGBA raw image
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn encode32_file<PixelType: Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGBA, 8)
 }
@@ -1214,7 +1214,7 @@ pub fn encode32_file<PixelType: Pod, P: AsRef<Path>>(filepath: P, image: &[Pixel
 /// Same as `encode_file`, but always encodes from 24-bit RGB raw image
 #[inline(always)]
 #[cfg_attr(debug_assertions, track_caller)]
-#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use no-default-features = true when adding lodepng as a dependency"))]
+#[cfg_attr(all(feature = "cfzlib", feature = "zlibrs"), deprecated(note = "two zlib libraries added at the same time! use default-features = false when adding lodepng as a dependency"))]
 pub fn encode24_file<PixelType: Pod, P: AsRef<Path>>(filepath: P, image: &[PixelType], w: usize, h: usize) -> Result<(), Error> {
     encode_file(filepath, image, w, h, ColorType::RGB, 8)
 }

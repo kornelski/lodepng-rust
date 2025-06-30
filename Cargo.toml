@@ -10,7 +10,7 @@ license = "Zlib"
 name = "lodepng"
 readme = "README.md"
 repository = "https://github.com/kornelski/lodepng-rust.git"
-version = "3.12.0"
+version = "3.12.1"
 edition = "2021"
 rust-version = "1.72"
 
@@ -38,7 +38,7 @@ default = ["zlibrs", "_deprecated_c_ffi_default_"]
 # Compress using pure-Rust miniz_oxide, which isn't the fastest
 rust_backend = ["flate2/rust_backend"]
 # Compress using zlib-rs. Recommended if you want to avoid C dependencies.
-zlibrs = ["flate2/cloudflare_zlib"]
+zlibrs = ["flate2/zlib-rs"]
 # Compress using cloudflare-zlib, which is faster, but written in C
 cfzlib = ["flate2/cloudflare_zlib"]
 # Compress using zlib-ng, which is faster, but written in C and requires `cmake`
